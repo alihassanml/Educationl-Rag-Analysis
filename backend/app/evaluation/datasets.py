@@ -54,8 +54,7 @@ def import_dataset(
         user_id=user_id,
         name=name,
         items=[
-            EvalItem(position=position, **item.model_dump())
-            for position, item in enumerate(items)
+            EvalItem(position=position, **item.model_dump()) for position, item in enumerate(items)
         ],
     )
     db.add(dataset)

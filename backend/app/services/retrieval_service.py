@@ -1,6 +1,7 @@
 import re
 import uuid
 from dataclasses import dataclass
+from typing import Literal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -54,6 +55,7 @@ def retrieve(
     document_ids: list[uuid.UUID] | None = None,
     top_k: int | None = None,
     min_similarity: float | None = None,
+    mode: Literal["dense", "hybrid"] = "dense",
 ) -> list[RetrievedChunk]:
     """Nearest chunks to the query, restricted to this user's ready documents."""
     settings = get_settings()

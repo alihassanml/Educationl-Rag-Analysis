@@ -29,9 +29,13 @@ THRESHOLDS = [0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70]
 OUT = Path(__file__).parent / "results" / "retrieval_results.md"
 
 
-def build_corpus(db: Session, user: User, workdir: Path) -> dict[str, Document]:
+def build_corpus(
+    db: Session, user: User, workdir: Path, only_titles: set[str] | None = None
+) -> dict[str, Document]:
     docs: dict[str, Document] = {}
     for title, pages in CORPUS.items():
+        if only_titles is not None and title not in only_titles:
+            continue
         pdf = pymupdf.open()
         for text in pages:
             pdf.new_page().insert_textbox(pymupdf.Rect(50, 50, 550, 800), text, fontsize=11)

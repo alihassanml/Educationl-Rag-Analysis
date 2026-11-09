@@ -68,7 +68,7 @@ def bootstrap_ci(
 
 @dataclass(frozen=True)
 class AbstentionMatrix:
-    """"Answerable" is the positive class. fp (answered an unanswerable question) is the
+    """ "Answerable" is the positive class. fp (answered an unanswerable question) is the
     hallucination risk; fn is an over-cautious refusal."""
 
     tp: int

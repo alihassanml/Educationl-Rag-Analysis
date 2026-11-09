@@ -7,15 +7,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import NotFoundError
-from app.core.security import hash_password
 from app.evaluation.datasets import EvalItemIn, import_dataset
 from app.evaluation.runner import execute_run
 from app.evaluation.service import create_run
-from app.models.document import Document, DocumentChunk
+from app.models.document import DocumentChunk
 from app.models.evaluation import EvalResult, EvalRun
 from app.models.user import User
-from app.services import document_service
-from app.tests.helpers import FakeEmbedder, make_pdf
+from app.tests.helpers import FakeEmbedder, add_document, make_user
 
 VARIABLES = "A variable stores a value in memory. Every variable has a name and a data type."
 RECURSION = (
@@ -29,29 +27,6 @@ PHOTOSYNTHESIS = (
 
 PROGRAMMING = "Programming Notes"
 BIOLOGY = "Biology Notes"
-
-
-def make_user(db: Session, email: str = "admin@example.com") -> User:
-    user = User(email=email, password_hash=hash_password("password123"), is_admin=True)
-    db.add(user)
-    db.commit()
-    return user
-
-
-def add_document(db: Session, user: User, title: str, pages: list[str], tmp: Path) -> Document:
-    path = tmp / f"{uuid.uuid4().hex}.pdf"
-    path.write_bytes(make_pdf(pages))
-    document = document_service.create_and_process(
-        db,
-        FakeEmbedder(),
-        user.id,
-        filename=f"{title}.pdf",
-        title=title,
-        path=path,
-        size=path.stat().st_size,
-    )
-    assert document.status == "ready"
-    return document
 
 
 def answerable(question: str, title: str, page: int) -> EvalItemIn:

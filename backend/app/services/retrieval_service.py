@@ -1,15 +1,20 @@
 import re
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import Select, Text, cast, func, select
+from sqlalchemy.dialects.postgresql import TSQUERY
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.errors import NotFoundError
 from app.models.document import STATUS_READY, Document, DocumentChunk
 from app.services.embedding_service import Embedder
+
+RRF_K = 60
+HYBRID_CANDIDATES = 40  # per ranking (guide section 7, step 3)
 
 
 @dataclass(frozen=True)
@@ -19,6 +24,14 @@ class RetrievedChunk:
     document_title: str
     page_number: int | None
     content: str
+    similarity: float
+    rrf_score: float | None = None  # only set by hybrid retrieval
+
+
+@dataclass(frozen=True)
+class _Candidate:
+    chunk: DocumentChunk
+    title: str
     similarity: float
 
 
@@ -47,6 +60,85 @@ def check_document_scope(db: Session, user_id: uuid.UUID, document_ids: list[uui
         raise NotFoundError("Document")
 
 
+def reciprocal_rank_fusion(
+    rankings: Sequence[Sequence[uuid.UUID]], k: int = RRF_K
+) -> list[tuple[uuid.UUID, float]]:
+    """Fuse ranked id lists: score(d) = sum over lists of 1 / (k + rank), ranks starting at 1.
+    Ties keep the order in which an id was first seen."""
+    scores: dict[uuid.UUID, float] = {}
+    for ranking in rankings:
+        for rank, item in enumerate(ranking, start=1):
+            scores[item] = scores.get(item, 0.0) + 1.0 / (k + rank)
+    first_seen = {item: position for position, item in enumerate(scores)}
+    return sorted(scores.items(), key=lambda pair: (-pair[1], first_seen[pair[0]]))
+
+
+def _scoped(
+    stmt: Select,
+    user_id: uuid.UUID,
+    document_ids: list[uuid.UUID] | None,  # type: ignore[type-arg]
+) -> Select:  # type: ignore[type-arg]
+    """Restrict to the user's own chunks of ready documents, and the selected documents."""
+    stmt = stmt.join(Document, Document.id == DocumentChunk.document_id).where(
+        DocumentChunk.user_id == user_id,
+        Document.user_id == user_id,
+        Document.status == STATUS_READY,
+    )
+    if document_ids:
+        stmt = stmt.where(DocumentChunk.document_id.in_(document_ids))
+    return stmt
+
+
+def _dense_candidates(
+    db: Session,
+    query_vector: list[float],
+    user_id: uuid.UUID,
+    document_ids: list[uuid.UUID] | None,
+    limit: int,
+) -> list[_Candidate]:
+    distance = DocumentChunk.embedding.cosine_distance(query_vector)
+    stmt = _scoped(
+        select(DocumentChunk, Document.title, distance.label("distance")), user_id, document_ids
+    )
+    rows = db.execute(stmt.order_by(distance).limit(limit))
+    return [_Candidate(chunk, title, 1.0 - float(dist)) for chunk, title, dist in rows]
+
+
+def _fulltext_candidates(
+    db: Session,
+    query: str,
+    query_vector: list[float],
+    user_id: uuid.UUID,
+    document_ids: list[uuid.UUID] | None,
+    limit: int,
+) -> list[_Candidate]:
+    """Chunks sharing at least one (stemmed) word with the query, best match first.
+
+    plainto_tsquery safely parses any user text; its terms are joined with AND, which would miss
+    most natural-language questions, so they are switched to OR before matching. Each row also
+    carries its cosine similarity so the same relevance gate can be applied to it.
+    """
+    tsquery = cast(
+        func.replace(cast(func.plainto_tsquery("english", query), Text), "&", "|"), TSQUERY
+    )
+    distance = DocumentChunk.embedding.cosine_distance(query_vector)
+    stmt = _scoped(
+        select(DocumentChunk, Document.title, distance.label("distance")), user_id, document_ids
+    )
+    rows = db.execute(
+        stmt.where(DocumentChunk.tsv.op("@@")(tsquery))
+        .order_by(func.ts_rank_cd(DocumentChunk.tsv, tsquery).desc(), DocumentChunk.id)
+        .limit(limit)
+    )
+    return [_Candidate(chunk, title, 1.0 - float(dist)) for chunk, title, dist in rows]
+
+
+def _fuse(dense: list[_Candidate], fulltext: list[_Candidate]) -> list[tuple[_Candidate, float]]:
+    by_id = {c.chunk.id: c for c in [*dense, *fulltext]}
+    fused = reciprocal_rank_fusion([[c.chunk.id for c in dense], [c.chunk.id for c in fulltext]])
+    return [(by_id[chunk_id], score) for chunk_id, score in fused]
+
+
 def retrieve(
     db: Session,
     embedder: Embedder,
@@ -55,47 +147,51 @@ def retrieve(
     document_ids: list[uuid.UUID] | None = None,
     top_k: int | None = None,
     min_similarity: float | None = None,
-    mode: Literal["dense", "hybrid"] = "dense",
+    mode: Literal["dense", "hybrid"] | None = None,
 ) -> list[RetrievedChunk]:
-    """Nearest chunks to the query, restricted to this user's ready documents."""
+    """Most relevant chunks for the query, restricted to this user's ready documents.
+
+    "dense" ranks by vector similarity. "hybrid" fuses the vector ranking with a full-text
+    ranking (reciprocal rank fusion). In both modes a chunk must reach the similarity threshold,
+    so hybrid can reorder and add keyword matches but never lowers the abstention bar.
+    """
     settings = get_settings()
     top_k = top_k or settings.retrieval_top_k
     threshold = settings.retrieval_min_similarity if min_similarity is None else min_similarity
+    mode = mode or settings.retrieval_mode
     if document_ids:
         check_document_scope(db, user_id, document_ids)
 
-    distance = DocumentChunk.embedding.cosine_distance(embedder.embed_query(query))
-    stmt = (
-        select(DocumentChunk, Document.title, distance.label("distance"))
-        .join(Document, Document.id == DocumentChunk.document_id)
-        .where(
-            DocumentChunk.user_id == user_id,
-            Document.user_id == user_id,
-            Document.status == STATUS_READY,
+    query_vector = embedder.embed_query(query)
+    if mode == "hybrid":
+        dense = _dense_candidates(db, query_vector, user_id, document_ids, HYBRID_CANDIDATES)
+        fulltext = _fulltext_candidates(
+            db, query, query_vector, user_id, document_ids, HYBRID_CANDIDATES
         )
-        .order_by(distance)
-        .limit(top_k * 3)
-    )
-    if document_ids:
-        stmt = stmt.where(DocumentChunk.document_id.in_(document_ids))
+        ordered = _fuse(dense, fulltext)
+    else:
+        dense = _dense_candidates(db, query_vector, user_id, document_ids, top_k * 3)
+        ordered = [(candidate, None) for candidate in dense]  # type: ignore[misc]
 
     selected: list[RetrievedChunk] = []
     kept_texts: list[str] = []
-    for chunk, title, dist in db.execute(stmt):
-        similarity = 1.0 - float(dist)
-        if similarity < threshold:
-            break  # results are ordered, so everything after is weaker
-        if _is_near_duplicate(chunk.content, kept_texts, settings.retrieval_duplicate_overlap):
+    for candidate, rrf_score in ordered:
+        if candidate.similarity < threshold:
             continue
-        kept_texts.append(chunk.content)
+        if _is_near_duplicate(
+            candidate.chunk.content, kept_texts, settings.retrieval_duplicate_overlap
+        ):
+            continue
+        kept_texts.append(candidate.chunk.content)
         selected.append(
             RetrievedChunk(
-                chunk_id=chunk.id,
-                document_id=chunk.document_id,
-                document_title=title,
-                page_number=chunk.page_number,
-                content=chunk.content,
-                similarity=similarity,
+                chunk_id=candidate.chunk.id,
+                document_id=candidate.chunk.document_id,
+                document_title=candidate.title,
+                page_number=candidate.chunk.page_number,
+                content=candidate.chunk.content,
+                similarity=candidate.similarity,
+                rrf_score=rrf_score,
             )
         )
         if len(selected) == top_k:

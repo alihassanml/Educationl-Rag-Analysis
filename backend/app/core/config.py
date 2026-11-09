@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     retrieval_top_k: int = 6
     retrieval_min_similarity: float = 0.6
     retrieval_duplicate_overlap: float = 0.9
+    # "hybrid" fuses vector and full-text rankings. Stays "dense" unless the Evaluation Lab shows
+    # hybrid is better (docs/evaluation-plan.md).
+    retrieval_mode: Literal["dense", "hybrid"] = "dense"
 
     # Groq (LLM provider, backend only)
     groq_api_key: str = ""

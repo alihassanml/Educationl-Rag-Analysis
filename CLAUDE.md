@@ -1,8 +1,17 @@
 # EduRAG FYP project guidance
 
-Full plan: `Implementation Guide.md`. The rules below are binding.
+Full plan: `docs/IMPLEMENTATION_GUIDE.md` (Guide v2, current). `Implementation Guide.md` is the superseded v1 MVP guide, kept for history. The rules below are binding and win over the guide where they differ.
 
 Stack: Next.js (App Router, TypeScript, Tailwind) in `frontend/`, FastAPI + SQLAlchemy + Alembic in `backend/`, PostgreSQL with pgvector, Groq via the backend only.
+
+### Owner decisions for Guide v2 (2026-11-09)
+
+- Evolve the existing repo in place. Keep `frontend/` and `backend/`; do not rename to `apps/web` and `apps/api`.
+- Approved infrastructure: Redis and one background worker (ARQ). Still not approved: MinIO (keep local disk storage), Mailpit (use SMTP settings, console email in dev), Kafka, Kubernetes, microservices.
+- Docker is not installed on this machine, so local services run through Homebrew (Postgres, Redis). `docker-compose.yml` may be added but must not be the only way to run the project.
+- Design direction is now "Midnight & Ice" (guide section 13), replacing the green palette. The UI rules below are updated to match. Glow is background atmosphere only, never on buttons, text, cards or charts.
+- Build order: Phase 0 (foundation), then a Phase 8 slice (Evaluation Lab on the existing pipeline), then hybrid retrieval measured in the Lab. Later phases only after the previous one passes its gates.
+- Claims in docs and UI must be measured, not pre-written (for example scale or latency results exist only after a benchmark has run).
 
 Commands:
 - Backend (from `backend/`, venv at `.venv`): `.venv/bin/pytest`, `.venv/bin/ruff check .`, `.venv/bin/uvicorn app.main:app --reload`, `.venv/bin/alembic upgrade head`
@@ -29,8 +38,10 @@ UI note from the owner: use one consistent left/right page margin on every scree
     learning.
 9.  Do not claim guaranteed zero hallucinations, perfect citations, or
     reliable exam prediction.
-10. Do not add Redis, Celery, Kafka, microservices, Kubernetes, agents,
-    or other infrastructure without a specific approved need.
+10. Infrastructure is limited to PostgreSQL + pgvector, Redis and one ARQ
+    worker (approved 2026-11-09). Do not add Celery, Kafka, microservices,
+    Kubernetes, agents, MinIO or other infrastructure without a specific
+    approved need.
 
 ### Coding rules
 
@@ -59,9 +70,13 @@ UI note from the owner: use one consistent left/right page margin on every scree
 
 ### UI rules
 
-1.  Use the approved neutral light palette and green primary action.
-2.  Avoid gradients, glowing effects, glassmorphism, excessive pills,
-    oversized cards, and decorative AI visuals.
+1.  Use the Midnight & Ice tokens from guide section 13 (electric blue
+    primary, light and dark themes) through shared CSS variables; never
+    hard-code hex values in components.
+2.  Glass only on floating layers, glow only as background atmosphere
+    (one per viewport), shadows per the guide. No glow on buttons, text,
+    cards or charts. Avoid purple/pink, sparkle spam, fake cursors, fake
+    logos, fake metrics, excessive pills, and decorative AI visuals.
 3.  Prioritize hierarchy, whitespace, readability, and familiar
     patterns.
 4.  Use one main action per page.

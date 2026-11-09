@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     app_env: str = "development"
     database_url: str
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
+    # Background jobs (ARQ worker)
+    redis_url: str = "redis://localhost:6379/0"
 
     # Authentication: JWT in an httpOnly cookie
     secret_key: str = "dev-only-change-me"

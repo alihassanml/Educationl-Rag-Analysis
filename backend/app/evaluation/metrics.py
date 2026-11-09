@@ -56,7 +56,7 @@ def percentile(values: Sequence[float], p: float) -> float:
 def bootstrap_ci(
     values: Sequence[float], resamples: int = 1000, confidence: float = 0.95, seed: int = 0
 ) -> tuple[float, float]:
-    """Percentile bootstrap interval of the mean; seeded, so the same data gives the same interval."""
+    """Percentile bootstrap interval of the mean. Seeded, so results are reproducible."""
     if not values:
         return (0.0, 0.0)
     rng = random.Random(seed)

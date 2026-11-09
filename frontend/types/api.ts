@@ -120,3 +120,97 @@ export type ProgressSummary = {
   score_history: Activity[];
   latest_document: { id: string; title: string } | null;
 };
+
+export type EvalMode = "dense" | "hybrid";
+export type EvalRunStatus = "queued" | "running" | "completed" | "failed";
+export type EvalOutcome = "all" | "failed" | "passed";
+export type EvalK = "1" | "3" | "5" | "10";
+export type EvalPerK = Record<EvalK, number>;
+
+export type EvalConfig = {
+  retrieval_mode: EvalMode;
+  min_similarity: number;
+  depth: number;
+  embedding_model: string;
+};
+
+export type EvalMetrics = {
+  n_answerable: number;
+  n_unanswerable: number;
+  n_errors: number;
+  hit_rate: EvalPerK;
+  precision: EvalPerK;
+  ndcg: EvalPerK;
+  mrr: number;
+  ci: { "hit_rate@5": [number, number]; mrr: [number, number] };
+  abstention: {
+    tp: number;
+    fn: number;
+    fp: number;
+    tn: number;
+    precision: number;
+    recall: number;
+    f1: number;
+    accuracy: number;
+  };
+  pass_rate: number;
+  latency_ms: { p50: number; p95: number };
+};
+
+export type EvalRun = {
+  id: string;
+  dataset_id: string;
+  dataset_name: string;
+  status: EvalRunStatus;
+  config: EvalConfig;
+  metrics: EvalMetrics | null;
+  error_message: string | null;
+  items_done: number;
+  items_total: number;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+};
+
+export type EvalRunList = { items: EvalRun[]; total: number };
+
+export type EvalDataset = {
+  id: string;
+  name: string;
+  item_count: number;
+  answerable_count: number;
+  created_at: string;
+};
+
+export type EvalDatasetList = { items: EvalDataset[]; total: number };
+
+export type EvalRetrieved = {
+  rank: number;
+  chunk_id: string;
+  document_title: string;
+  page_number: number | null;
+  similarity: number;
+  relevant: boolean;
+};
+
+export type EvalResult = {
+  id: string;
+  question: string;
+  answerable: boolean;
+  question_type: string;
+  concept: string | null;
+  gold_document_title: string | null;
+  gold_page: number | null;
+  answered: boolean | null;
+  passed: boolean | null;
+  first_relevant_rank: number | null;
+  retrieved: EvalRetrieved[];
+  latency_ms: number | null;
+  error: string | null;
+};
+
+export type EvalResultList = { items: EvalResult[]; total: number };
+
+export type EvalCompare = { runs: EvalRun[]; config_diff: Record<string, unknown[]> };
+
+export type StartEvalRunInput = { dataset_id: string; retrieval_mode?: EvalMode; min_similarity?: number };

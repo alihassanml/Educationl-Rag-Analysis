@@ -2,16 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUser } from "@/components/auth/session-provider";
 import { cn } from "@/lib/cn";
 import { NAV_ITEMS } from "./nav-items";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const user = useUser();
+  const items = NAV_ITEMS.filter((item) => !item.adminOnly || user.is_admin);
 
   return (
     <nav aria-label="Main">
       <ul className="flex flex-col gap-1">
-        {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+        {items.map(({ label, href, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <li key={href}>

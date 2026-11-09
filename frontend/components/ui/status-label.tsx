@@ -1,5 +1,5 @@
 import { cn } from "@/lib/cn";
-import type { DocumentStatus, TopicStatus } from "@/types/api";
+import type { DocumentStatus, EvalRunStatus, TopicStatus } from "@/types/api";
 
 const topicStyles: Record<TopicStatus, { label: string; className: string }> = {
   needs_revision: { label: "Needs revision", className: "text-danger border-danger/30" },
@@ -12,6 +12,13 @@ const documentStyles: Record<DocumentStatus, { label: string; className: string 
   ready: { label: "Ready", className: "text-success border-success/30" },
   processing: { label: "Processing", className: "text-warning border-warning/30" },
   uploaded: { label: "Uploaded", className: "text-muted border-border" },
+  failed: { label: "Failed", className: "text-danger border-danger/30" },
+};
+
+const runStyles: Record<EvalRunStatus, { label: string; className: string }> = {
+  queued: { label: "Queued", className: "text-muted border-border" },
+  running: { label: "Running", className: "text-warning border-warning/30" },
+  completed: { label: "Completed", className: "text-success border-success/30" },
   failed: { label: "Failed", className: "text-danger border-danger/30" },
 };
 
@@ -29,4 +36,8 @@ export function TopicStatusLabel({ status }: { status: TopicStatus }) {
 
 export function DocumentStatusLabel({ status }: { status: DocumentStatus }) {
   return <Label {...documentStyles[status]} />;
+}
+
+export function RunStatusLabel({ status }: { status: EvalRunStatus }) {
+  return <Label {...runStyles[status]} />;
 }

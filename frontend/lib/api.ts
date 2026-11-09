@@ -3,10 +3,17 @@ import type {
   AskResponse,
   AttemptResult,
   DocumentList,
+  EvalCompare,
+  EvalDatasetList,
+  EvalOutcome,
+  EvalResultList,
+  EvalRun,
+  EvalRunList,
   GenerateQuizInput,
   ProgressSummary,
   QuizDetail,
   QuizList,
+  StartEvalRunInput,
   StudyDocument,
   TopicProgressList,
   User,
@@ -52,4 +59,22 @@ export const quizzesApi = {
 export const progressApi = {
   summary: (signal?: AbortSignal) => apiRequest<ProgressSummary>("/progress/summary", { signal }),
   topics: (signal?: AbortSignal) => apiRequest<TopicProgressList>("/progress/topics", { signal }),
+};
+
+export const evalApi = {
+  datasets: (signal?: AbortSignal) => apiRequest<EvalDatasetList>("/eval/datasets", { signal }),
+  startRun: (input: StartEvalRunInput) => apiRequest<EvalRun>("/eval/runs", { method: "POST", json: input }),
+  runs: (signal?: AbortSignal) => apiRequest<EvalRunList>("/eval/runs?limit=50", { signal }),
+  run: (id: string, signal?: AbortSignal) => apiRequest<EvalRun>(`/eval/runs/${id}`, { signal }),
+  results: (
+    id: string,
+    query: { outcome: EvalOutcome; limit: number; offset: number },
+    signal?: AbortSignal,
+  ) =>
+    apiRequest<EvalResultList>(
+      `/eval/runs/${id}/results?outcome=${query.outcome}&limit=${query.limit}&offset=${query.offset}`,
+      { signal },
+    ),
+  compare: (ids: string[], signal?: AbortSignal) =>
+    apiRequest<EvalCompare>(`/eval/compare?${ids.map((id) => `runs=${id}`).join("&")}`, { signal }),
 };

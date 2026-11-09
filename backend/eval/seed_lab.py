@@ -1,7 +1,8 @@
 """Prepare the Evaluation Lab for an existing user, and optionally run it from the terminal.
 
 Builds the sample study documents in the user's library (skipping titles they already have),
-imports the labelled questions as the dataset "Sample course", and with --run executes the
+imports the labelled questions as the dataset "Sample course" (kept, with its run history,
+if the questions have not changed), and with --run executes the
 listed retrieval modes synchronously and prints the headline metrics. Uses the real embedding
 model and database, no LLM call. From backend/:
 
@@ -16,7 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_engine
-from app.evaluation.datasets import import_dataset, load_jsonl
+from app.evaluation.datasets import ensure_dataset, load_jsonl
 from app.evaluation.runner import execute_run
 from app.evaluation.service import create_run
 from app.models.document import Document
@@ -45,7 +46,9 @@ def _summary(run: EvalRun) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--email", required=True, help="an existing user to prepare the lab for")
-    parser.add_argument("--run", default="", help="comma-separated modes to run now, e.g. dense,hybrid")
+    parser.add_argument(
+        "--run", default="", help="comma-separated modes to run now, e.g. dense,hybrid"
+    )
     args = parser.parse_args()
     modes = [m.strip() for m in args.run.split(",") if m.strip()]
     for mode in modes:
@@ -63,7 +66,7 @@ def main() -> None:
             with tempfile.TemporaryDirectory() as tmp:
                 build_corpus(db, user, Path(tmp), only_titles=missing)
             print(f"Added sample documents: {', '.join(sorted(missing))}")
-        dataset = import_dataset(db, user.id, DATASET_NAME, load_jsonl(DATASET_FILE))
+        dataset = ensure_dataset(db, user.id, DATASET_NAME, load_jsonl(DATASET_FILE))
         print(f'Dataset "{DATASET_NAME}" ready: {len(dataset.items)} questions')
 
         embedder = get_embedder()

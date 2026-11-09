@@ -9,8 +9,9 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_admin
 from app.core.errors import AppError
 from app.core.security import hash_password
-from app.evaluation.datasets import EvalItemIn, import_dataset, load_jsonl
-from app.models.evaluation import EvalDataset, EvalItem
+from app.evaluation.datasets import EvalItemIn, ensure_dataset, import_dataset, load_jsonl
+from app.evaluation.service import create_run
+from app.models.evaluation import EvalDataset, EvalItem, EvalRun
 from app.models.user import User
 from app.tests.helpers import register
 from eval.corpus import CORPUS
@@ -101,3 +102,32 @@ def test_me_returns_is_admin(client, db: Session) -> None:  # type: ignore[no-un
     user.is_admin = True  # type: ignore[union-attr]
     db.commit()
     assert client.get("/api/v1/auth/me").json()["is_admin"] is True
+
+
+def test_ensure_dataset_keeps_run_history_when_questions_are_unchanged(db: Session) -> None:
+    user = make_user(db)
+    items = [EvalItemIn(question="Who painted the Mona Lisa?", answerable=False)]
+    dataset = ensure_dataset(db, user.id, "Sample course", items)
+    run = create_run(db, user.id, dataset.id, {})
+
+    again = ensure_dataset(db, user.id, "Sample course", items)
+
+    assert again.id == dataset.id
+    assert db.get(EvalRun, run.id) is not None
+
+
+def test_ensure_dataset_replaces_when_questions_changed(db: Session) -> None:
+    user = make_user(db)
+    old = ensure_dataset(
+        db,
+        user.id,
+        "Sample course",
+        [EvalItemIn(question="Who painted the Mona Lisa?", answerable=False)],
+    )
+    changed = [EvalItemIn(question="Who wrote the play Hamlet?", answerable=False)]
+
+    new = ensure_dataset(db, user.id, "Sample course", changed)
+
+    assert new.id != old.id
+    questions = set(db.scalars(select(EvalItem.question).where(EvalItem.dataset_id == new.id)))
+    assert questions == {"Who wrote the play Hamlet?"}

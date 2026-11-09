@@ -41,8 +41,8 @@ Selected: `openai/gpt-oss-120b` with `GROQ_REASONING_EFFORT=low`. `gpt-oss-20b` 
 
 | Area | Where | Count |
 |---|---|---|
-| Backend: extraction, chunking, retrieval and tutor behaviour, Groq error handling, quiz validation, scoring, adaptive rules (every boundary: 0, 2, 3 attempts, exactly 60%, 80%), progress, auth, security | `backend/app/tests` (real PostgreSQL + pgvector, mocked Groq) | 94 |
-| Frontend: validators, API client, auth form, tutor, quiz runner, progress, shell | `frontend/tests` (Vitest) | 31 |
+| Backend: extraction, chunking, retrieval (dense and hybrid) and tutor behaviour, Groq error handling, quiz validation, scoring, adaptive rules (every boundary: 0, 2, 3 attempts, exactly 60%, 80%), progress, auth, security, Evaluation Lab metrics, runner and API (including administrator-only access) | `backend/app/tests` (real PostgreSQL + pgvector, mocked Groq) | 180 |
+| Frontend: validators, API client, auth form, tutor, quiz runner, progress, shell, design-token contrast (WCAG AA), Evaluation Lab screens | `frontend/tests` (Vitest) | 87 |
 | Browser end to end on a production build: register, upload, tutor with sources and refusal, quiz, progress, delete, sign out, 375 px layout | `frontend/e2e` (Playwright, real DB and embeddings, scripted LLM) | 11 |
 
 Security and robustness covered by tests: student A cannot read, delete, list, query, quiz from, or see progress of student B's data; non-PDF, fake-PDF (bad signature), empty and oversized uploads are rejected and not left on disk; image-only and corrupt PDFs end as `failed` with a helpful message; errors never include internals; cross-origin state-changing requests are blocked; the default secret key is refused in production.
@@ -58,6 +58,44 @@ Security and robustness covered by tests: student A cannot read, delete, list, q
 
 Test setup and dataset (section 1), metric definitions, results tables (sections 1 to 3), real screenshots (`docs/screenshots`, regenerate with `SCREENSHOTS=1 npx playwright test screenshots` from `frontend/`), failure cases and limitations (above), and what changed after testing: the similarity threshold moved from 0.50 to 0.60 after the sweep, chunk size was set below the embedding model's 512-token limit, and the quiz prompt was tightened after reviewing advanced questions.
 
+## 6. Evaluation Lab: retrieval metrics and dense versus hybrid
+
+The Lab (administrators only, sidebar "Evaluation") runs a labelled question set through the real retrieval code for the signed-in user's own documents and stores every run with a snapshot of its settings. It scores **retrieval only**: no Groq call is made, so it says nothing about answer faithfulness, answer correctness or citation recall. Each question has either an expected page (answerable) or none (unanswerable).
+
+How each number is computed (`backend/app/evaluation/metrics.py`, `runner.py`):
+
+| Metric | Definition |
+|---|---|
+| Hit rate at K | Share of answerable questions whose expected page (same document title and page number) is among the top K retrieved passages, K = 1, 3, 5, 10 |
+| Precision at K | Relevant passages in the top K divided by K |
+| MRR | Mean of 1 / rank of the first relevant passage (0 if none) |
+| nDCG at K | Binary relevance with a log2 discount, normalised by the best possible ordering given how many passages of the expected page exist |
+| Answered | The best passage reaches the similarity threshold (`RETRIEVAL_MIN_SIMILARITY`, 0.60). Otherwise the system abstains |
+| Abstention matrix | Answerable is the positive class: answerable and answered is a true positive; unanswerable and answered is a false positive (hallucination risk); answerable and abstained is an over-cautious refusal |
+| Pass | Answerable: answered and the expected page is in the top 5. Unanswerable: abstained |
+| Intervals | 95% bootstrap interval of the mean (1,000 resamples, fixed seed) |
+| Latency | p50 and p95 of the retrieval call per question (embedding the question plus the database search) |
+
+Questions whose expected document or page is not in the user's library are shown as "not scored" and excluded from every ratio instead of counting as failures. Repeat with `python -m eval.seed_lab --email <user> --run dense,hybrid` (from `backend/`; needs the sample documents it creates in that user's library) or from the Evaluation page.
+
+**Dense versus hybrid, recorded 2026-11-09.** Same 38 questions (30 answerable, 8 unanswerable) over the 3-document, 12-page sample corpus, real `BAAI/bge-small-en-v1.5` embeddings, threshold 0.60, 0 questions unscored. Hybrid fuses the dense ranking with a PostgreSQL full-text ranking by reciprocal rank fusion (k = 60, 40 candidates each) and keeps the same similarity gate.
+
+| Metric | Dense | Hybrid |
+|---|---|---|
+| Hit rate at 1 | 96.7% (29/30) | 93.3% (28/30) |
+| Hit rate at 3 | 100.0% | 100.0% |
+| Hit rate at 5 (95% interval) | 100.0% (100.0 to 100.0) | 100.0% (100.0 to 100.0) |
+| Hit rate at 10 | 100.0% | 100.0% |
+| MRR (95% interval) | 0.983 (0.950 to 1.000) | 0.967 (0.917 to 1.000) |
+| nDCG at 5 | 0.988 | 0.975 |
+| Abstention precision, recall, F1 | 93.5%, 96.7%, 95.1% | 93.5%, 96.7%, 95.1% |
+| Abstention counts (tp, fn, fp, tn) | 29, 1, 2, 6 | 29, 1, 2, 6 |
+| Retrieval latency p50, p95 | 19 ms, 31 ms | 22 ms, 25 ms |
+
+Reading: hybrid was **not better** here. It ranked one more question's expected page second instead of first ("What happens during glycolysis?"); everything else is equal, and the intervals overlap. Abstention is identical by construction because hybrid keeps the same gate. With a dense hit rate at 5 already at 100% on 30 questions, this sample has no room to show a hybrid gain, so the result does not say hybrid is worse in general either; it says there is no evidence to switch. `RETRIEVAL_MODE` therefore stays `dense`. Rule for changing it: switch only if a run on a larger or harder question set (ideally your own course documents) shows hybrid keeping abstention F1 and improving hit rate at 5 or MRR.
+
+Not measured by the Lab yet: faithfulness, answer relevance and correctness, citation precision and recall (these need judged answers), a threshold tuner, a golden set of 150 reviewed questions (the 38 here come from `backend/eval/corpus.py`), and scale benchmarks.
+
 ## Limitations to state honestly
 
-Citations show which passages were retrieved, not that the answer is fully correct. Refusing when evidence is weak reduces unsupported answers but does not eliminate them. Topic status uses simple, configurable rules and is not a measure of ability or an exam prediction. Scanned (image-only) PDFs are not supported (no OCR).
+Citations show which passages were retrieved, not that the answer is fully correct. Refusing when evidence is weak reduces unsupported answers but does not eliminate them. Topic status uses simple, configurable rules and is not a measure of ability or an exam prediction. Scanned (image-only) PDFs are not supported (no OCR). The Evaluation Lab's numbers describe retrieval on a small sample corpus; they are not an accuracy figure for answers.

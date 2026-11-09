@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Starts the EduRAG backend (FastAPI, :8000) and frontend (Next.js, :3000).
+# Starts the EduRAG backend (FastAPI, :8000), the background worker (needs Redis) and the
+# frontend (Next.js, :3000).
 # First run also creates the venv, installs dependencies, and applies migrations.
 set -euo pipefail
 
@@ -38,7 +39,15 @@ echo "==> Starting servers (Ctrl+C stops both)"
 cd "$BACKEND"
 "$PY/uvicorn" app.main:app --reload --port 8000 &
 BACKEND_PID=$!
-trap 'kill "$BACKEND_PID" 2>/dev/null || true' EXIT INT TERM
+WORKER_PID=""
+if command -v redis-cli >/dev/null 2>&1 && redis-cli ping >/dev/null 2>&1; then
+  "$PY/arq" app.workers.settings.WorkerSettings &
+  WORKER_PID=$!
+else
+  echo "Redis is not running, so the Evaluation Lab worker was not started."
+  echo "Install and start it with: brew install redis && brew services start redis"
+fi
+trap 'kill "$BACKEND_PID" ${WORKER_PID:+"$WORKER_PID"} 2>/dev/null || true' EXIT INT TERM
 
 cd "$FRONTEND"
 echo "Frontend: http://localhost:3000   API health: http://localhost:8000/api/v1/health"

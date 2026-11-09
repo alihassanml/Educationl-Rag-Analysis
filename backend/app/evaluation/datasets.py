@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal, Self
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.evaluation import EvalDataset, EvalItem
@@ -60,3 +60,30 @@ def import_dataset(
     db.add(dataset)
     db.commit()
     return dataset
+
+
+def _as_items(dataset: EvalDataset) -> list[EvalItemIn]:
+    return [
+        EvalItemIn(
+            question=i.question,
+            answerable=i.answerable,
+            gold_document_title=i.gold_document_title,
+            gold_page=i.gold_page,
+            question_type=i.question_type,  # type: ignore[arg-type]
+            concept=i.concept,
+        )
+        for i in dataset.items
+    ]
+
+
+def ensure_dataset(
+    db: Session, user_id: uuid.UUID, name: str, items: list[EvalItemIn]
+) -> EvalDataset:
+    """Like import_dataset, but keeps the existing dataset, and with it every run made on it,
+    when its questions are identical. Replacing a dataset deletes its run history."""
+    existing = db.scalar(
+        select(EvalDataset).where(EvalDataset.user_id == user_id, EvalDataset.name == name)
+    )
+    if existing is not None and _as_items(existing) == items:
+        return existing
+    return import_dataset(db, user_id, name, items)

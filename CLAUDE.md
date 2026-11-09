@@ -16,7 +16,7 @@ Stack: Next.js (App Router, TypeScript, Tailwind) in `frontend/`, FastAPI + SQLA
 Commands:
 - Backend (from `backend/`, venv at `.venv`): `.venv/bin/pytest`, `.venv/bin/ruff check .`, `.venv/bin/uvicorn app.main:app --reload`, `.venv/bin/alembic upgrade head`
 - Frontend (from `frontend/`): `npm test`, `npm run typecheck`, `npm run lint`, `npm run dev`, `npm run e2e` (Playwright, own servers on 3001 and 8001)
-- Evaluation (from `backend/`): `python -m eval.run_retrieval_eval`, `python -m eval.compare_models <ids>`; see `docs/evaluation-plan.md`
+- Evaluation (from `backend/`): `python -m eval.run_retrieval_eval`, `python -m eval.compare_models <ids>`, Evaluation Lab: `.venv/bin/arq app.workers.settings.WorkerSettings` (worker, needs Redis), `python -m app.scripts.make_admin <email>`, `python -m eval.seed_lab --email <email> [--run dense,hybrid]`; see `docs/evaluation-plan.md`
 - Groq model and key are set in `backend/.env` (`GROQ_API_KEY`, `GROQ_MODEL`); never print or commit the key
 - Next.js here is v16 with breaking changes: read `frontend/node_modules/next/dist/docs/` before writing Next code.
 

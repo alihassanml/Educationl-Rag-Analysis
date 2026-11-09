@@ -5,9 +5,9 @@ import { cn } from "@/lib/cn";
 type Variant = "primary" | "secondary" | "danger";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-primary text-white hover:bg-primary-hover",
+  primary: "bg-primary text-on-brand shadow-[var(--shadow-brand)] hover:bg-primary-hover",
   secondary: "border border-border bg-surface text-foreground hover:bg-selected",
-  danger: "bg-danger text-white hover:opacity-90",
+  danger: "bg-danger text-on-brand hover:opacity-90",
 };
 
 function styles(variant: Variant, className?: string): string {

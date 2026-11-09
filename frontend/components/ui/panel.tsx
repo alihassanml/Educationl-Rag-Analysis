@@ -13,7 +13,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-panel border border-border bg-surface p-5 sm:p-6", className)}>
+    <section className={cn("rounded-panel border border-border bg-surface p-5 shadow-[var(--shadow-sm)] sm:p-6", className)}>
       {title || action ? (
         <div className="mb-4 flex items-center justify-between gap-4">
           {title ? <h2 className="text-lg font-semibold">{title}</h2> : <span />}

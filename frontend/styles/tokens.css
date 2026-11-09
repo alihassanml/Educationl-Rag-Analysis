@@ -1,0 +1,72 @@
+/* EduRAG design tokens: "Midnight & Ice" (Implementation Guide v2, section 13).
+   Components read these through Tailwind aliases in globals.css and never hard-code hex.
+   tests/tokens.test.ts enforces WCAG 2.1 AA (4.5:1) on every text pair in both themes.
+
+   Deviations from the guide, each forced by that test:
+   - --brand-solid: the guide's #1F6FFF is only 4.40:1 with white and 4.09:1 on the ice background,
+     so solid button fills and link text use a darker blue. --brand keeps the guide value for focus
+     rings, accents and large display text only.
+   - --text-subtle light #8D9BB5 was 2.80:1 on white; dark #62728F was 3.79:1 on surface.
+   - --success light #12A27A was 3.24:1 on white; --warning light #D9930D and --danger light #E0464C
+     were also below 4.5:1 as text.
+   - Dark mode: white on #3D86FF is 3.47:1, so --on-brand is midnight in dark mode. */
+
+:root {
+  --brand: #1f6fff;
+  --brand-solid: #155bdb;
+  --brand-hover: #1048b0;
+  --brand-soft: #e7efff;
+  --on-brand: #ffffff;
+  --glow: #0b5bff;
+
+  --bg: #f4f7fc;
+  --surface: #ffffff;
+  --surface-2: #edf2fa;
+  --text: #0b1f44;
+  --text-muted: #5a6a88;
+  --text-subtle: #62718c;
+  --border: #dce5f2;
+
+  --success: #0b7a5a;
+  --warning: #946000;
+  --danger: #c42f36;
+
+  --glass-bg: rgb(255 255 255 / 0.62);
+  --glass-border: rgb(255 255 255 / 0.75);
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.9);
+  --shadow-sm: 0 1px 2px rgb(11 31 68 / 0.06);
+  --shadow-md: 0 8px 24px -8px rgb(15 60 140 / 0.18);
+  --shadow-lg: 0 28px 64px -16px rgb(10 40 110 / 0.28);
+  --shadow-brand: 0 6px 18px -4px rgb(31 111 255 / 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand: #3d86ff;
+    --brand-solid: #3d86ff;
+    --brand-hover: #5c9bff;
+    --brand-soft: #0e2149;
+    --on-brand: #050b18;
+    --glow: #0b5bff;
+
+    --bg: #050b18;
+    --surface: #0a1426;
+    --surface-2: #0f1c33;
+    --text: #eaf1ff;
+    --text-muted: #96a6c2;
+    --text-subtle: #7a8aa8;
+    --border: #1a2944;
+
+    --success: #34d3a2;
+    --warning: #f2b544;
+    --danger: #ff7378;
+
+    --glass-bg: rgb(16 30 56 / 0.55);
+    --glass-border: rgb(148 180 255 / 0.14);
+    --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.06);
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 10px 30px -10px rgb(0 0 0 / 0.6);
+    --shadow-lg: 0 30px 80px -20px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(148 180 255 / 0.06);
+    --shadow-brand: 0 6px 18px -4px rgb(61 134 255 / 0.45);
+  }
+}

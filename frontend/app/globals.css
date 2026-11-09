@@ -1,46 +1,63 @@
 @import "tailwindcss";
-
-/* Design tokens from the Implementation Guide, section 12 */
-:root {
-  --background: #f7f7f4;
-  --surface: #ffffff;
-  --foreground: #252823;
-  --muted: #686d66;
-  --border: #e4e6df;
-  --primary: #315c45;
-  --primary-hover: #264936;
-  --success: #34704a;
-  --warning: #936b25;
-  --danger: #b5473c;
-  --selected: #eaf1eb;
-}
+@import "../styles/tokens.css";
 
 @theme inline {
-  --color-background: var(--background);
+  --color-background: var(--bg);
   --color-surface: var(--surface);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--text);
+  --color-muted: var(--text-muted);
+  --color-subtle: var(--text-subtle);
   --color-border: var(--border);
-  --color-primary: var(--primary);
-  --color-primary-hover: var(--primary-hover);
+  --color-brand: var(--brand);
+  --color-primary: var(--brand-solid);
+  --color-primary-hover: var(--brand-hover);
+  --color-on-brand: var(--on-brand);
+  --color-selected: var(--brand-soft);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-  --color-selected: var(--selected);
-  --font-sans: var(--font-geist-sans);
-  --radius-control: 8px;
-  --radius-panel: 10px;
+  --font-sans: var(--font-inter);
+  --radius-control: 10px;
+  --radius-panel: 16px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-sans), system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.6;
 }
 
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
+}
+
+/* Glass: floating layers only (top bar, composer, popovers). Solid fallback when blur is
+   unavailable or the user asked for reduced transparency. */
+.glass {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  @media not (prefers-reduced-transparency: reduce) {
+    .glass {
+      background: var(--glass-bg);
+      border-color: var(--glass-border);
+      box-shadow: var(--glass-highlight);
+      backdrop-filter: blur(18px) saturate(140%);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -3,7 +3,7 @@ import { cn } from "@/lib/cn";
 
 const control =
   "w-full rounded-control border border-border bg-surface px-3 text-sm text-foreground " +
-  "placeholder:text-muted/70 disabled:cursor-not-allowed disabled:opacity-60 " +
+  "placeholder:text-subtle disabled:cursor-not-allowed disabled:opacity-60 " +
   "aria-[invalid=true]:border-danger";
 
 type FieldProps = { id: string; label: string; error?: string; hint?: string; children: ReactNode };

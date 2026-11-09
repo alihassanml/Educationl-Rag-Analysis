@@ -78,7 +78,9 @@ function Summary({ metrics }: { metrics: EvalMetrics }) {
           95% intervals: hit rate at 5 {formatPercent(ci["hit_rate@5"][0])} to {formatPercent(ci["hit_rate@5"][1])}, MRR{" "}
           {ci.mrr[0].toFixed(3)} to {ci.mrr[1].toFixed(3)}. Based on {metrics.n_answerable} answerable and{" "}
           {metrics.n_unanswerable} unanswerable questions
-          {metrics.n_errors > 0 ? `; ${metrics.n_errors} could not be scored` : ""}.
+          {metrics.n_errors > 0 ? `; ${metrics.n_errors} could not be scored` : ""}. Hit rate, MRR and nDCG rank every
+          retrieved passage before the similarity threshold is applied; a question only passes when the expected passage
+          also reaches the threshold.
         </p>
       </Panel>
       <Panel title="Abstention">

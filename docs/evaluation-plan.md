@@ -41,8 +41,8 @@ Selected: `openai/gpt-oss-120b` with `GROQ_REASONING_EFFORT=low`. `gpt-oss-20b` 
 
 | Area | Where | Count |
 |---|---|---|
-| Backend: extraction, chunking, retrieval (dense and hybrid) and tutor behaviour, Groq error handling, quiz validation, scoring, adaptive rules (every boundary: 0, 2, 3 attempts, exactly 60%, 80%), progress, auth, security, Evaluation Lab metrics, runner and API (including administrator-only access) | `backend/app/tests` (real PostgreSQL + pgvector, mocked Groq) | 180 |
-| Frontend: validators, API client, auth form, tutor, quiz runner, progress, shell, design-token contrast (WCAG AA), Evaluation Lab screens | `frontend/tests` (Vitest) | 87 |
+| Backend: extraction, chunking, retrieval (dense and hybrid) and tutor behaviour, Groq error handling, quiz validation, scoring, adaptive rules (every boundary: 0, 2, 3 attempts, exactly 60%, 80%), progress, auth, security, Evaluation Lab metrics, runner and API (including administrator-only access) | `backend/app/tests` (real PostgreSQL + pgvector, mocked Groq) | 182 |
+| Frontend: validators, API client, auth form, tutor, quiz runner, progress, shell, design-token contrast (WCAG AA), Evaluation Lab screens | `frontend/tests` (Vitest) | 90 |
 | Browser end to end on a production build: register, upload, tutor with sources and refusal, quiz, progress, delete, sign out, 375 px layout | `frontend/e2e` (Playwright, real DB and embeddings, scripted LLM) | 11 |
 
 Security and robustness covered by tests: student A cannot read, delete, list, query, quiz from, or see progress of student B's data; non-PDF, fake-PDF (bad signature), empty and oversized uploads are rejected and not left on disk; image-only and corrupt PDFs end as `failed` with a helpful message; errors never include internals; cross-origin state-changing requests are blocked; the default secret key is refused in production.
@@ -66,17 +66,17 @@ How each number is computed (`backend/app/evaluation/metrics.py`, `runner.py`):
 
 | Metric | Definition |
 |---|---|
-| Hit rate at K | Share of answerable questions whose expected page (same document title and page number) is among the top K retrieved passages, K = 1, 3, 5, 10 |
+| Ranking metrics (hit rate, precision, MRR, nDCG) | Computed on the ranked top 10 **before** the similarity threshold is applied, so they measure ranking quality; the threshold is judged by the abstention matrix and Pass. Share of answerable questions whose expected page (same document title and page number) is among the top K retrieved passages, K = 1, 3, 5, 10 |
 | Precision at K | Relevant passages in the top K divided by K |
 | MRR | Mean of 1 / rank of the first relevant passage (0 if none) |
 | nDCG at K | Binary relevance with a log2 discount, normalised by the best possible ordering given how many passages of the expected page exist |
 | Answered | The best passage reaches the similarity threshold (`RETRIEVAL_MIN_SIMILARITY`, 0.60). Otherwise the system abstains |
 | Abstention matrix | Answerable is the positive class: answerable and answered is a true positive; unanswerable and answered is a false positive (hallucination risk); answerable and abstained is an over-cautious refusal |
-| Pass | Answerable: answered and the expected page is in the top 5. Unanswerable: abstained |
+| Pass | Answerable: a passage of the expected page is in the top 5 **and** reaches the similarity threshold (the tutor drops passages below it, so a hit it would never show does not count). Unanswerable: the system abstained |
 | Intervals | 95% bootstrap interval of the mean (1,000 resamples, fixed seed) |
 | Latency | p50 and p95 of the retrieval call per question (embedding the question plus the database search) |
 
-Questions whose expected document or page is not in the user's library are shown as "not scored" and excluded from every ratio instead of counting as failures. Repeat with `python -m eval.seed_lab --email <user> --run dense,hybrid` (from `backend/`; needs the sample documents it creates in that user's library) or from the Evaluation page.
+Questions whose expected document or page is not in the user's library are shown as "not scored" and excluded from every ratio instead of counting as failures; if no question at all could be scored, the run is marked failed instead of reporting zeros. Repeat with `python -m eval.seed_lab --email <user> --run dense,hybrid` (from `backend/`; needs the sample documents it creates in that user's library) or from the Evaluation page.
 
 **Dense versus hybrid, recorded 2026-11-09.** Same 38 questions (30 answerable, 8 unanswerable) over the 3-document, 12-page sample corpus, real `BAAI/bge-small-en-v1.5` embeddings, threshold 0.60, 0 questions unscored. Hybrid fuses the dense ranking with a PostgreSQL full-text ranking by reciprocal rank fusion (k = 60, 40 candidates each) and keeps the same similarity gate.
 
@@ -90,9 +90,10 @@ Questions whose expected document or page is not in the user's library are shown
 | nDCG at 5 | 0.988 | 0.975 |
 | Abstention precision, recall, F1 | 93.5%, 96.7%, 95.1% | 93.5%, 96.7%, 95.1% |
 | Abstention counts (tp, fn, fp, tn) | 29, 1, 2, 6 | 29, 1, 2, 6 |
+| Pass rate | 92.1% | 92.1% |
 | Retrieval latency p50, p95 | 19 ms, 31 ms | 22 ms, 25 ms |
 
-Reading: hybrid was **not better** here. It ranked one more question's expected page second instead of first ("What happens during glycolysis?"); everything else is equal, and the intervals overlap. Abstention is identical by construction because hybrid keeps the same gate. With a dense hit rate at 5 already at 100% on 30 questions, this sample has no room to show a hybrid gain, so the result does not say hybrid is worse in general either; it says there is no evidence to switch. `RETRIEVAL_MODE` therefore stays `dense`. Rule for changing it: switch only if a run on a larger or harder question set (ideally your own course documents) shows hybrid keeping abstention F1 and improving hit rate at 5 or MRR.
+Reading: hybrid was **not better** here. It ranked one more question's expected page second instead of first ("What happens during glycolysis?"); everything else is equal, and the intervals overlap. Abstention is identical by construction because hybrid keeps the same gate. With a dense hit rate at 5 already at 100% on 30 questions, this sample has no room to show a hybrid gain, so the result does not say hybrid is worse in general either; it says there is no evidence to switch. `RETRIEVAL_MODE` therefore stays `dense`. Rule for changing it: switch only if a run on a larger or harder question set (ideally your own course documents) shows hybrid keeping abstention F1 and pass rate and improving hit rate at 5 or MRR. Hybrid can promote keyword-only passages with low similarity, which the ranking metrics credit but the tutor would drop, so the pass rate must not fall.
 
 Not measured by the Lab yet: faithfulness, answer relevance and correctness, citation precision and recall (these need judged answers), a threshold tuner, a golden set of 150 reviewed questions (the 38 here come from `backend/eval/corpus.py`), and scale benchmarks.
 

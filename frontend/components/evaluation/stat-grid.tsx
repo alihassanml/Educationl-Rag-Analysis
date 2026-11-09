@@ -36,7 +36,9 @@ const deltaTone = { up: "text-success", down: "text-danger", flat: "text-muted" 
 export function StatGrid({ latest, previous }: { latest: EvalRun; previous: EvalRun | null }) {
   if (!latest.metrics) return null;
   const items = cells(latest.metrics, previous?.metrics ?? null);
+  const unscored = latest.metrics.n_errors;
   return (
+    <div className="flex flex-col gap-2">
     <dl className="stat-grid grid grid-cols-2 overflow-hidden rounded-panel border border-border bg-surface shadow-[var(--shadow-sm)]">
       {items.map((cell, index) => (
         <div
@@ -55,5 +57,11 @@ export function StatGrid({ latest, previous }: { latest: EvalRun; previous: Eval
         </div>
       ))}
     </dl>
+    {unscored > 0 ? (
+      <p className="text-sm text-warning">
+        {unscored} {unscored === 1 ? "question" : "questions"} could not be scored and {unscored === 1 ? "is" : "are"} left out of these numbers
+      </p>
+    ) : null}
+    </div>
   );
 }

@@ -126,8 +126,9 @@ def test_other_users_documents_are_never_used(db: Session, tmp_path: Path) -> No
 
     # The gold document only exists in the other user's library, so it is unresolvable.
     run = run_items(db, owner, [answerable("What is a recursive function?", PROGRAMMING, 2)])
-    assert run.metrics["n_errors"] == 1
-    assert run.metrics["n_answerable"] == 0
+    assert run.status == "failed"  # nothing could be scored
+    only = db.scalars(select(EvalResult).where(EvalResult.run_id == run.id)).one()
+    assert only.error == "Gold passage not found in your library"
 
     # Same title in both libraries: every retrieved chunk must belong to the run owner.
     add_document(db, owner, PROGRAMMING, [VARIABLES, RECURSION], tmp_path)
@@ -214,3 +215,38 @@ def test_config_snapshot_is_stored(db: Session, library: User) -> None:
     assert run.config["depth"] == 10
     assert "min_similarity" in run.config
     assert "embedding_model" in run.config
+
+
+def test_answerable_question_does_not_pass_when_the_gold_passage_is_below_the_gate(
+    db: Session, tmp_path: Path
+) -> None:
+    user = make_user(db)
+    add_document(db, user, "Strong", ["alpha beta gamma delta epsilon"], tmp_path)
+    add_document(db, user, "Weak", ["alpha zeta theta iota kappa lambda"], tmp_path)
+    # The wrong page passes the gate and is ranked first. The gold page is ranked second, but its
+    # similarity (about 0.16) is under the 0.2 gate, so the tutor would never have shown it.
+    run = run_items(
+        db, user, [answerable("alpha beta gamma delta epsilon", "Weak", 1)], min_similarity=0.2
+    )
+    result = db.scalars(select(EvalResult).where(EvalResult.run_id == run.id)).one()
+
+    assert result.first_relevant_rank == 2  # ranking is still measured before the gate
+    assert result.answered is True
+    assert result.passed is False
+    assert run.metrics["hit_rate"]["5"] == 1.0
+    assert run.metrics["pass_rate"] == 0.0
+
+
+def test_run_where_nothing_could_be_scored_is_failed_not_completed(
+    db: Session, library: User
+) -> None:
+    items = [answerable("What is a sorting algorithm?", "Deleted Notes", 3)]
+    run = run_items(db, library, items)
+
+    assert run.status == "failed"
+    assert (
+        run.error_message
+        == "No question could be scored. Check that the documents are in your library"
+    )
+    assert run.items_done == 1  # the per-question reasons stay available
+    assert db.scalars(select(EvalResult).where(EvalResult.run_id == run.id)).one().error is not None

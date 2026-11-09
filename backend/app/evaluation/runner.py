@@ -40,6 +40,7 @@ PASS_AT_K = 5
 GOLD_NOT_FOUND = "Gold passage not found in your library"
 ITEM_FAILED = "Retrieval failed for this item"
 RUN_FAILED_MESSAGE = "The evaluation could not be completed"
+NOTHING_SCORED_MESSAGE = "No question could be scored. Check that the documents are in your library"
 
 
 @dataclass
@@ -103,7 +104,14 @@ def _evaluate_item(
     answered = bool(ranked) and max(c.similarity for c in ranked) >= config.min_similarity
     rels = [item.answerable and _is_gold(c, item) for c in ranked]
     first_rank = next((rank for rank, relevant in enumerate(rels, start=1) if relevant), None)
-    passed = (answered and hit_at_k(rels, PASS_AT_K) == 1.0) if item.answerable else not answered
+    if item.answerable:
+        # Only a gold passage that reaches the gate counts: the tutor drops the others.
+        passed = any(
+            relevant and chunk.similarity >= config.min_similarity
+            for chunk, relevant in zip(ranked[:PASS_AT_K], rels[:PASS_AT_K], strict=True)
+        )
+    else:
+        passed = not answered
     return ItemOutcome(
         answerable=item.answerable,
         answered=answered,
@@ -172,13 +180,13 @@ def compute_metrics(outcomes: list[ItemOutcome]) -> dict[str, Any]:
     }
 
 
-def _fail_run(db: Session, run_id: uuid.UUID) -> None:
+def _fail_run(db: Session, run_id: uuid.UUID, message: str = RUN_FAILED_MESSAGE) -> None:
     db.rollback()
     run = db.get(EvalRun, run_id)
     if run is None:
         return
     run.status = RUN_FAILED
-    run.error_message = RUN_FAILED_MESSAGE
+    run.error_message = message
     run.finished_at = datetime.now(UTC)
     db.commit()
 
@@ -219,6 +227,9 @@ def execute_run(db: Session, embedder: Embedder, run_id: uuid.UUID) -> None:
             run.items_done += 1
             db.commit()
 
+        if outcomes and all(o.error is not None for o in outcomes):
+            _fail_run(db, run_id, NOTHING_SCORED_MESSAGE)
+            return
         run.metrics = compute_metrics(outcomes)
         run.status = RUN_COMPLETED
         run.finished_at = datetime.now(UTC)

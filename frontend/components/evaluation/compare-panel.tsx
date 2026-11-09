@@ -44,8 +44,12 @@ function runLabel(run: EvalRun): string {
 }
 
 export function ComparePanel({ runs }: { runs: EvalRun[] }) {
-  const [a, setA] = useState(runs[0]?.id ?? "");
-  const [b, setB] = useState(runs[1]?.id ?? "");
+  // null means "not chosen yet": follow the list as runs finish, so the defaults stay valid.
+  const [chosenA, setA] = useState<string | null>(null);
+  const [chosenB, setB] = useState<string | null>(null);
+  const has = (id: string | null): id is string => id !== null && runs.some((r) => r.id === id);
+  const a = has(chosenA) ? chosenA : (runs[0]?.id ?? "");
+  const b = has(chosenB) ? chosenB : (runs.find((r) => r.id !== a)?.id ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<EvalCompare | null>(null);

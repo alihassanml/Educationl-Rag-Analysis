@@ -132,6 +132,16 @@ describe("StatGrid", () => {
     expect(screen.getAllByText("No previous run").length).toBeGreaterThan(0);
   });
 
+  it("says how many questions could not be scored", () => {
+    render(<StatGrid latest={makeRun({ metrics: { ...metrics, n_errors: 2 } })} previous={null} />);
+    expect(screen.getByText(/2 questions could not be scored/)).toBeInTheDocument();
+  });
+
+  it("does not mention unscored questions when there are none", () => {
+    render(<StatGrid latest={makeRun()} previous={null} />);
+    expect(screen.queryByText(/could not be scored/)).not.toBeInTheDocument();
+  });
+
   it("shows the change against the previous run", () => {
     const previous = makeRun({ id: "run-0", metrics: { ...metrics, hit_rate: { ...metrics.hit_rate, "5": 0.9 } } });
     render(<StatGrid latest={makeRun()} previous={previous} />);
@@ -285,6 +295,16 @@ describe("ComparePanel", () => {
     expect(evalApi.compare).toHaveBeenCalledWith(["run-d", "run-h"]);
     expect(await screen.findByText("+6.7 pts")).toBeInTheDocument();
     expect(screen.getByText("Retrieval mode")).toBeInTheDocument();
+  });
+
+  it("picks sensible runs when a second run completes after the panel was shown", async () => {
+    const dense = makeRun({ id: "run-d" });
+    const hybrid = makeRun({ id: "run-h", config: { ...dense.config, retrieval_mode: "hybrid" } });
+    vi.mocked(evalApi.compare).mockResolvedValue({ runs: [hybrid, dense], config_diff: {} });
+    const { rerender } = render(<ComparePanel runs={[dense]} />);
+    rerender(<ComparePanel runs={[hybrid, dense]} />);
+    await userEvent.click(screen.getByRole("button", { name: "Compare" }));
+    expect(evalApi.compare).toHaveBeenCalledWith(["run-h", "run-d"]);
   });
 
   it("needs two completed runs", () => {

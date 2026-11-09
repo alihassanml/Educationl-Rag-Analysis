@@ -1,1 +1,12 @@
-docs
+docs/*.pdf
+docs/screenshots/
+.DS_Store
+.env
+.env.*
+!.env.example
+backend/.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+backend/uploads/
+backend/eval/results/

@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* Design tokens from the Implementation Guide, section 12 */
+:root {
+  --background: #f7f7f4;
+  --surface: #ffffff;
+  --foreground: #252823;
+  --muted: #686d66;
+  --border: #e4e6df;
+  --primary: #315c45;
+  --primary-hover: #264936;
+  --success: #34704a;
+  --warning: #936b25;
+  --danger: #b5473c;
+  --selected: #eaf1eb;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-selected: var(--selected);
+  --font-sans: var(--font-geist-sans);
+  --radius-control: 8px;
+  --radius-panel: 10px;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

@@ -1,0 +1,49 @@
+import uuid
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+
+from app.api.deps import CurrentUser, DbSession
+from app.models.document import Document
+from app.schemas.documents import DocumentList, DocumentOut
+from app.services import document_service
+from app.services.embedding_service import Embedder, get_embedder
+
+router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+@router.get("", response_model=DocumentList)
+def list_documents(
+    user: CurrentUser,
+    db: DbSession,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> DocumentList:
+    items, total = document_service.list_documents(db, user.id, limit, offset)
+    return DocumentList(items=[DocumentOut.model_validate(d) for d in items], total=total)
+
+
+@router.post("", response_model=DocumentOut, status_code=status.HTTP_201_CREATED)
+def upload_document(
+    user: CurrentUser,
+    db: DbSession,
+    embedder: Annotated[Embedder, Depends(get_embedder)],
+    file: Annotated[UploadFile, File()],
+    title: Annotated[str | None, Form(max_length=255)] = None,
+) -> Document:
+    path, size = document_service.validate_and_store(
+        user.id, file.filename or "", file.content_type or "", file.file
+    )
+    return document_service.create_and_process(
+        db, embedder, user.id, filename=file.filename or "", title=title, path=path, size=size
+    )
+
+
+@router.get("/{document_id}", response_model=DocumentOut)
+def get_document(document_id: uuid.UUID, user: CurrentUser, db: DbSession) -> Document:
+    return document_service.get_owned_document(db, user.id, document_id)
+
+
+@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_document(document_id: uuid.UUID, user: CurrentUser, db: DbSession) -> None:
+    document_service.delete_document(db, user.id, document_id)

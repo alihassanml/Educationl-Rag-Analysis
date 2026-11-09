@@ -1,0 +1,38 @@
+{"question": "What is a variable?", "answerable": true, "gold_document_title": "Intro to Programming", "gold_page": 1, "question_type": "factual", "concept": "Intro to Programming"}
+{"question": "How do statically typed and dynamically typed languages differ?", "answerable": true, "gold_document_title": "Intro to Programming", "gold_page": 1, "question_type": "factual", "concept": "Intro to Programming"}
+{"question": "Which data type holds true or false?", "answerable": true, "gold_document_title": "Intro to Programming", "gold_page": 1, "question_type": "factual", "concept": "Intro to Programming"}
+{"question": "When does a while loop stop repeating?", "answerable": true, "gold_document_title": "Intro to Programming", "gold_page": 2, "question_type": "factual", "concept": "Intro to Programming"}
+{"question": "What does the break statement do inside a loop?", "answerable": true, "gold_document_title": "Intro to Programming", "gold_page": 2, "question_type": "factual", "concept": "Intro to Programming"}
+{"question": "What is an infinite loop?", "answerable": true, "gold_document_title": "Intro to Programming", "gold_page": 2, "question_type": "factual", "concept": "Intro to Programming"}
+{"question": "What is the base case in a recursive function?", "answerable": true, "gold_document_title": "Intro to Programming", "gold_page": 3, "question_type": "factual", "concept": "Intro to Programming"}
+{"question": "Why can recursion lead to a stack overflow?", "answerable": true, "gold_document_title": "Intro to Programming", "gold_page": 3, "question_type": "factual", "concept": "Intro to Programming"}
+{"question": "What is the difference between a parameter and a return value?", "answerable": true, "gold_document_title": "Intro to Programming", "gold_page": 3, "question_type": "factual", "concept": "Intro to Programming"}
+{"question": "Which operations does a stack support?", "answerable": true, "gold_document_title": "Intro to Programming", "gold_page": 4, "question_type": "factual", "concept": "Intro to Programming"}
+{"question": "What are queues used for in programming?", "answerable": true, "gold_document_title": "Intro to Programming", "gold_page": 4, "question_type": "factual", "concept": "Intro to Programming"}
+{"question": "Which part of the cell contains the DNA?", "answerable": true, "gold_document_title": "Cell Biology", "gold_page": 1, "question_type": "factual", "concept": "Cell Biology"}
+{"question": "What do plant cells have that animal cells do not?", "answerable": true, "gold_document_title": "Cell Biology", "gold_page": 1, "question_type": "factual", "concept": "Cell Biology"}
+{"question": "What is the role of chlorophyll?", "answerable": true, "gold_document_title": "Cell Biology", "gold_page": 2, "question_type": "factual", "concept": "Cell Biology"}
+{"question": "What are the inputs and outputs of photosynthesis?", "answerable": true, "gold_document_title": "Cell Biology", "gold_page": 2, "question_type": "factual", "concept": "Cell Biology"}
+{"question": "Where do the light dependent reactions take place?", "answerable": true, "gold_document_title": "Cell Biology", "gold_page": 2, "question_type": "factual", "concept": "Cell Biology"}
+{"question": "How much ATP does aerobic respiration make per glucose?", "answerable": true, "gold_document_title": "Cell Biology", "gold_page": 3, "question_type": "factual", "concept": "Cell Biology"}
+{"question": "What does anaerobic respiration produce in muscle cells?", "answerable": true, "gold_document_title": "Cell Biology", "gold_page": 3, "question_type": "factual", "concept": "Cell Biology"}
+{"question": "What happens during glycolysis?", "answerable": true, "gold_document_title": "Cell Biology", "gold_page": 3, "question_type": "factual", "concept": "Cell Biology"}
+{"question": "Which DNA bases pair with each other?", "answerable": true, "gold_document_title": "Cell Biology", "gold_page": 4, "question_type": "factual", "concept": "Cell Biology"}
+{"question": "What is transcription?", "answerable": true, "gold_document_title": "Cell Biology", "gold_page": 4, "question_type": "factual", "concept": "Cell Biology"}
+{"question": "How is a process different from a thread?", "answerable": true, "gold_document_title": "Operating Systems", "gold_page": 1, "question_type": "factual", "concept": "Operating Systems"}
+{"question": "What is a context switch?", "answerable": true, "gold_document_title": "Operating Systems", "gold_page": 1, "question_type": "factual", "concept": "Operating Systems"}
+{"question": "What is the convoy effect in scheduling?", "answerable": true, "gold_document_title": "Operating Systems", "gold_page": 2, "question_type": "factual", "concept": "Operating Systems"}
+{"question": "How does round robin scheduling work?", "answerable": true, "gold_document_title": "Operating Systems", "gold_page": 2, "question_type": "factual", "concept": "Operating Systems"}
+{"question": "What is a page fault?", "answerable": true, "gold_document_title": "Operating Systems", "gold_page": 3, "question_type": "factual", "concept": "Operating Systems"}
+{"question": "What is thrashing?", "answerable": true, "gold_document_title": "Operating Systems", "gold_page": 3, "question_type": "factual", "concept": "Operating Systems"}
+{"question": "What does the page table do?", "answerable": true, "gold_document_title": "Operating Systems", "gold_page": 3, "question_type": "factual", "concept": "Operating Systems"}
+{"question": "What are the four conditions needed for a deadlock?", "answerable": true, "gold_document_title": "Operating Systems", "gold_page": 4, "question_type": "factual", "concept": "Operating Systems"}
+{"question": "How does the banker's algorithm avoid deadlock?", "answerable": true, "gold_document_title": "Operating Systems", "gold_page": 4, "question_type": "factual", "concept": "Operating Systems"}
+{"question": "Who painted the Mona Lisa?", "answerable": false, "question_type": "factual"}
+{"question": "What is the capital city of Australia?", "answerable": false, "question_type": "factual"}
+{"question": "How does mitosis differ from meiosis?", "answerable": false, "question_type": "factual"}
+{"question": "What is a B-tree and when is it used in databases?", "answerable": false, "question_type": "factual"}
+{"question": "Explain how TCP congestion control works", "answerable": false, "question_type": "factual"}
+{"question": "What were the main causes of the First World War?", "answerable": false, "question_type": "factual"}
+{"question": "How does a neural network learn from training data?", "answerable": false, "question_type": "factual"}
+{"question": "What is the boiling point of water at sea level?", "answerable": false, "question_type": "factual"}

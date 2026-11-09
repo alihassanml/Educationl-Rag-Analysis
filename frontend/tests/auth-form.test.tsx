@@ -27,7 +27,7 @@ describe("AuthForm", () => {
   });
 
   it("signs in and goes to the dashboard", async () => {
-    vi.mocked(authApi.login).mockResolvedValue({ id: "1", email: "a@b.com", created_at: "" });
+    vi.mocked(authApi.login).mockResolvedValue({ id: "1", email: "a@b.com", is_admin: false, created_at: "" });
     render(<AuthForm mode="login" />);
     await userEvent.type(screen.getByLabelText("Email"), "a@b.com");
     await userEvent.type(screen.getByLabelText("Password"), "password123");

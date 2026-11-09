@@ -8,7 +8,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
 }));
 vi.mock("@/components/auth/session-provider", () => ({
-  useUser: () => ({ id: "1", email: "student@example.com", created_at: "2026-01-01" }),
+  useUser: () => ({ id: "1", email: "student@example.com", is_admin: false, created_at: "2026-01-01" }),
 }));
 
 describe("AppShell", () => {

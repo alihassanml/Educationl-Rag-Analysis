@@ -33,3 +33,12 @@ def get_current_user(request: Request, db: DbSession) -> User:
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def require_admin(user: CurrentUser) -> User:
+    if not user.is_admin:
+        raise AppError(403, "forbidden", "This area is for administrators")
+    return user
+
+
+AdminUser = Annotated[User, Depends(require_admin)]

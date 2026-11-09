@@ -1,4 +1,4 @@
-export type User = { id: string; email: string; created_at: string };
+export type User = { id: string; email: string; is_admin: boolean; created_at: string };
 
 export type DocumentStatus = "uploaded" | "processing" | "ready" | "failed";
 

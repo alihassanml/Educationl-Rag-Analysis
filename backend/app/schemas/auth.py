@@ -19,4 +19,5 @@ class UserOut(BaseModel):
 
     id: uuid.UUID
     email: str
+    is_admin: bool
     created_at: datetime

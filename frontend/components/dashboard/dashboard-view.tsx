@@ -97,7 +97,7 @@ function NextStep({ data }: { data: ProgressSummary }) {
   })();
 
   return (
-    <section className="rounded-panel border border-stone border-l-[3px] border-l-clay bg-paper p-6">
+    <section className="h-full rounded-panel border border-stone border-l-[3px] border-l-clay bg-paper p-6">
       <p className="text-xs font-semibold uppercase tracking-[0.06em] text-ink-2">Recommended next step</p>
       <h2 className="mt-2 text-lg font-semibold text-ink">{body.title}</h2>
       <p className="mt-1 max-w-prose text-ink-2">{body.reason}</p>

@@ -14,6 +14,13 @@ from app.api.deps import get_db  # noqa: F401  (imported so settings load before
 from app.main import app
 from app.services.groq_service import GroqService, get_groq_service
 
+# Realistic wording: these questions appear in screenshots used on the landing page
+QUESTIONS = [
+    "What does a recursive function need so that it stops calling itself?",
+    "Which part of a recursive function ends the chain of calls?",
+    "What must every recursive function include?",
+]
+
 
 class ScriptedLLM(GroqService):
     def __init__(self) -> None:
@@ -29,7 +36,8 @@ class ScriptedLLM(GroqService):
                 "topic": "Recursion",
                 "questions": [
                     {
-                        "question": f"E2E question {i}: what does a recursive function need?",
+                        "question": QUESTIONS[(i - 1) % len(QUESTIONS)]
+                        + ("" if i <= len(QUESTIONS) else f" ({i})"),
                         "options": [
                             "A base case",
                             "A global flag",
@@ -43,7 +51,15 @@ class ScriptedLLM(GroqService):
                     for i in range(1, count + 1)
                 ],
             }
-        first = passages[0][1].split(".")[0] if passages else "No passage"
+        # Quote the first full sentence. Heading lines without a full stop are skipped,
+        # so the quote reads naturally.
+        raw = passages[0][1] if passages else ""
+        lines = [line.strip() for line in raw.splitlines() if line.strip()]
+        body = " ".join(line for line in lines if "." in line or len(lines) == 1)
+        first = body.split(".")[0] if body else "No passage"
+        # Chunks are flattened to one line, so a heading and the sentence after it can
+        # start with the same word
+        first = re.sub(r"^(\S+)\s+\1\b", r"\1", first)
         return {
             "answer": f"According to your notes: {first}.",
             "insufficient_evidence": False,

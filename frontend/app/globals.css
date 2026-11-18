@@ -94,3 +94,96 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Hero illustration (components/landing/hero-illustration.tsx): one pass on load, then static.
+   Reduced motion is handled by the global rule above, which lands every element on its final frame. */
+.hero-ill [class^="hi-"],
+.hero-ill [class*=" hi-"] {
+  transform-box: fill-box;
+}
+
+.hero-ill[data-animate="true"] .hi-page {
+  animation: hi-rise 400ms var(--ease) both;
+}
+.hero-ill[data-animate="true"] .hi-highlight {
+  transform-origin: left center;
+  animation: hi-scale-x 400ms var(--ease) 400ms both;
+}
+.hero-ill[data-animate="true"] .hi-tile {
+  animation: hi-pop 260ms var(--ease) both;
+}
+.hero-ill[data-animate="true"] .hi-hot {
+  transform-origin: center;
+  animation: hi-fill 500ms var(--ease) 1500ms both;
+}
+.hero-ill[data-animate="true"] .hi-card {
+  animation: hi-rise 400ms var(--ease) 1500ms both;
+}
+.hero-ill[data-animate="true"] .hi-line {
+  transform-origin: left center;
+  animation: hi-scale-x 300ms var(--ease) both;
+}
+.hero-ill[data-animate="true"] .hi-pill {
+  transform-origin: center;
+  animation: hi-pop 250ms var(--ease) both;
+}
+.hero-ill[data-animate="true"] .hi-draw {
+  animation: hi-draw 400ms var(--ease) 2200ms both;
+}
+.hero-ill[data-animate="true"] .hi-end {
+  animation: hi-pop 200ms var(--ease) 2550ms both;
+}
+.hero-ill[data-animate="true"] .hi-next {
+  animation: hi-rise 200ms var(--ease) 2600ms both;
+}
+
+/* The only interaction: hovering the [1] pill darkens the connector */
+.hero-ill:has(.hi-pill-btn:hover) .hi-connector {
+  stroke: var(--clay-stronger);
+}
+
+@keyframes hi-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes hi-scale-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes hi-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+@keyframes hi-fill {
+  0% {
+    fill: var(--paper);
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    fill: var(--clay);
+    transform: scale(1);
+  }
+}
+@keyframes hi-draw {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Small labels are unreadable when the illustration shrinks on phones */
+@media (max-width: 639px) {
+  .hero-ill .hero-label {
+    display: none;
+  }
+}

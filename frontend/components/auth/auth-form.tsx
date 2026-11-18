@@ -1,11 +1,12 @@
 "use client";
 
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, describedBy } from "@/components/ui/field";
-import { Notice, Spinner } from "@/components/ui/feedback";
+import { Notice } from "@/components/ui/feedback";
 import { ApiError } from "@/lib/api-client";
 import { authApi } from "@/lib/api";
 import { credentialsSchema, fieldErrors, serverFieldErrors } from "@/lib/validators";
@@ -15,7 +16,7 @@ type Mode = "login" | "register";
 const COPY = {
   login: {
     title: "Sign in",
-    description: "Welcome back. Continue studying from your own material.",
+    description: "Welcome back. Continue studying from your own material",
     submit: "Sign in",
     pending: "Signing in",
     switchText: "New to EduRAG?",
@@ -25,7 +26,7 @@ const COPY = {
   },
   register: {
     title: "Create your account",
-    description: "Upload your notes and start studying with cited answers.",
+    description: "Upload your notes and start studying with cited answers",
     submit: "Create account",
     pending: "Creating account",
     switchText: "Already have an account?",
@@ -43,6 +44,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -67,14 +69,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <div className="w-full max-w-md">
-      <h1 className="text-2xl font-semibold tracking-tight">{copy.title}</h1>
+    <div className="w-full max-w-[400px]">
+      <h1 className="text-page font-medium text-ink">{copy.title}</h1>
       <p className="mt-1 text-ink-2">{copy.description}</p>
 
-      <form onSubmit={onSubmit} noValidate className="mt-8 flex flex-col gap-5 rounded-panel border border-stone bg-paper p-6">
+      <form onSubmit={onSubmit} noValidate className="mt-8 flex flex-col gap-4">
         {expired && !formError ? <Notice>Your session ended. Please sign in again.</Notice> : null}
         {formError ? (
-          <div role="alert" className="rounded-control border border-danger/30 px-3 py-2 text-sm text-danger">
+          <div role="alert" className="flex items-start gap-2 rounded-control bg-danger-soft px-3 py-2 text-sm text-danger">
+            <AlertCircle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
             {formError}
           </div>
         ) : null}
@@ -96,24 +99,35 @@ export function AuthForm({ mode }: { mode: Mode }) {
           error={errors.password}
           hint={mode === "register" ? "Use at least 8 characters" : undefined}
         >
-          <Input
-            id="password"
-            type="password"
-            autoComplete={copy.autoComplete}
-            value={values.password}
-            onChange={(e) => setValues({ ...values, password: e.target.value })}
-            aria-invalid={Boolean(errors.password)}
-            aria-describedby={describedBy("password", errors.password, mode === "register" ? "hint" : undefined)}
-            disabled={pending}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete={copy.autoComplete}
+              value={values.password}
+              onChange={(e) => setValues({ ...values, password: e.target.value })}
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={describedBy("password", errors.password, mode === "register" ? "hint" : undefined)}
+              disabled={pending}
+              className="pr-11"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((shown) => !shown)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-control text-ink-2 hover:text-ink"
+            >
+              {showPassword ? <EyeOff size={16} strokeWidth={1.75} aria-hidden="true" /> : <Eye size={16} strokeWidth={1.75} aria-hidden="true" />}
+            </button>
+          </div>
         </Field>
-        <Button type="submit" disabled={pending} className="w-full">
-          {pending ? <Spinner /> : null}
+        <Button type="submit" loading={pending} size="lg" className="w-full">
           {pending ? copy.pending : copy.submit}
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-ink-2">
+      <p className="mt-6 text-sm text-ink-2">
         {copy.switchText}{" "}
         <Link href={copy.switchHref} className="font-medium text-clay-strong underline-offset-4 hover:underline">
           {copy.switchLink}

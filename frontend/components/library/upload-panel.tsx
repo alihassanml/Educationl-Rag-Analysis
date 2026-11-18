@@ -1,41 +1,17 @@
 "use client";
 
 import { FileUp } from "lucide-react";
-import { useRef, useState, type DragEvent } from "react";
+import { useState, type DragEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/feedback";
-import { Panel } from "@/components/ui/panel";
-import { ApiError } from "@/lib/api-client";
-import { documentsApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { MAX_UPLOAD_MB, validatePdf } from "@/lib/validators";
-import type { StudyDocument } from "@/types/api";
+import { MAX_UPLOAD_MB } from "@/lib/validators";
+import type { UploadState } from "./use-upload";
 
-type Props = { onUploaded: (document: StudyDocument) => void };
-
-export function UploadPanel({ onUploaded }: Props) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+/** The file input and status line are always mounted. The large dropzone card is the empty state;
+ *  a normal file picker always works and drag and drop is only an enhancement. */
+export function UploadPanel({ state, showDropzone }: { state: UploadState; showDropzone: boolean }) {
+  const { inputRef, uploading, error, upload, choose } = state;
   const [dragging, setDragging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function upload(file: File) {
-    const problem = validatePdf(file);
-    if (problem) {
-      setError(problem);
-      return;
-    }
-    setError(null);
-    setUploading(true);
-    try {
-      onUploaded(await documentsApi.upload(file));
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Upload failed. Please try again.");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  }
 
   function onDrop(event: DragEvent) {
     event.preventDefault();
@@ -45,51 +21,52 @@ export function UploadPanel({ onUploaded }: Props) {
   }
 
   return (
-    <Panel>
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
+    <div>
+      <input
+        ref={inputRef}
+        id="pdf-upload"
+        type="file"
+        accept="application/pdf,.pdf"
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Choose a PDF file"
+        disabled={uploading}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void upload(file);
         }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        className={cn(
-          "flex flex-col items-start gap-4 rounded-control border border-dashed p-5 sm:flex-row sm:items-center",
-          dragging ? "border-clay bg-clay-soft" : "border-stone",
-        )}
-      >
-        <FileUp size={24} className="shrink-0 text-ink-2" aria-hidden="true" />
-        <div className="flex-1">
-          <p className="font-medium">Upload a PDF</p>
-          <p className="text-sm text-ink-2">
-            Notes, textbooks, slides, or past papers. Text-based PDFs up to {MAX_UPLOAD_MB} MB. You can also drop a file here.
-          </p>
-        </div>
-        <input
-          ref={inputRef}
-          id="pdf-upload"
-          type="file"
-          accept="application/pdf,.pdf"
-          className="sr-only"
-          disabled={uploading}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void upload(file);
+      />
+      {showDropzone ? (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
           }}
-        />
-        <Button onClick={() => inputRef.current?.click()} disabled={uploading} aria-describedby="upload-status">
-          {uploading ? <Spinner /> : null}
-          {uploading ? "Processing" : "Choose PDF"}
-        </Button>
-      </div>
-      <div id="upload-status" aria-live="polite" className="mt-3 text-sm">
-        {uploading ? <p className="text-ink-2">Reading and indexing your document. Larger files take longer.</p> : null}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          className={cn(
+            "flex flex-col items-center gap-3 rounded-panel border border-dashed px-6 py-12 text-center",
+            dragging ? "border-clay bg-clay-soft" : "border-stone-strong bg-stone-100",
+          )}
+        >
+          <FileUp size={24} strokeWidth={1.75} className="text-ink-2" aria-hidden="true" />
+          <h2 className="text-lg font-semibold text-ink">Drop a PDF here or choose a file</h2>
+          <p className="max-w-prose text-ink-2">
+            Notes, textbooks, slides or past papers. Text-based PDFs up to {MAX_UPLOAD_MB} MB. Once it shows Ready, you can ask questions about it or create a quiz.
+          </p>
+          <Button variant="secondary" onClick={choose} loading={uploading}>
+            {uploading ? "Processing" : "Choose file"}
+          </Button>
+        </div>
+      ) : null}
+      <div id="upload-status" aria-live="polite" className={cn("text-sm", (uploading || error) && "mt-3")}>
+        {uploading ? <p className="text-ink-2">Reading and indexing your document. Larger files take longer</p> : null}
         {error ? (
           <p role="alert" className="text-danger">
             {error}
           </p>
         ) : null}
       </div>
-    </Panel>
+    </div>
   );
 }

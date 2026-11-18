@@ -23,7 +23,7 @@ export function StartRunPanel({
 
   if (datasets.length === 0) {
     return (
-      <Panel title="Start a run">
+      <Panel title="New run">
         <p className="text-ink-2">
           There is no question set yet. Create one for your account with{" "}
           <code className="rounded-control bg-stone-100 px-1.5 py-0.5 text-sm">python -m eval.seed_lab --email you@example.com</code>{" "}
@@ -47,7 +47,7 @@ export function StartRunPanel({
   }
 
   return (
-    <Panel title="Start a run">
+    <Panel title="New run">
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field id="eval-dataset" label="Question set">

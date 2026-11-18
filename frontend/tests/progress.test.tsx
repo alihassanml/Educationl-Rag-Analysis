@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ProgressView } from "@/components/progress/progress-view";
+import { ProgressView, sortByAccuracy } from "@/components/progress/progress-view";
 import { TopicRow } from "@/components/progress/topic-row";
 import { progressApi } from "@/lib/api";
 import type { TopicProgress } from "@/types/api";
@@ -30,6 +30,17 @@ describe("TopicRow", () => {
   });
 });
 
+describe("sortByAccuracy", () => {
+  const t = (id: string, accuracy: number | null): TopicProgress => ({ ...topic, topic_id: id, topic_name: id, accuracy_percent: accuracy });
+
+  it("sorts ascending and descending and always puts topics without accuracy last", () => {
+    const items = [t("b", 70), t("none", null), t("a", 40), t("c", 95)];
+    expect(sortByAccuracy(items, "asc").map((x) => x.topic_id)).toEqual(["a", "b", "c", "none"]);
+    expect(sortByAccuracy(items, "desc").map((x) => x.topic_id)).toEqual(["c", "b", "a", "none"]);
+    expect(sortByAccuracy(items, "none")).toBe(items);
+  });
+});
+
 describe("ProgressView", () => {
   it("explains the first step instead of showing empty charts", async () => {
     vi.mocked(progressApi.topics).mockResolvedValue({ items: [], rules });
@@ -43,9 +54,9 @@ describe("ProgressView", () => {
     vi.mocked(progressApi.topics).mockResolvedValue({ items: [topic], rules });
     vi.mocked(progressApi.summary).mockResolvedValue({ ...emptySummary, quizzes_completed: 1 });
     render(<ProgressView />);
-    expect(await screen.findByText("Recursion")).toBeInTheDocument();
+    expect((await screen.findAllByText("Recursion")).length).toBeGreaterThan(0); // table row and mobile card
     expect(screen.getByText(/below 60% correct/)).toBeInTheDocument();
-    expect(screen.getByText(/not a measure of ability/i)).toBeInTheDocument();
+    expect(screen.getByText(/not your ability/i)).toBeInTheDocument();
     expect(screen.queryByText("chart")).not.toBeInTheDocument(); // fewer than 3 quizzes
   });
 });

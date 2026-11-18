@@ -1,27 +1,25 @@
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { TopicStatusLabel } from "@/components/ui/status-label";
 import { formatDate } from "@/lib/formatters";
 import type { TopicProgress } from "@/types/api";
 
+/** Compact list row: topic, status, accuracy as a bar with its text, and optionally the reason. */
 export function TopicRow({ topic, compact = false }: { topic: TopicProgress; compact?: boolean }) {
   const percent = topic.accuracy_percent;
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-medium">{topic.topic_name}</p>
+        <p className="font-medium text-ink">{topic.topic_name}</p>
         <TopicStatusLabel status={topic.status} />
       </div>
-      <div className="flex items-center gap-3">
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-stone" aria-hidden="true">
-          <div className="h-full bg-clay-strong" style={{ width: `${percent ?? 0}%` }} />
-        </div>
-        <p className="w-44 shrink-0 text-right text-sm">
-          {percent ?? 0}% · {topic.correct_answers} of {topic.questions_attempted} correct
-        </p>
-      </div>
+      <ProgressBar value={percent ?? 0} label={`${topic.topic_name} accuracy`} />
+      <p className="text-small text-ink-2">
+        {percent ?? 0}% · {topic.correct_answers} of {topic.questions_attempted} correct
+      </p>
       {compact ? null : (
         <>
           <p className="text-sm text-ink-2">{topic.recommendation.message}</p>
-          <p className="text-xs text-ink-2">Last practiced {formatDate(topic.last_practiced_at)}</p>
+          <p className="text-small text-ink-2">Last practised {formatDate(topic.last_practiced_at)}</p>
         </>
       )}
     </div>

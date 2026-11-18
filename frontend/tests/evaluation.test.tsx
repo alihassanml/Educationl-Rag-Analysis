@@ -121,10 +121,15 @@ describe("StatGrid", () => {
     expect(screen.getByText("100.0%")).toBeInTheDocument();
     expect(screen.getByText("MRR")).toBeInTheDocument();
     expect(screen.getByText("0.983")).toBeInTheDocument();
-    expect(screen.getByText("Abstention F1")).toBeInTheDocument();
-    expect(screen.getByText("95.2%")).toBeInTheDocument();
-    expect(screen.getByText("p95 latency")).toBeInTheDocument();
-    expect(screen.getByText("19 ms")).toBeInTheDocument();
+    expect(screen.getByText("Abstention accuracy")).toBeInTheDocument();
+    expect(screen.getByText("92.1%")).toBeInTheDocument();
+    expect(screen.getByText("Items tested")).toBeInTheDocument();
+    expect(screen.getByText("38")).toBeInTheDocument();
+  });
+
+  it("always shows the sample size, question set and date next to the numbers", () => {
+    render(<StatGrid latest={makeRun()} previous={null} />);
+    expect(screen.getByText("38 labelled questions · Sample course · 9 Nov 2026")).toBeInTheDocument();
   });
 
   it("says there is no previous run instead of inventing a change", () => {
@@ -324,5 +329,21 @@ describe("SidebarNav", () => {
     userState.is_admin = true;
     render(<SidebarNav />);
     expect(screen.getByRole("link", { name: "Evaluation Lab" })).toHaveAttribute("href", "/evaluation");
+  });
+});
+
+describe("small test set warning", () => {
+  it("warns when the latest run used fewer than 150 items, and stays quiet for a large set", async () => {
+    userState.is_admin = true;
+    vi.mocked(evalApi.datasets).mockResolvedValue({ items: [], total: 0 });
+    vi.mocked(evalApi.runs).mockResolvedValue({ items: [makeRun()], total: 1 });
+    const { unmount } = render(<EvaluationView />);
+    expect(await screen.findByText(/Small test set \(38 items\)/)).toBeInTheDocument();
+    unmount();
+
+    vi.mocked(evalApi.runs).mockResolvedValue({ items: [makeRun({ items_total: 150 })], total: 1 });
+    render(<EvaluationView />);
+    await screen.findByText("Hit rate at 5");
+    expect(screen.queryByText(/Small test set/)).not.toBeInTheDocument();
   });
 });

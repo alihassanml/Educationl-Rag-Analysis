@@ -13,6 +13,8 @@ import { StartRunPanel } from "./start-run-panel";
 import { StatGrid } from "./stat-grid";
 
 const POLL_MS = 2000;
+// Below this many labelled items the results are shown with a warning (docs/UI_REDESIGN.md section 15)
+const SMALL_SAMPLE = 150;
 
 export function EvaluationView() {
   const datasets = useApi(evalApi.datasets);
@@ -36,7 +38,7 @@ export function EvaluationView() {
     <PageContainer>
       <PageHeader
         title="Evaluation Lab"
-        description="Measure how well retrieval finds the right passage in your documents."
+        description="How accurately EduRAG retrieves, cites and abstains, measured on a labelled question set"
       />
       <div className="flex flex-col gap-6">
         {forbidden ? <Notice>This area is for administrators</Notice> : null}
@@ -53,11 +55,14 @@ export function EvaluationView() {
 
         {!forbidden && !loading && !error ? (
           <>
+            {completed.length > 0 && completed[0].items_total < SMALL_SAMPLE ? (
+              <Notice tone="warning">Small test set ({completed[0].items_total} items). Results may not reflect real course material</Notice>
+            ) : null}
             {completed.length > 0 ? <StatGrid latest={completed[0]} previous={completed[1] ?? null} /> : null}
             <StartRunPanel datasets={datasets.data?.items ?? []} onStarted={() => runs.reload()} />
             {items.length === 0 ? (
               <EmptyState title="No evaluation runs yet">
-                Start a run above. It scores whether the expected page appears among the retrieved passages.
+                Start a run above. It scores whether the expected page appears among the retrieved passages
               </EmptyState>
             ) : (
               <Panel title="Runs">

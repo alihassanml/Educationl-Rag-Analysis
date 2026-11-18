@@ -22,6 +22,11 @@ export function ConfirmDialog({ open, title, description, confirmLabel, pending,
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
+    // A modal left open in the top layer would keep the whole page inert, for example when the route changes
+    // and Next keeps the old page mounted but hidden. Close it whenever this component is hidden or removed.
+    return () => {
+      if (dialog.open) dialog.close();
+    };
   }, [open]);
 
   return (

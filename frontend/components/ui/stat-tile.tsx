@@ -1,10 +1,11 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 type Props = {
   label: string;
   /** `null` or `undefined` renders a dash and "No data yet", never a fake zero. */
   value: string | number | null | undefined;
-  context?: string;
+  context?: ReactNode;
   className?: string;
 };
 

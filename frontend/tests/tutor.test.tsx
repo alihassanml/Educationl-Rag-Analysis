@@ -2,12 +2,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AnswerCard } from "@/components/tutor/answer-card";
-import { TutorView } from "@/components/tutor/tutor-view";
+import { uniqueSources } from "@/components/tutor/sources";
+import { TutorView, suggestionsFor } from "@/components/tutor/tutor-view";
 import { ApiError } from "@/lib/api-client";
 import { documentsApi, tutorApi } from "@/lib/api";
 import type { AskResponse, StudyDocument } from "@/types/api";
 
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+vi.mock("@/components/ui/toast", () => ({ useToast: () => ({ show: vi.fn() }) }));
 vi.mock("@/lib/api", () => ({ documentsApi: { list: vi.fn() }, tutorApi: { ask: vi.fn() } }));
 
 const doc = (over: Partial<StudyDocument> = {}): StudyDocument => ({
@@ -35,7 +37,24 @@ describe("AnswerCard", () => {
   it("shows a clear not-found state with no sources", () => {
     render(<AnswerCard response={{ answer: "Nothing found.", citations: [], insufficient_evidence: true }} />);
     expect(screen.getByText("Not found in your material")).toBeInTheDocument();
-    expect(screen.queryByText(/Sources from your material/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Sources")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Upload a source" })).toHaveAttribute("href", "/library");
+  });
+
+  it("numbers one source per document page, in the order returned by the backend", () => {
+    const sources = uniqueSources([citation(12, "c1"), citation(12, "c2"), citation(3, "c3")]);
+    expect(sources.map((s) => [s.marker, s.page_number])).toEqual([[1, 12], [2, 3]]);
+  });
+});
+
+describe("suggestionsFor", () => {
+  it("builds four prompts from real document titles and never invents a title", () => {
+    const prompts = suggestionsFor([doc({ title: "OS Notes" }), doc({ id: "d2", title: "Biology" })]);
+    expect(prompts).toHaveLength(4);
+    expect(prompts[0]).toBe("Summarise the key ideas in OS Notes");
+    expect(prompts[1]).toBe("Explain the hardest topic in Biology simply");
+    expect(prompts.every((p) => p.includes("OS Notes") || p.includes("Biology"))).toBe(true);
+    expect(suggestionsFor([])).toEqual([]);
   });
 });
 
@@ -48,7 +67,7 @@ describe("TutorView", () => {
 
     render(<TutorView />);
     await userEvent.type(await screen.findByLabelText("Your question"), "What is recursion?");
-    await userEvent.click(screen.getByRole("button", { name: "Ask your tutor" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send question" }));
 
     expect(await screen.findByText("The AI service is busy right now")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
@@ -62,10 +81,33 @@ describe("TutorView", () => {
     vi.mocked(documentsApi.list).mockResolvedValue({ items: [doc(), doc({ id: "d2", title: "Biology" })], total: 2 });
     vi.mocked(tutorApi.ask).mockResolvedValue({ answer: "x", citations: [], insufficient_evidence: false });
     render(<TutorView />);
-    await userEvent.click(await screen.findByLabelText("Biology"));
+    await userEvent.click(await screen.findByRole("button", { name: "All my documents" }));
+    await userEvent.click(screen.getByLabelText("Biology"));
     await userEvent.type(screen.getByLabelText("Your question"), "What is a cell?");
-    await userEvent.click(screen.getByRole("button", { name: "Ask your tutor" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send question" }));
     await waitFor(() => expect(tutorApi.ask).toHaveBeenCalledWith("What is a cell?", ["d2"]));
+  });
+
+  it("sends with Enter, adds a new line with Shift+Enter, and keeps the question when sending fails", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [doc()], total: 1 });
+    vi.mocked(tutorApi.ask).mockRejectedValue(new ApiError("The AI service is busy right now", 503, "ai_unavailable"));
+    render(<TutorView />);
+    const box = await screen.findByLabelText("Your question");
+    await userEvent.type(box, "What is recursion?{Shift>}{Enter}{/Shift}Second line");
+    expect(box).toHaveValue("What is recursion?\nSecond line");
+    expect(tutorApi.ask).not.toHaveBeenCalled();
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(tutorApi.ask).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("The AI service is busy right now")).toBeInTheDocument();
+    expect(screen.getByLabelText("Your question")).toHaveValue("What is recursion?\nSecond line"); // restored for another try
+  });
+
+  it("fills the composer from a suggestion without sending it", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [doc({ title: "OS Notes" })], total: 1 });
+    render(<TutorView />);
+    await userEvent.click(await screen.findByRole("button", { name: "Summarise the key ideas in OS Notes" }));
+    expect(screen.getByLabelText("Your question")).toHaveValue("Summarise the key ideas in OS Notes");
+    expect(tutorApi.ask).not.toHaveBeenCalled();
   });
 
   it("asks the student to upload a document when none is ready", async () => {

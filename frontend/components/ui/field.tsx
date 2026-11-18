@@ -1,9 +1,11 @@
+import { AlertCircle } from "lucide-react";
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
+// stone-strong border keeps the input outline above 3:1 (non-text contrast)
 const control =
-  "w-full rounded-control border border-border bg-surface px-3 text-sm text-foreground " +
-  "placeholder:text-subtle disabled:cursor-not-allowed disabled:opacity-60 " +
+  "w-full rounded-control border border-stone-strong bg-paper px-3 text-sm text-ink " +
+  "placeholder:text-ink-3 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:opacity-70 " +
   "aria-[invalid=true]:border-danger";
 
 type FieldProps = { id: string; label: string; error?: string; hint?: string; children: ReactNode };
@@ -11,17 +13,18 @@ type FieldProps = { id: string; label: string; error?: string; hint?: string; ch
 export function Field({ id, label, error, hint, children }: FieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium">
+      <label htmlFor={id} className="text-sm font-medium text-ink">
         {label}
       </label>
       {children}
       {hint && !error ? (
-        <p id={`${id}-hint`} className="text-sm text-muted">
+        <p id={`${id}-hint`} className="text-small text-ink-2">
           {hint}
         </p>
       ) : null}
       {error ? (
-        <p id={`${id}-error`} role="alert" className="text-sm text-danger">
+        <p id={`${id}-error`} role="alert" className="flex items-start gap-1.5 text-small text-danger">
+          <AlertCircle size={14} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
           {error}
         </p>
       ) : null}

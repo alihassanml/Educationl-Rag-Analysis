@@ -17,11 +17,11 @@ export function ScopeSelector({ documents, selected, onChange, disabled }: Props
   }
 
   return (
-    <fieldset disabled={disabled} className="rounded-panel border border-border bg-surface p-4">
+    <fieldset disabled={disabled} className="rounded-panel border border-stone bg-paper p-4">
       <legend className="px-1 text-sm font-medium">Search in</legend>
       <div className="mt-1 flex flex-wrap gap-x-5 gap-y-2">
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={all} onChange={() => onChange([])} className="accent-primary" />
+          <input type="checkbox" checked={all} onChange={() => onChange([])} className="accent-clay-strong" />
           All my documents
         </label>
         {documents.map((doc) => (
@@ -30,7 +30,7 @@ export function ScopeSelector({ documents, selected, onChange, disabled }: Props
               type="checkbox"
               checked={selected.includes(doc.id)}
               onChange={() => toggle(doc.id)}
-              className="accent-primary"
+              className="accent-clay-strong"
             />
             <span className="truncate">{doc.title}</span>
           </label>

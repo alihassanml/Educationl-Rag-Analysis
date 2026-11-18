@@ -57,7 +57,7 @@ export function ComparePanel({ runs }: { runs: EvalRun[] }) {
   if (runs.length < 2) {
     return (
       <Panel title="Compare runs">
-        <p className="text-muted">Complete two runs to compare them</p>
+        <p className="text-ink-2">Complete two runs to compare them</p>
       </Panel>
     );
   }
@@ -110,7 +110,7 @@ export function ComparePanel({ runs }: { runs: EvalRun[] }) {
               <table className="w-full text-left text-sm">
                 <caption className="sr-only">Metrics of the two runs and the change from A to B</caption>
                 <thead>
-                  <tr className="border-b border-border text-muted">
+                  <tr className="border-b border-stone text-ink-2">
                     <th scope="col" className="py-2 pr-4 font-medium">
                       Metric
                     </th>
@@ -127,7 +127,7 @@ export function ComparePanel({ runs }: { runs: EvalRun[] }) {
                 </thead>
                 <tbody className="tabular-nums">
                   {rows(first.metrics, second.metrics).map((row) => (
-                    <tr key={row.label} className="border-b border-border last:border-0">
+                    <tr key={row.label} className="border-b border-stone last:border-0">
                       <th scope="row" className="py-2 pr-4 font-normal">
                         {row.label}
                       </th>
@@ -142,12 +142,12 @@ export function ComparePanel({ runs }: { runs: EvalRun[] }) {
             <div>
               <h3 className="text-sm font-medium">What differed between the runs</h3>
               {Object.keys(result?.config_diff ?? {}).length === 0 ? (
-                <p className="text-sm text-muted">The settings were identical</p>
+                <p className="text-sm text-ink-2">The settings were identical</p>
               ) : (
-                <ul className="mt-1 text-sm text-muted">
+                <ul className="mt-1 text-sm text-ink-2">
                   {Object.entries(result?.config_diff ?? {}).map(([key, values]) => (
                     <li key={key}>
-                      <span className="text-foreground">{CONFIG_LABELS[key] ?? key}</span>:{" "}
+                      <span className="text-ink">{CONFIG_LABELS[key] ?? key}</span>:{" "}
                       {values.map(String).join(" → ")}
                     </li>
                   ))}

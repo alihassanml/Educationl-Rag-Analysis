@@ -55,13 +55,13 @@ export function UploadPanel({ onUploaded }: Props) {
         onDrop={onDrop}
         className={cn(
           "flex flex-col items-start gap-4 rounded-control border border-dashed p-5 sm:flex-row sm:items-center",
-          dragging ? "border-primary bg-selected" : "border-border",
+          dragging ? "border-clay bg-clay-soft" : "border-stone",
         )}
       >
-        <FileUp size={24} className="shrink-0 text-muted" aria-hidden="true" />
+        <FileUp size={24} className="shrink-0 text-ink-2" aria-hidden="true" />
         <div className="flex-1">
           <p className="font-medium">Upload a PDF</p>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-ink-2">
             Notes, textbooks, slides, or past papers. Text-based PDFs up to {MAX_UPLOAD_MB} MB. You can also drop a file here.
           </p>
         </div>
@@ -83,7 +83,7 @@ export function UploadPanel({ onUploaded }: Props) {
         </Button>
       </div>
       <div id="upload-status" aria-live="polite" className="mt-3 text-sm">
-        {uploading ? <p className="text-muted">Reading and indexing your document. Larger files take longer.</p> : null}
+        {uploading ? <p className="text-ink-2">Reading and indexing your document. Larger files take longer.</p> : null}
         {error ? (
           <p role="alert" className="text-danger">
             {error}

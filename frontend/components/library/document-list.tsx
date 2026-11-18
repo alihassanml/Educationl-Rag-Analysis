@@ -40,12 +40,12 @@ export function DocumentList({ documents, onDeleted }: Props) {
           {error}
         </p>
       ) : null}
-      <ul className="divide-y divide-border rounded-panel border border-border bg-surface">
+      <ul className="divide-y divide-stone rounded-panel border border-stone bg-paper">
         {documents.map((doc) => (
           <li key={doc.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{doc.title}</p>
-              <p className="mt-0.5 text-sm text-muted">
+              <p className="mt-0.5 text-sm text-ink-2">
                 Uploaded {formatDate(doc.created_at)}
                 {doc.page_count ? ` · ${doc.page_count} ${doc.page_count === 1 ? "page" : "pages"}` : ""} · {formatBytes(doc.file_size)}
               </p>

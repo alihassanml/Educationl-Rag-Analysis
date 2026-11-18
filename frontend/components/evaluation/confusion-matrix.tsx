@@ -7,8 +7,8 @@ function Cell({ count, total, label }: { count: number; total: number; label: st
   return (
     <td className="p-4 align-top">
       <span className="block text-2xl font-medium tabular-nums">{count}</span>
-      <span className="block text-sm tabular-nums text-muted">{total > 0 ? formatPercent(count / total) : "0.0%"}</span>
-      <span className="mt-1 block text-sm text-muted">{label}</span>
+      <span className="block text-sm tabular-nums text-ink-2">{total > 0 ? formatPercent(count / total) : "0.0%"}</span>
+      <span className="mt-1 block text-sm text-ink-2">{label}</span>
     </td>
   );
 }
@@ -21,7 +21,7 @@ export function ConfusionMatrix({ abstention }: { abstention: Abstention }) {
     <div className="overflow-x-auto">
       <table aria-label="Abstention confusion matrix" className="w-full min-w-[28rem] border-collapse text-left">
         <thead>
-          <tr className="text-sm text-muted">
+          <tr className="text-sm text-ink-2">
             <td />
             <th scope="col" className="p-4 font-medium">
               System answered
@@ -32,14 +32,14 @@ export function ConfusionMatrix({ abstention }: { abstention: Abstention }) {
           </tr>
         </thead>
         <tbody>
-          <tr className="border-t border-border">
+          <tr className="border-t border-stone">
             <th scope="row" className="p-4 text-sm font-medium">
               Question is answerable
             </th>
             <Cell count={abstention.tp} total={total} label="Answered" />
             <Cell count={abstention.fn} total={total} label="Over-cautious refusal" />
           </tr>
-          <tr className="border-t border-border">
+          <tr className="border-t border-stone">
             <th scope="row" className="p-4 text-sm font-medium">
               Question is not answerable
             </th>

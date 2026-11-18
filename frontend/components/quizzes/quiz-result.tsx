@@ -16,10 +16,10 @@ export function QuizResult({ result }: { result: AttemptResult }) {
         <Panel>
           <p className="text-3xl font-semibold">
             {result.score} of {result.total_questions} correct
-            <span className="ml-3 text-lg font-normal text-muted">{result.percent}%</span>
+            <span className="ml-3 text-lg font-normal text-ink-2">{result.percent}%</span>
           </p>
           {result.recommendation ? (
-            <div className="mt-4 border-t border-border pt-4">
+            <div className="mt-4 border-t border-stone pt-4">
               <div className="flex items-center gap-3">
                 <p className="text-sm font-medium">Suggested next step</p>
                 {result.topic_status ? <TopicStatusLabel status={result.topic_status} /> : null}
@@ -44,7 +44,7 @@ export function QuizResult({ result }: { result: AttemptResult }) {
 
         <ol className="flex flex-col gap-4">
           {result.results.map((r, index) => (
-            <li key={r.question_id} className="rounded-panel border border-border bg-surface p-5">
+            <li key={r.question_id} className="rounded-panel border border-stone bg-paper p-5">
               <p className="flex items-center gap-2 text-sm font-medium">
                 {r.is_correct ? (
                   <CheckCircle2 size={18} className="text-success" aria-hidden="true" />
@@ -58,19 +58,19 @@ export function QuizResult({ result }: { result: AttemptResult }) {
               <p className="mt-2 font-medium">{r.question_text}</p>
               <dl className="mt-3 space-y-1 text-sm">
                 <div className="flex gap-2">
-                  <dt className="shrink-0 text-muted">Your answer:</dt>
+                  <dt className="shrink-0 text-ink-2">Your answer:</dt>
                   <dd>{r.options[r.selected_index]}</dd>
                 </div>
                 {!r.is_correct ? (
                   <div className="flex gap-2">
-                    <dt className="shrink-0 text-muted">Correct answer:</dt>
+                    <dt className="shrink-0 text-ink-2">Correct answer:</dt>
                     <dd className="font-medium">{r.options[r.correct_index]}</dd>
                   </div>
                 ) : null}
               </dl>
               <p className="mt-3 text-sm">{r.explanation}</p>
               {r.sources.length > 0 ? (
-                <p className="mt-2 text-sm text-muted">
+                <p className="mt-2 text-sm text-ink-2">
                   Source: {r.sources.map((s) => `${s.document_title}, ${pageLabel(s.page_number)}`).join("; ")}
                 </p>
               ) : null}

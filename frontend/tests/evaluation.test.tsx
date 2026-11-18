@@ -316,13 +316,13 @@ describe("ComparePanel", () => {
 describe("SidebarNav", () => {
   it("hides Evaluation from regular users", () => {
     render(<SidebarNav />);
-    expect(screen.queryByRole("link", { name: "Evaluation" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Evaluation Lab" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
   });
 
   it("shows Evaluation to administrators", () => {
     userState.is_admin = true;
     render(<SidebarNav />);
-    expect(screen.getByRole("link", { name: "Evaluation" })).toHaveAttribute("href", "/evaluation");
+    expect(screen.getByRole("link", { name: "Evaluation Lab" })).toHaveAttribute("href", "/evaluation");
   });
 });

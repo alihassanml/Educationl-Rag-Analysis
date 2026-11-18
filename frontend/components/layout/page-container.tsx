@@ -1,11 +1,22 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-/** One horizontal gutter and max width, shared by every screen and the top bar. */
-export const PAGE_GUTTER = "px-4 sm:px-6";
+/** The one place side padding and max width are set (docs/UI_REDESIGN.md section 5.1):
+ *  16px below 640px, 24px from 640px, 32px from 1280px; content is at most 1200px wide. */
+export const PAGE_GUTTER = "px-4 sm:px-6 xl:px-8";
 
-export function PageContainer({ children, className }: { children: ReactNode; className?: string }) {
+type Props = {
+  children: ReactNode;
+  className?: string;
+  /** App pages get 24px (mobile) or 32px (desktop) top padding and bottom space. Landing sections turn it off. */
+  padded?: boolean;
+  as?: "div" | "section" | "header" | "footer" | "nav";
+};
+
+export function PageContainer({ children, className, padded = true, as: Tag = "div" }: Props) {
   return (
-    <div className={cn("mx-auto w-full max-w-[1200px] py-8", PAGE_GUTTER, className)}>{children}</div>
+    <Tag className={cn("w-full", PAGE_GUTTER, padded && "py-6 lg:py-8")}>
+      <div className={cn("mx-auto w-full max-w-[1200px]", className)}>{children}</div>
+    </Tag>
   );
 }

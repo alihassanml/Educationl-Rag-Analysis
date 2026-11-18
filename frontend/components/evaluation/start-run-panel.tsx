@@ -24,9 +24,9 @@ export function StartRunPanel({
   if (datasets.length === 0) {
     return (
       <Panel title="Start a run">
-        <p className="text-muted">
+        <p className="text-ink-2">
           There is no question set yet. Create one for your account with{" "}
-          <code className="rounded-control bg-surface-2 px-1.5 py-0.5 text-sm">python -m eval.seed_lab --email you@example.com</code>{" "}
+          <code className="rounded-control bg-stone-100 px-1.5 py-0.5 text-sm">python -m eval.seed_lab --email you@example.com</code>{" "}
           from the backend folder.
         </p>
       </Panel>

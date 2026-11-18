@@ -58,23 +58,23 @@ function Summary({ metrics }: { metrics: EvalMetrics }) {
         <HitRateChart hitRate={metrics.hit_rate} />
         <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
           <div>
-            <dt className="text-muted">MRR</dt>
+            <dt className="text-ink-2">MRR</dt>
             <dd className="text-lg font-medium tabular-nums">{metrics.mrr.toFixed(3)}</dd>
           </div>
           <div>
-            <dt className="text-muted">nDCG at 5</dt>
+            <dt className="text-ink-2">nDCG at 5</dt>
             <dd className="text-lg font-medium tabular-nums">{metrics.ndcg["5"].toFixed(3)}</dd>
           </div>
           <div>
-            <dt className="text-muted">Latency p50</dt>
+            <dt className="text-ink-2">Latency p50</dt>
             <dd className="text-lg font-medium tabular-nums">{formatLatency(metrics.latency_ms.p50)}</dd>
           </div>
           <div>
-            <dt className="text-muted">Latency p95</dt>
+            <dt className="text-ink-2">Latency p95</dt>
             <dd className="text-lg font-medium tabular-nums">{formatLatency(metrics.latency_ms.p95)}</dd>
           </div>
         </dl>
-        <p className="mt-4 text-sm text-muted">
+        <p className="mt-4 text-sm text-ink-2">
           95% intervals: hit rate at 5 {formatPercent(ci["hit_rate@5"][0])} to {formatPercent(ci["hit_rate@5"][1])}, MRR{" "}
           {ci.mrr[0].toFixed(3)} to {ci.mrr[1].toFixed(3)}. Based on {metrics.n_answerable} answerable and{" "}
           {metrics.n_unanswerable} unanswerable questions
@@ -85,7 +85,7 @@ function Summary({ metrics }: { metrics: EvalMetrics }) {
       </Panel>
       <Panel title="Abstention">
         <ConfusionMatrix abstention={a} />
-        <p className="mt-4 text-sm text-muted">
+        <p className="mt-4 text-sm text-ink-2">
           Precision {formatPercent(a.precision)}, recall {formatPercent(a.recall)}, F1 {formatPercent(a.f1)}. A passage
           must reach the similarity threshold for the system to answer.
         </p>
@@ -97,7 +97,7 @@ function Summary({ metrics }: { metrics: EvalMetrics }) {
 function Header({ run }: { run: EvalRun }) {
   return (
     <>
-      <Link href="/evaluation" className="mb-4 inline-block text-sm text-primary underline-offset-4 hover:underline">
+      <Link href="/evaluation" className="mb-4 inline-block text-sm text-clay-strong underline-offset-4 hover:underline">
         Evaluation Lab
       </Link>
       <PageHeader
@@ -152,11 +152,11 @@ export function RunView({ runId }: { runId: string }) {
               value={data.items_done}
               aria-label="Evaluation progress"
             />
-            <p className="mt-2 text-sm text-muted">
+            <p className="mt-2 text-sm text-ink-2">
               {data.items_done} of {data.items_total} questions
             </p>
             {status === "queued" ? (
-              <p className="mt-1 text-sm text-muted">Waiting for the background worker to pick this run up</p>
+              <p className="mt-1 text-sm text-ink-2">Waiting for the background worker to pick this run up</p>
             ) : null}
           </Panel>
         ) : null}

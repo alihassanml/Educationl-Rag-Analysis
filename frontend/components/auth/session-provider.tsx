@@ -3,6 +3,7 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { authApi } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
+import { PageContainer } from "@/components/layout/page-container";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import type { User } from "@/types/api";
 
@@ -22,14 +23,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   if (data) return <SessionContext.Provider value={data}>{children}</SessionContext.Provider>;
   if (error && error.status !== 401) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16">
+      <PageContainer className="max-w-lg">
         <ErrorBlock message={error.message} onRetry={reload} />
-      </div>
+      </PageContainer>
     );
   }
   return (
-    <div className="px-4 py-16">
+    <PageContainer>
       <LoadingBlock label="Loading your account" />
-    </div>
+    </PageContainer>
   );
 }

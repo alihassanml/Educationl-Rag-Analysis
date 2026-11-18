@@ -21,8 +21,8 @@ const FIRST_STEPS = [
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-panel border border-border bg-surface p-4">
-      <p className="text-sm text-muted">{label}</p>
+    <div className="rounded-panel border border-stone bg-paper p-4">
+      <p className="text-sm text-ink-2">{label}</p>
       <p className="mt-1 text-2xl font-semibold">{value}</p>
     </div>
   );
@@ -34,7 +34,7 @@ function Dashboard({ data }: { data: ProgressSummary }) {
   if (isNew) {
     return (
       <Panel title="Get started">
-        <p className="text-muted">Your progress will appear here once you have studied.</p>
+        <p className="text-ink-2">Your progress will appear here once you have studied.</p>
         <ol className="mt-4 list-decimal space-y-2 pl-5">
           {FIRST_STEPS.map((step) => (
             <li key={step}>{step}</li>
@@ -67,21 +67,21 @@ function Dashboard({ data }: { data: ProgressSummary }) {
           ) : data.latest_document ? (
             <p>
               Your latest document is <strong>{data.latest_document.title}</strong>. Ask the tutor about it or{" "}
-              <Link href="/quizzes" className="font-medium text-primary underline-offset-4 hover:underline">
+              <Link href="/quizzes" className="font-medium text-clay-strong underline-offset-4 hover:underline">
                 create your first quiz
               </Link>
               .
             </p>
           ) : (
-            <p className="text-muted">Upload a document to continue studying.</p>
+            <p className="text-ink-2">Upload a document to continue studying.</p>
           )}
         </Panel>
 
         <Panel title="Needs revision">
           {data.needs_revision.length === 0 ? (
-            <p className="text-muted">No topics need revision right now.</p>
+            <p className="text-ink-2">No topics need revision right now.</p>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul className="divide-y divide-stone">
               {data.needs_revision.map((topic) => (
                 <li key={topic.topic_id} className="py-3 first:pt-0 last:pb-0">
                   <TopicRow topic={topic} compact />
@@ -95,20 +95,20 @@ function Dashboard({ data }: { data: ProgressSummary }) {
       <Panel
         title="Recent activity"
         action={
-          <Link href="/progress" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+          <Link href="/progress" className="text-sm font-medium text-clay-strong underline-offset-4 hover:underline">
             View all progress
           </Link>
         }
       >
         {data.recent_activity.length === 0 ? (
-          <p className="text-muted">No completed quizzes yet.</p>
+          <p className="text-ink-2">No completed quizzes yet.</p>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="divide-y divide-stone">
             {data.recent_activity.map((a) => (
               <li key={`${a.quiz_id}-${a.completed_at}`} className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0">
                 <span>
                   {a.topic ?? a.quiz_title}
-                  <span className="ml-2 text-sm text-muted">{formatDate(a.completed_at)}</span>
+                  <span className="ml-2 text-sm text-ink-2">{formatDate(a.completed_at)}</span>
                 </span>
                 <span className="text-sm font-medium">
                   {a.score} of {a.total_questions} correct ({a.percent}%)

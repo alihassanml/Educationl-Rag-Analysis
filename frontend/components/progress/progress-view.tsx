@@ -36,7 +36,7 @@ export function ProgressView() {
           <EmptyState
             title="No quiz results yet"
             action={
-              <Link href="/quizzes" className="font-medium text-primary underline-offset-4 hover:underline">
+              <Link href="/quizzes" className="font-medium text-clay-strong underline-offset-4 hover:underline">
                 Create a quiz
               </Link>
             }
@@ -48,7 +48,7 @@ export function ProgressView() {
         {topics.data && topics.data.items.length > 0 ? (
           <>
             <Panel title="Topics">
-              <ul className="divide-y divide-border">
+              <ul className="divide-y divide-stone">
                 {topics.data.items.map((topic) => (
                   <li key={topic.topic_id} className="py-4 first:pt-0 last:pb-0">
                     <TopicRow topic={topic} />
@@ -78,7 +78,7 @@ export function ProgressView() {
                   <strong>Doing well:</strong> {topics.data.rules.doing_well_from_percent}% or more correct.
                 </li>
               </ul>
-              <p className="mt-3 text-sm text-muted">
+              <p className="mt-3 text-sm text-ink-2">
                 These are simple starting rules for study guidance. They are not a measure of ability or a prediction of exam results.
               </p>
             </Panel>

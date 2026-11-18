@@ -30,7 +30,7 @@ function cells(latest: EvalMetrics, previous: EvalMetrics | null): Cell[] {
   ];
 }
 
-const deltaTone = { up: "text-success", down: "text-danger", flat: "text-muted" } as const;
+const deltaTone = { up: "text-success", down: "text-danger", flat: "text-ink-2" } as const;
 
 /** Headline numbers of the latest completed run, each compared with the run before it. */
 export function StatGrid({ latest, previous }: { latest: EvalRun; previous: EvalRun | null }) {
@@ -39,19 +39,19 @@ export function StatGrid({ latest, previous }: { latest: EvalRun; previous: Eval
   const unscored = latest.metrics.n_errors;
   return (
     <div className="flex flex-col gap-2">
-    <dl className="stat-grid grid grid-cols-2 overflow-hidden rounded-panel border border-border bg-surface shadow-[var(--shadow-sm)]">
+    <dl className="stat-grid grid grid-cols-2 overflow-hidden rounded-panel border border-stone bg-paper shadow-sm">
       {items.map((cell, index) => (
         <div
           key={cell.caption}
           className={cn(
             "flex flex-col gap-1 p-5 sm:p-6",
-            index % 2 === 1 && "border-l border-border",
-            index >= 2 && "border-t border-border",
+            index % 2 === 1 && "border-l border-stone",
+            index >= 2 && "border-t border-stone",
           )}
         >
           <dd className="order-2 text-3xl font-medium tabular-nums sm:text-4xl">{cell.value}</dd>
-          <dt className="order-1 text-sm text-muted">{cell.caption}</dt>
-          <p className={cn("order-3 text-sm tabular-nums", cell.delta ? deltaTone[cell.delta.direction] : "text-muted")}>
+          <dt className="order-1 text-sm text-ink-2">{cell.caption}</dt>
+          <p className={cn("order-3 text-sm tabular-nums", cell.delta ? deltaTone[cell.delta.direction] : "text-ink-2")}>
             {cell.delta ? cell.delta.text : (cell.previously ?? "No previous run")}
           </p>
         </div>

@@ -13,16 +13,16 @@ export function HitRateChart({ hitRate }: { hitRate: EvalPerK }) {
       <div className="h-56 w-full" role="img" aria-label={`Hit rate by number of retrieved passages: ${summary}`}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 20, right: 8, bottom: 8, left: 0 }}>
-            <CartesianGrid stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="label" tick={{ fill: "var(--text-muted)", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "var(--border)" }} />
-            <YAxis domain={[0, 100]} unit="%" tick={{ fill: "var(--text-muted)", fontSize: 12 }} tickLine={false} axisLine={false} width={44} />
-            <Bar dataKey="percent" fill="var(--brand-solid)" radius={[4, 4, 0, 0]} maxBarSize={56} isAnimationActive={false}>
-              <LabelList dataKey="percent" position="top" formatter={(value) => `${value}%`} fill="var(--text)" fontSize={12} />
+            <CartesianGrid stroke="var(--stone)" vertical={false} />
+            <XAxis dataKey="label" tick={{ fill: "var(--ink-2)", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "var(--stone)" }} />
+            <YAxis domain={[0, 100]} unit="%" tick={{ fill: "var(--ink-2)", fontSize: 12 }} tickLine={false} axisLine={false} width={44} />
+            <Bar dataKey="percent" fill="var(--clay)" radius={[4, 4, 0, 0]} maxBarSize={56} isAnimationActive={false}>
+              <LabelList dataKey="percent" position="top" formatter={(value) => `${value}%`} fill="var(--ink)" fontSize={12} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <figcaption className="mt-2 text-sm text-muted">
+      <figcaption className="mt-2 text-sm text-ink-2">
         Share of answerable questions where the expected page was among the top retrieved passages.
       </figcaption>
     </figure>

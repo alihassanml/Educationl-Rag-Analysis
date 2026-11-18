@@ -16,15 +16,15 @@ export function ScoreChart({ history }: { history: Activity[] }) {
       <div className="h-56 w-full" role="img" aria-label={`Quiz scores over time, ${data.map((d) => `${d.percent}%`).join(", ")}`}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
-            <CartesianGrid stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="attempt" tick={{ fill: "var(--text-muted)", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "var(--border)" }} label={{ value: "Quiz number", position: "insideBottom", offset: -4, fill: "var(--text-muted)", fontSize: 12 }} />
-            <YAxis domain={[0, 100]} unit="%" tick={{ fill: "var(--text-muted)", fontSize: 12 }} tickLine={false} axisLine={false} width={44} />
+            <CartesianGrid stroke="var(--stone)" vertical={false} />
+            <XAxis dataKey="attempt" tick={{ fill: "var(--ink-2)", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "var(--stone)" }} label={{ value: "Quiz number", position: "insideBottom", offset: -4, fill: "var(--ink-2)", fontSize: 12 }} />
+            <YAxis domain={[0, 100]} unit="%" tick={{ fill: "var(--ink-2)", fontSize: 12 }} tickLine={false} axisLine={false} width={44} />
             <Tooltip formatter={(value) => [`${value}%`, "Score"]} labelFormatter={(_, payload) => payload?.[0]?.payload.label ?? ""} />
-            <Line type="monotone" dataKey="percent" stroke="var(--brand-solid)" strokeWidth={2} dot={{ r: 3, fill: "var(--brand-solid)" }} isAnimationActive={false} />
+            <Line type="monotone" dataKey="percent" stroke="var(--clay)" strokeWidth={2} dot={{ r: 3, fill: "var(--clay)" }} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <figcaption className="mt-2 text-sm text-muted">Percentage correct in each quiz you completed, oldest to newest.</figcaption>
+      <figcaption className="mt-2 text-sm text-ink-2">Percentage correct in each quiz you completed, oldest to newest.</figcaption>
     </figure>
   );
 }

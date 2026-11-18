@@ -77,7 +77,7 @@ export function GeneratePanel({ documents }: { documents: StudyDocument[] }) {
           </p>
         ) : null}
         <div className="flex items-center justify-end gap-4">
-          {pending ? <p className="text-sm text-muted">Writing questions from your material. This can take a few seconds.</p> : null}
+          {pending ? <p className="text-sm text-ink-2">Writing questions from your material. This can take a few seconds.</p> : null}
           <Button type="submit" disabled={pending}>
             {pending ? <Spinner /> : null}
             {pending ? "Creating" : "Create quiz"}

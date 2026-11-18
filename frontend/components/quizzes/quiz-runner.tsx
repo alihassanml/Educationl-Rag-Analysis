@@ -47,8 +47,8 @@ export function QuizRunner({ quiz, onSubmitted }: Props) {
       />
       <form onSubmit={onSubmit} className="flex max-w-3xl flex-col gap-6">
         {quiz.questions.map((q, index) => (
-          <fieldset key={q.id} className="rounded-panel border border-border bg-surface p-5">
-            <legend className="px-1 text-sm text-muted">
+          <fieldset key={q.id} className="rounded-panel border border-stone bg-paper p-5">
+            <legend className="px-1 text-sm text-ink-2">
               Question {index + 1} of {quiz.questions.length}
             </legend>
             <p className="mb-4 font-medium">{q.question_text}</p>
@@ -59,7 +59,7 @@ export function QuizRunner({ quiz, onSubmitted }: Props) {
                   <label
                     key={optionIndex}
                     className={`flex cursor-pointer items-start gap-3 rounded-control border px-4 py-3 text-sm ${
-                      checked ? "border-primary bg-selected" : "border-border hover:bg-background"
+                      checked ? "border-clay bg-clay-soft" : "border-stone hover:bg-stone-100"
                     }`}
                   >
                     <input
@@ -68,7 +68,7 @@ export function QuizRunner({ quiz, onSubmitted }: Props) {
                       checked={checked}
                       onChange={() => setAnswers({ ...answers, [q.id]: optionIndex })}
                       disabled={pending}
-                      className="mt-1 accent-primary"
+                      className="mt-1 accent-clay-strong"
                     />
                     <span>{option}</span>
                   </label>
@@ -83,7 +83,7 @@ export function QuizRunner({ quiz, onSubmitted }: Props) {
           </p>
         ) : null}
         <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted" aria-live="polite">
+          <p className="text-sm text-ink-2" aria-live="polite">
             {answered} of {quiz.questions.length} answered
           </p>
           <Button type="submit" disabled={!complete || pending}>

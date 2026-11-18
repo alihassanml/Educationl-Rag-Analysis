@@ -20,12 +20,12 @@ test("capture screens", async ({ browser }) => {
   await page.getByText("Get started").first().waitFor();
   await shot("02-dashboard-new-student");
 
-  await page.getByRole("link", { name: "My Library" }).first().click();
+  await page.getByRole("link", { name: "My library" }).first().click();
   await page.locator("#pdf-upload").setInputFiles(pdf);
   await page.getByText("Ready", { exact: true }).waitFor();
   await shot("03-library");
 
-  await page.getByRole("link", { name: "Study Tutor" }).first().click();
+  await page.getByRole("link", { name: "Study tutor" }).first().click();
   await shot("04-tutor-empty");
   await page.getByLabel("Your question").fill("What does a recursive function need to stop calling itself?");
   await page.getByRole("button", { name: "Ask your tutor" }).last().click();
@@ -35,7 +35,7 @@ test("capture screens", async ({ browser }) => {
   await page.getByText("Not found in your material").waitFor();
   await shot("05-tutor-answers");
 
-  await page.getByRole("link", { name: "Practice Quizzes" }).first().click();
+  await page.getByRole("link", { name: "Quizzes" }).first().click();
   await page.getByLabel("Number of questions").selectOption("3");
   await shot("06-quizzes-create");
   await page.getByRole("button", { name: "Create quiz" }).click();

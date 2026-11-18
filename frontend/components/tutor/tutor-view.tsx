@@ -82,7 +82,7 @@ export function TutorView() {
           <EmptyState
             title="Upload a document first"
             action={
-              <Link href="/library" className="font-medium text-primary underline-offset-4 hover:underline">
+              <Link href="/library" className="font-medium text-clay-strong underline-offset-4 hover:underline">
                 Go to My Library
               </Link>
             }
@@ -104,7 +104,7 @@ export function TutorView() {
                       key={example}
                       type="button"
                       onClick={() => setQuestion(example)}
-                      className="rounded-control border border-border bg-surface px-4 py-2.5 text-left text-sm hover:bg-selected"
+                      className="rounded-control border border-stone bg-paper px-4 py-2.5 text-left text-sm hover:bg-clay-soft"
                     >
                       {example}
                     </button>
@@ -115,9 +115,9 @@ export function TutorView() {
               <ol className="flex flex-col gap-8" aria-live="polite">
                 {turns.map((turn) => (
                   <li key={turn.id} className="flex flex-col gap-3">
-                    <p className="self-end rounded-panel bg-selected px-4 py-2.5 text-foreground">{turn.question}</p>
+                    <p className="self-end rounded-panel bg-clay-soft px-4 py-2.5 text-ink">{turn.question}</p>
                     {turn.pending ? (
-                      <p role="status" className="flex items-center gap-2 text-muted">
+                      <p role="status" className="flex items-center gap-2 text-ink-2">
                         <Spinner /> Searching your material
                       </p>
                     ) : null}

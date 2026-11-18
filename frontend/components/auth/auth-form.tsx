@@ -69,9 +69,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
   return (
     <div className="w-full max-w-md">
       <h1 className="text-2xl font-semibold tracking-tight">{copy.title}</h1>
-      <p className="mt-1 text-muted">{copy.description}</p>
+      <p className="mt-1 text-ink-2">{copy.description}</p>
 
-      <form onSubmit={onSubmit} noValidate className="mt-8 flex flex-col gap-5 rounded-panel border border-border bg-surface p-6">
+      <form onSubmit={onSubmit} noValidate className="mt-8 flex flex-col gap-5 rounded-panel border border-stone bg-paper p-6">
         {expired && !formError ? <Notice>Your session ended. Please sign in again.</Notice> : null}
         {formError ? (
           <div role="alert" className="rounded-control border border-danger/30 px-3 py-2 text-sm text-danger">
@@ -113,9 +113,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted">
+      <p className="mt-6 text-center text-sm text-ink-2">
         {copy.switchText}{" "}
-        <Link href={copy.switchHref} className="font-medium text-primary underline-offset-4 hover:underline">
+        <Link href={copy.switchHref} className="font-medium text-clay-strong underline-offset-4 hover:underline">
           {copy.switchLink}
         </Link>
       </p>

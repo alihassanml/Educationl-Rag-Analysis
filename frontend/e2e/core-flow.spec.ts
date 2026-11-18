@@ -44,7 +44,7 @@ test("a new student registers and sees the getting started steps", async () => {
 });
 
 test("uploading a PDF indexes it and rejects non-PDFs", async () => {
-  await page.getByRole("link", { name: "My Library" }).first().click();
+  await page.getByRole("link", { name: "My library" }).first().click();
   await expect(page.getByText("No documents yet")).toBeVisible();
 
   await page.locator("#pdf-upload").setInputFiles({ name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("hello") });
@@ -58,7 +58,7 @@ test("uploading a PDF indexes it and rejects non-PDFs", async () => {
 });
 
 test("the tutor answers with sources and admits when material has no answer", async () => {
-  await page.getByRole("link", { name: "Study Tutor" }).first().click();
+  await page.getByRole("link", { name: "Study tutor" }).first().click();
   await page.getByLabel("Your question").fill("What does a recursive function need to stop calling itself?");
   await page.getByRole("button", { name: "Ask your tutor" }).last().click();
   await expect(page.getByText("According to your notes")).toBeVisible();
@@ -70,7 +70,7 @@ test("the tutor answers with sources and admits when material has no answer", as
 });
 
 test("a quiz can be created, taken once, and scored", async () => {
-  await page.getByRole("link", { name: "Practice Quizzes" }).first().click();
+  await page.getByRole("link", { name: "Quizzes" }).first().click();
   await page.getByLabel("Number of questions").selectOption("3");
   await page.getByRole("button", { name: "Create quiz" }).click();
 
@@ -106,7 +106,7 @@ test("progress and dashboard reflect the completed quiz", async () => {
 });
 
 test("deleting a document asks first and removes it", async () => {
-  await page.getByRole("link", { name: "My Library" }).first().click();
+  await page.getByRole("link", { name: "My library" }).first().click();
   await page.getByRole("button", { name: "Delete recursion-notes" }).click();
   await expect(page.getByRole("alertdialog").or(page.getByRole("dialog"))).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();

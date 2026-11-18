@@ -24,7 +24,7 @@ export function QuizzesView() {
           <EmptyState
             title="Upload a document to create quizzes"
             action={
-              <Link href="/library" className="font-medium text-primary underline-offset-4 hover:underline">
+              <Link href="/library" className="font-medium text-clay-strong underline-offset-4 hover:underline">
                 Go to My Library
               </Link>
             }
@@ -41,19 +41,19 @@ export function QuizzesView() {
           {quizzes.loading ? <LoadingBlock label="Loading your quizzes" /> : null}
           {quizzes.error ? <ErrorBlock message={quizzes.error.message} onRetry={quizzes.reload} /> : null}
           {quizzes.data && quizzes.data.items.length === 0 ? (
-            <p className="text-muted">No quizzes yet. Create your first one above.</p>
+            <p className="text-ink-2">No quizzes yet. Create your first one above.</p>
           ) : null}
           {quizzes.data && quizzes.data.items.length > 0 ? (
-            <ul className="divide-y divide-border rounded-panel border border-border bg-surface">
+            <ul className="divide-y divide-stone rounded-panel border border-stone bg-paper">
               {quizzes.data.items.map((quiz) => (
                 <li key={quiz.id}>
                   <Link
                     href={`/quizzes/${quiz.id}`}
-                    className="flex flex-col gap-1 p-4 hover:bg-selected sm:flex-row sm:items-center sm:justify-between sm:p-5"
+                    className="flex flex-col gap-1 p-4 hover:bg-clay-soft sm:flex-row sm:items-center sm:justify-between sm:p-5"
                   >
                     <span className="min-w-0">
                       <span className="block truncate font-medium">{quiz.title}</span>
-                      <span className="block text-sm text-muted">
+                      <span className="block text-sm text-ink-2">
                         {quiz.question_count} questions · {quiz.source_documents.join(", ") || "Source removed"} ·{" "}
                         {formatDate(quiz.created_at)}
                       </span>

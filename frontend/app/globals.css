@@ -2,62 +2,95 @@
 @import "../styles/tokens.css";
 
 @theme inline {
-  --color-background: var(--bg);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-foreground: var(--text);
-  --color-muted: var(--text-muted);
-  --color-subtle: var(--text-subtle);
-  --color-border: var(--border);
-  --color-brand: var(--brand);
-  --color-primary: var(--brand-solid);
-  --color-primary-hover: var(--brand-hover);
-  --color-on-brand: var(--on-brand);
-  --color-selected: var(--brand-soft);
+  /* Colours (names match docs/UI_REDESIGN.md section 3) */
+  --color-paper: var(--paper);
+  --color-stone-50: var(--stone-50);
+  --color-stone-100: var(--stone-100);
+  --color-stone: var(--stone);
+  --color-stone-strong: var(--stone-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-clay: var(--clay);
+  --color-clay-strong: var(--clay-strong);
+  --color-clay-stronger: var(--clay-stronger);
+  --color-clay-soft: var(--clay-soft);
+  --color-clay-200: var(--clay-200);
+  --color-clay-300: var(--clay-300);
   --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
-  --font-sans: var(--font-inter);
-  --radius-control: 10px;
-  --radius-panel: 16px;
+  --color-danger-soft: var(--danger-soft);
+
+  /* Typography: Google Sans Flex, loaded in app/layout.tsx */
+  --font-sans: var(--font-google-sans-flex), "Google Sans Flex", "Google Sans", Roboto, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-mono: "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-small: 13px;
+  --text-small--line-height: 18px;
+  --text-sm: 14px;
+  --text-sm--line-height: 20px;
+  --text-base: 16px;
+  --text-base--line-height: 24px;
+  --text-lg: 18px;
+  --text-lg--line-height: 26px;
+  --text-lead: 18px;
+  --text-lead--line-height: 28px;
+  --text-page: 24px;
+  --text-page--line-height: 32px;
+  --text-metric: 32px;
+  --text-metric--line-height: 40px;
+  --text-h1: 28px;
+  --text-h1--line-height: 36px;
+  --text-h1-lg: 36px;
+  --text-h1-lg--line-height: 44px;
+  --text-display: 40px;
+  --text-display--line-height: 48px;
+  --text-display-lg: 56px;
+  --text-display-lg--line-height: 64px;
+
+  /* Shape */
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-composer: 16px;
+
+  /* Elevation */
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+
+  --ease-standard: var(--ease);
 }
 
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-sans), system-ui, sans-serif;
-  font-size: 15px;
-  line-height: 1.6;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
 }
 
 :focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
-/* Glass: floating layers only (top bar, composer, popovers). Solid fallback when blur is
-   unavailable or the user asked for reduced transparency. */
-.glass {
-  background: var(--surface);
-  border-color: var(--border);
-}
-
-@supports (backdrop-filter: blur(1px)) {
-  @media not (prefers-reduced-transparency: reduce) {
-    .glass {
-      background: var(--glass-bg);
-      border-color: var(--glass-border);
-      box-shadow: var(--glass-highlight);
-      backdrop-filter: blur(18px) saturate(140%);
-    }
-  }
-}
-
+/* Hero illustration and any animated element: final state immediately for reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

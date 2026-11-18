@@ -53,6 +53,29 @@ typecheck, npm run lint), then commit. Finish with npm run e2e and the section 2
 checks, and report real command output. Never claim a check you did not run.
 ```
 
+### Prompt C: fix the "AI-generated look" (run any time, and again at the end)
+
+```text
+Use the frontend-design skill. Read CLAUDE.md and docs/UI_REDESIGN.md, especially sections
+3-7, 9, 10 and 21.
+
+The current UI looks AI-generated. Fix it screen by screen, without changing any API calls,
+auth, validation or business logic.
+
+For each screen in this order (landing, auth, dashboard, tutor, library, quizzes, progress,
+evaluation lab):
+1. Start the dev servers, open the screen with Playwright MCP at 1440px and 390px, and
+   take screenshots.
+2. Score the screen against the 16 AI tells in section 21.1. List every hit with file:line.
+3. Rewrite the layout, typography, spacing and copy to follow sections 3-7 and 21.2. Use
+   real product UI as visuals, not decoration.
+4. Take new screenshots, compare before and after, and repeat until there are zero tells.
+5. Run npm test, npm run typecheck and npm run lint, then commit that screen.
+
+At the end, give me a table: screen | tells found | tells fixed | screenshot paths.
+Report real command output. Never claim a check you did not run.
+```
+
 ---
 
 ## 1. What the user must understand in 5 seconds
@@ -798,6 +821,50 @@ event: error    data: {"code": "provider_unavailable", "message": "..."}  (safe 
 6. Frontend: SSE client and parser, history panel, streaming messages, Stop, feedback, and an admin "Live feedback" list in the Evaluation Lab.
 7. Feature registry: mark chat history, follow-ups and streaming as `live`. Update the landing tutor section copy ("Ask follow-up questions, see sources before the answer") and recapture its screenshot.
 8. Section 20.8 checks, then README and API docs updated (CLAUDE.md coding rule 15).
+
+---
+
+## 21. Anti "AI-generated look" rules (Prompt C)
+
+These are the patterns that make a page look machine-made. Claude Code checks every screen against this list and fixes every hit.
+
+### 21.1 Banned patterns ("AI tells")
+
+| # | AI tell | Do this instead |
+|---|---|---|
+| 1 | Centred hero with a gradient blob or glow behind it | Left-aligned text with the section 10 illustration on the right |
+| 2 | A grid of 6 identical cards, each an icon in a rounded square, a title and two lines | Fewer sections with real product screenshots and alternating layouts (9.5) |
+| 3 | Purple, blue or pink gradients and gradient text | Flat Paper, Clay & Stone colours only |
+| 4 | Sparkle or star icons, "AI-powered" badges, robot or brain imagery | No AI imagery. The citations and sources are the "smart" visual |
+| 5 | Words like "Unlock", "Supercharge", "Revolutionize", "Seamless", "Empower", "Next-level" | Plain, specific verbs: "Upload a PDF", "See the page it came from" |
+| 6 | Fake stats ("10k+ students"), fake testimonials, fake logos, five-star rows | Real evaluation numbers with sample size, or nothing |
+| 7 | All text centred, every section the same height | Left-aligned body, varied section rhythm, content-led heights |
+| 8 | The same radius, shadow and padding on every element | Use the hierarchy in sections 5–7: borders at rest, shadows only on floating layers |
+| 9 | Every card lifts and scales on hover | Hover only changes the border or background on clickable cards, with no scale |
+| 10 | Pills and badges everywhere | Chips only for status (section 7) |
+| 11 | Decorative icon on every heading and button | Icons only where they help people scan or recognise something |
+| 12 | Low-contrast grey text in many shades | Only ink, ink-2 and ink-3 |
+| 13 | Wavy SVG section dividers, floating 3D shapes, grain or noise | Background changes between paper and stone-50 |
+| 14 | Generic lorem-style copy that could describe any app | Copy that mentions EduRAG's real objects: documents, pages, citations, topics, quizzes |
+| 15 | A pricing table for a product that isn't sold | No pricing section |
+| 16 | Emoji used as icons | Lucide icons |
+
+### 21.2 What makes a design look made by a person
+
+- **Real UI as the visual:** the product's own screens, not illustrations of the product. The hero SVG is the single exception, and it shows real product concepts.
+- **Strong type contrast:** big jumps between display, title and body sizes, and tight headline tracking.
+- **Density where it helps:** tables and lists in the app are compact and scannable, not padded like marketing cards.
+- **Craft details:** hairline dividers, tabular numbers, aligned baselines, an icon size consistent within each context, and real empty states.
+- **Asymmetry with a reason:** 8+4 and 7+5 grids, with the most important item biggest.
+- **Specific copy:** every sentence could only be about EduRAG.
+
+### 21.3 Review loop (required for every screen)
+
+1. Open the screen in the browser with Playwright MCP at 1440px and 390px and take screenshots.
+2. Score it against the 16 tells in 21.1. List every hit with the file and line.
+3. Fix the hits, take new screenshots and compare before and after.
+4. A screen is done only when it has zero tells and passes the section 19 checks.
+5. Save the before and after screenshots to `artifacts/screens/review/` and list the changes in `docs/ui-audit.md`.
 
 ---
 

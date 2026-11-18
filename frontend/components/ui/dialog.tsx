@@ -53,7 +53,7 @@ export function Dialog({ open, title, onClose, children, variant = "dialog", cla
         <div className="flex max-h-[inherit] flex-col">
           <div className="flex items-center justify-between gap-4 border-b border-stone px-6 py-4">
             <h2 className="text-lg font-semibold">{title}</h2>
-            <button type="button" aria-label="Close" onClick={onClose} className="-mr-2 inline-flex size-9 items-center justify-center rounded-control text-ink-2 hover:bg-stone-100">
+            <button type="button" aria-label="Close" onClick={onClose} className="inline-flex size-9 items-center justify-center rounded-control border border-stone-strong bg-paper text-ink-2 hover:bg-stone-100">
               <X size={20} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>

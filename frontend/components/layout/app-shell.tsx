@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               aria-controls="mobile-nav"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               onClick={() => setMenuOpen((open) => !open)}
-              className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-control text-ink hover:bg-stone-100"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-control border border-stone-strong bg-paper text-ink hover:bg-stone-100"
             >
               {menuOpen ? <X size={20} strokeWidth={1.75} aria-hidden="true" /> : <Menu size={20} strokeWidth={1.75} aria-hidden="true" />}
             </button>

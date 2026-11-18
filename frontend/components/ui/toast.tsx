@@ -37,7 +37,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div key={toast.id} className="pointer-events-auto flex max-w-sm items-center gap-2 rounded-panel border border-stone bg-paper px-4 py-3 text-sm text-ink shadow-md">
             <CheckCircle2 size={16} strokeWidth={1.75} className="shrink-0 text-success" aria-hidden="true" />
             <span>{toast.message}</span>
-            <button type="button" aria-label="Dismiss" onClick={() => dismiss(toast.id)} className="-mr-1 ml-1 rounded-md p-1 text-ink-2 hover:bg-stone-100">
+            <button type="button" aria-label="Dismiss" onClick={() => dismiss(toast.id)} className="-mr-1 ml-1 rounded-md border border-stone-strong p-1 text-ink-2 hover:bg-stone-100">
               <X size={14} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>

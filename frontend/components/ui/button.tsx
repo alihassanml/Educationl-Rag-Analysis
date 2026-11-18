@@ -8,8 +8,9 @@ type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   primary: "bg-clay-strong text-paper hover:bg-clay-stronger active:bg-clay-stronger",
-  secondary: "border border-stone bg-paper text-ink hover:bg-stone-100 active:bg-stone",
-  ghost: "text-ink hover:bg-stone-100 active:bg-stone",
+  secondary: "border border-stone-strong bg-paper text-ink hover:bg-stone-100 active:bg-stone",
+  // Still a bordered button, so it never reads as plain text
+  ghost: "border border-stone-strong bg-paper text-ink hover:bg-stone-100 active:bg-stone",
   // Outline at rest; the confirm dialog uses `danger` (filled) for the final step
   destructive: "border border-danger bg-paper text-danger hover:bg-danger-soft",
   danger: "bg-danger text-paper hover:opacity-90",

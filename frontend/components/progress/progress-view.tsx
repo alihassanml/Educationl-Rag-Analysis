@@ -74,7 +74,7 @@ export function ProgressView() {
                   <tr>
                     <th scope="col" className="px-4 py-3 font-medium">Topic</th>
                     <th scope="col" className="px-4 py-3 font-medium" aria-sort={order === "none" ? "none" : order === "asc" ? "ascending" : "descending"}>
-                      <button type="button" onClick={cycleOrder} className="inline-flex items-center gap-1 font-medium" aria-label="Sort by accuracy">
+                      <button type="button" onClick={cycleOrder} className="inline-flex items-center gap-1 rounded-control border border-stone-strong bg-paper px-2 py-0.5 font-medium" aria-label="Sort by accuracy">
                         Accuracy
                         {order === "asc" ? <ArrowUp size={14} strokeWidth={1.75} aria-hidden="true" /> : null}
                         {order === "desc" ? <ArrowDown size={14} strokeWidth={1.75} aria-hidden="true" /> : null}

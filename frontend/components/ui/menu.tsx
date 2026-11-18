@@ -55,7 +55,7 @@ export function Menu({ label, items }: { label: string; items: MenuItem[] }) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex size-9 items-center justify-center rounded-control text-ink-2 hover:bg-stone-100 hover:text-ink max-sm:size-10"
+        className="inline-flex size-9 items-center justify-center rounded-control border border-stone-strong bg-paper text-ink-2 hover:bg-stone-100 hover:text-ink max-sm:size-10"
       >
         <MoreHorizontal size={20} strokeWidth={1.75} aria-hidden="true" />
       </button>

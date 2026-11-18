@@ -127,7 +127,7 @@ export function TutorView() {
                             setQuestion(text);
                             composerRef.current?.focus();
                           }}
-                          className="h-full w-full rounded-panel border border-stone bg-paper p-4 text-left text-sm text-ink hover:bg-stone-100"
+                          className="h-full w-full rounded-panel border border-stone-strong bg-paper p-4 text-left text-sm text-ink hover:bg-stone-100"
                         >
                           {text}
                         </button>

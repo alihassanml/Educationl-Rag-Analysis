@@ -74,7 +74,7 @@ export function Composer({ value, onChange, onSubmit, busy, documents, scope, on
             onClick={() => setScopeOpen((v) => !v)}
             disabled={busy}
             className={cn(
-              "inline-flex h-8 items-center gap-1.5 rounded-full border border-stone px-3 text-small text-ink-2 hover:bg-stone-100 disabled:opacity-50",
+              "inline-flex h-8 items-center gap-1.5 rounded-full border border-stone-strong bg-paper px-3 text-small text-ink hover:bg-stone-100 disabled:opacity-50",
               scope.length > 0 && "border-clay bg-clay-soft text-clay-stronger",
             )}
           >

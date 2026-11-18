@@ -116,7 +116,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               onClick={() => setShowPassword((shown) => !shown)}
               aria-label={showPassword ? "Hide password" : "Show password"}
               aria-pressed={showPassword}
-              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-control text-ink-2 hover:text-ink"
+              className="absolute inset-y-1 right-1 flex w-9 items-center justify-center rounded-control border border-stone-strong bg-paper text-ink-2 hover:bg-stone-100 hover:text-ink"
             >
               {showPassword ? <EyeOff size={16} strokeWidth={1.75} aria-hidden="true" /> : <Eye size={16} strokeWidth={1.75} aria-hidden="true" />}
             </button>

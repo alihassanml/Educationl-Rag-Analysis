@@ -34,7 +34,8 @@ StreamEvent = tuple[str, Any]  # (event name, JSON-serialisable data)
 TITLE_MAX = 60
 SNIPPET_CHARS = 240
 NOT_FOUND_MARKER = "NOT_FOUND"
-_MARKER = re.compile(r"\[(\d+)\]")
+# Models sometimes write 【1】 or [1, 2] instead of [1]; all are treated as citation markers
+_MARKER = re.compile(r"[\[【]\s*(\d+(?:\s*,\s*\d+)*)\s*[\]】]")
 
 STREAM_SYSTEM_PROMPT = """You are a study tutor. Answer the student's question using ONLY the \
 numbered passages provided between <passages> tags.
@@ -45,7 +46,7 @@ Rules:
 nothing else. Do not guess or use outside knowledge.
 - Do not invent quotations, page numbers, chapter names, or sources.
 - After each statement, cite the passage it comes from with its number in square brackets, such \
-as [1]. Cite only numbers that appear in the passages.
+as [1]. Use plain square brackets and cite only numbers that appear in the passages.
 - Write in plain language. Start with a direct answer, then add a short explanation if helpful.
 - Reply in plain text. Do not use JSON."""
 
@@ -244,7 +245,7 @@ def run_stream(
             )  # fmt: skip
             yield done(message, True, [])
             return
-        shown = {int(n) for n in _MARKER.findall(content)}
+        shown = {int(n) for group in _MARKER.findall(content) for n in re.findall(r"\d+", group)}
         unknown = sorted(n for n in shown if not 1 <= n <= len(chunks))
         message = _save_answer(
             db, prepared, content=content, status=STATUS_COMPLETE, abstained=False,

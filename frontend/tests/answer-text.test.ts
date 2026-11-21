@@ -33,4 +33,16 @@ describe("splitAnswer", () => {
   it("returns nothing for an empty answer", () => {
     expect(splitAnswer("", [1])).toEqual([]);
   });
+
+  it("understands the full-width brackets some models use, and lists such as [1, 2]", () => {
+    const [paragraph] = splitAnswer("A stack overflow【1】 and more [1, 2] but not 【4】 or [2, 5].", [1, 2]);
+    expect(paragraph.filter((s) => s.type === "cite")).toEqual([
+      { type: "cite", marker: 1 },
+      { type: "cite", marker: 1 },
+      { type: "cite", marker: 2 },
+      { type: "cite", marker: 2 },
+    ]);
+    const text = paragraph.map((s) => (s.type === "text" ? s.text : "")).join("");
+    expect(text).not.toMatch(/[【】\[\]]|\b4\b|\b5\b/); // unknown numbers are dropped, never shown
+  });
 });

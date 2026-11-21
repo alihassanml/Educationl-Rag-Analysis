@@ -166,6 +166,13 @@ def test_unknown_markers_are_flagged_and_citations_equal_the_retrieved_chunks(
     assert [c["marker"] for c in answer["citations"]] == [1]
 
 
+def test_markers_in_full_width_brackets_and_lists_are_checked_too(chat, fake_groq) -> None:
+    client, thread_id = chat
+    fake_groq.stream_replies.append(["A method【1】, see also [1, 7] and 【9】."])
+    events = parse_sse(_send(client, thread_id).text)
+    assert events[-1][1]["unknown_markers"] == [7, 9]
+
+
 def test_provider_failure_mid_answer_sends_the_safe_error_and_keeps_the_partial(
     chat, fake_groq
 ) -> None:

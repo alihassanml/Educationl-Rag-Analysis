@@ -1,3 +1,6 @@
+// [1], 【1】 (some models use full-width brackets) and lists such as [1, 2]
+const MARKER = /[[【]\s*(\d+(?:\s*,\s*\d+)*)\s*[\]】]/g;
+
 export type AnswerSegment = { type: "text"; text: string } | { type: "cite"; marker: number };
 
 /** Split an answer into paragraphs of text and citation markers. Only markers that are among the
@@ -17,10 +20,12 @@ export function splitAnswer(text: string, validMarkers: number[]): AnswerSegment
         else segments.push(segment);
       };
       let from = 0;
-      for (const match of paragraph.matchAll(/\[(\d+)\]/g)) {
-        const marker = Number(match[1]);
+      for (const match of paragraph.matchAll(MARKER)) {
         if (match.index > from) push({ type: "text", text: paragraph.slice(from, match.index) });
-        if (valid.has(marker)) push({ type: "cite", marker });
+        for (const number of match[1].split(",")) {
+          const marker = Number(number);
+          if (valid.has(marker)) push({ type: "cite", marker });
+        }
         from = match.index + match[0].length;
       }
       if (from < paragraph.length) push({ type: "text", text: paragraph.slice(from) });

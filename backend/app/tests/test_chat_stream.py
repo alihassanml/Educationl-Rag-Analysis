@@ -271,3 +271,14 @@ def test_another_users_thread_and_documents_are_404_and_no_message_is_saved(
 def test_short_question_is_rejected_before_streaming(chat) -> None:
     client, thread_id = chat
     assert _send(client, thread_id, "hi").status_code == 422
+
+
+def test_snippets_end_at_a_word_boundary_with_an_ellipsis() -> None:
+    from app.services.chat_stream_service import SNIPPET_CHARS, make_snippet
+
+    assert make_snippet("A short  passage\nwith   spaces.") == "A short passage with spaces."
+    long_text = "word " * 100
+    snippet = make_snippet(long_text)
+    assert snippet.endswith("…") and snippet[:-1].endswith("word")
+    assert len(snippet) <= SNIPPET_CHARS + 1
+    assert make_snippet("x" * 500).endswith("…")  # no spaces at all: still cut

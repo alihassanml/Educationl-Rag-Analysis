@@ -96,6 +96,16 @@ def prepare_message(
     return PreparedMessage(user_id, thread.id, message.id, question, document_ids, history)
 
 
+def make_snippet(content: str) -> str:
+    """One line of the passage, ended at a word boundary with an ellipsis when it is cut."""
+    text = " ".join(content.split())
+    if len(text) <= SNIPPET_CHARS:
+        return text
+    cut = text[:SNIPPET_CHARS]
+    space = cut.rfind(" ")
+    return (cut[:space] if space > SNIPPET_CHARS // 2 else cut).rstrip() + "…"
+
+
 def _source_event(chunks: list[RetrievedChunk]) -> list[dict[str, Any]]:
     return [
         {
@@ -104,7 +114,7 @@ def _source_event(chunks: list[RetrievedChunk]) -> list[dict[str, Any]]:
             "document_id": str(c.document_id),
             "document_title": c.document_title,
             "page_number": c.page_number,
-            "snippet": " ".join(c.content.split())[:SNIPPET_CHARS],
+            "snippet": make_snippet(c.content),
         }
         for marker, c in enumerate(chunks, start=1)
     ]
@@ -147,7 +157,7 @@ def _save_answer(
                     document_title=c.document_title,
                     page_number=c.page_number,
                     marker=marker,
-                    snippet=" ".join(c.content.split())[:SNIPPET_CHARS],
+                    snippet=make_snippet(c.content),
                 )
             )
     thread = db.get(ChatThread, prepared.thread_id)

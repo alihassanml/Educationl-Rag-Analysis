@@ -6,7 +6,7 @@ Scope, architecture and milestones: `docs/IMPLEMENTATION_GUIDE.md` (Guide v2; th
 
 ## What works
 
-Sign up and sign in, PDF library (upload, status, delete), cited answers from your own material with a clear "not found" response, topic quizzes, scoring, per-topic progress with transparent rules, recommendations, and a dashboard. An administrator can also open the Evaluation Lab, which measures retrieval (hit rate at K, MRR, nDCG, abstention) on a labelled question set and compares dense with hybrid retrieval. It measures retrieval only: answer faithfulness and quiz quality are not measured by the Lab. Not built: diagnostic quiz, past-paper analysis, viva mode, reminders, mood adaptation, peer matching, OCR, accounts beyond sign up and sign in.
+Sign up and sign in, PDF library (upload, status, delete), cited answers from your own material with a clear "not found" response, saved tutor chats with follow-up questions, streamed answers, Stop and feedback (see Study tutor chat below), topic quizzes, scoring, per-topic progress with transparent rules, recommendations, and a dashboard. An administrator can also open the Evaluation Lab, which measures retrieval (hit rate at K, MRR, nDCG, abstention) on a labelled question set and compares dense with hybrid retrieval. It measures retrieval only: answer faithfulness and quiz quality are not measured by the Lab. Not built: diagnostic quiz, past-paper analysis, viva mode, reminders, mood adaptation, peer matching, OCR, accounts beyond sign up and sign in.
 
 ## Requirements
 
@@ -59,6 +59,27 @@ cd frontend && npm run e2e        # Playwright; builds the app and starts its ow
 ```
 
 End-to-end tests use a separate database (`createdb edurag_e2e` and run migrations with `DATABASE_URL` pointing at it; run `alembic upgrade head` there again after any schema change, otherwise sign up fails with a missing-column error) and a scripted LLM, so they need no Groq key. One-time: `npx playwright install chromium`.
+
+## Study tutor chat
+
+The tutor keeps conversations. Each student has chat threads with saved messages and citations; a follow-up such as "What about its base case?" is rewritten into a standalone question before searching, and the answer is streamed with its sources shown first. A Stop button (or Esc) ends an answer early and keeps the partial text, and answers can be rated with a thumbs up or down. Admins see recent ratings under **Live feedback** in the Evaluation Lab.
+
+All endpoints are under `/api/v1/tutor` and every query is limited to the signed-in student. Another student's thread or message returns 404.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET, POST | `/threads` | List threads (newest first, `limit` and `offset`), create an empty thread |
+| GET, PATCH, DELETE | `/threads/{id}` | Read with messages and citations, rename, delete with its messages and feedback |
+| POST | `/threads/{id}/messages` | Send a question, answer arrives as server-sent events |
+| POST | `/messages/{id}/feedback` | `up` or `down`, with an optional reason (`wrong`, `missing_source`, `unclear`) on a thumbs down |
+| GET | `/feedback` | Admin only: recent feedback with the question and answer, no student identity |
+| POST | `/ask` | The original single-question endpoint, unchanged |
+
+The message stream sends these events in order: `status` (`rewriting` for follow-ups only, then `searching`), `sources` (marker, chunk, document, title, page, snippet), `status` (`writing`), `token` (text pieces), then `done` (message id, `abstained`, `standalone_query`, `rewrite_used`, `unknown_markers`, per-stage `latency_ms`) or `error` (a safe code and message). When nothing in the student's material passes the similarity gate, no answer is generated: the stream sends `sources` (empty) and `done` with `abstained: true`.
+
+Grounding rules: the conversation is used only to rewrite a follow-up; the answer prompt receives only the retrieved passages and the standalone question, and earlier answers are never evidence. The first message of a thread is searched as typed, and a failed rewrite falls back to the original question. Citations come from retrieval results only, and a `[n]` in the text that is not among the sources is dropped from the display and reported in `unknown_markers`. If the client disconnects, the server stops reading from the model and saves the partial answer with status `stopped`. A citation to a deleted document keeps its title and passage and shows "Source deleted".
+
+Not built (optional extras in the brief): the Redis message limit, and follow-up question pairs in the evaluation set.
 
 ## Evaluation Lab
 

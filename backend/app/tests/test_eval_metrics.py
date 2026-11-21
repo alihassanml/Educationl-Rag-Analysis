@@ -79,9 +79,7 @@ def test_bootstrap_ci_is_reproducible_and_brackets_the_mean() -> None:
 
 
 def test_abstention_matrix_counts_and_ratios() -> None:
-    matrix = build_abstention_matrix(
-        [(True, True), (True, False), (False, True), (False, False)]
-    )
+    matrix = build_abstention_matrix([(True, True), (True, False), (False, True), (False, False)])
     assert (matrix.tp, matrix.fn, matrix.fp, matrix.tn) == (1, 1, 1, 1)
     assert matrix.precision == 0.5
     assert matrix.recall == 0.5

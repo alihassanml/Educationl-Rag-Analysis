@@ -124,3 +124,13 @@ Not changed: product images are small on a 390px screen (they are desktop screen
 | 7 Centred text, floating layout | `(auth)/layout.tsx` the logo sat at the page edge (x 32) while the form sat at x 160, so nothing shared a left edge. The caption under the illustration was centred in an empty panel | Logo, heading and fields share one 400px column. The illustration and its caption share one left-aligned block |
 
 The split layout, the static illustration and the caption wording are specified in section 11 and stay. No other tells found: no gradients, no decorative icons, one primary button.
+
+### Dashboard
+
+| Tell | Where (before) | Fix |
+| --- | --- | --- |
+| 8 Nested cards (also rule 5.3) | `dashboard-view.tsx:134` the Snapshot was a muted card holding two white stat tiles | One muted surface, two stats separated by a hairline (`StatTile` gained a `bare` prop) |
+| 2 / 8 Same card on everything | Needs revision and Recent activity were two equal bordered cards, one holding a single sentence | Flat hairline sections (`FlatSection`) with no card around a list |
+| Scan distance | The first-run checklist stretched 1130px, so a step's label and its button were about 1000px apart | Checklist is 672px wide |
+
+Kept: the clay left border on the next-step card and its caps label (brief 12.2), the caps stat labels (brief 7) and equal row heights (brief 5.3).

@@ -2,6 +2,7 @@
 
 import { Check, Circle } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { ScoreChart, MIN_POINTS_FOR_CHART } from "@/components/progress/score-chart";
@@ -33,7 +34,7 @@ function Checklist({ data }: { data: ProgressSummary }) {
   const current = steps.findIndex((s) => !s.done);
 
   return (
-    <Panel title="Get started in three steps">
+    <Panel title="Get started in three steps" className="max-w-2xl">
       <p className="mb-4 text-ink-2">
         {done} of {steps.length} done
       </p>
@@ -109,6 +110,19 @@ function NextStep({ data }: { data: ProgressSummary }) {
   );
 }
 
+/** A titled section with a hairline above it. Lists on the dashboard are not wrapped in cards. */
+function FlatSection({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="border-t border-stone pt-5">
+      <div className="mb-4 flex items-baseline justify-between gap-4">
+        <h2 className="text-lg font-semibold text-ink">{title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 function Dashboard({ data }: { data: ProgressSummary }) {
   const isNew = data.documents_total === 0 && data.quizzes_completed === 0;
   if (isNew) return <Checklist data={data} />;
@@ -122,19 +136,26 @@ function Dashboard({ data }: { data: ProgressSummary }) {
         <div className="lg:col-span-8">
           <NextStep data={data} />
         </div>
-        <section aria-label="Snapshot" className="flex flex-col gap-4 rounded-panel bg-stone-100 p-5 lg:col-span-4">
+        <section aria-label="Snapshot" className="divide-y divide-stone-strong/30 rounded-panel bg-stone-100 px-5 lg:col-span-4">
           <StatTile
-            className="bg-paper"
+            bare
+            className="py-4"
             label="Average quiz score"
             value={average === null ? null : `${average}%`}
             context={`from ${data.quizzes_completed} ${data.quizzes_completed === 1 ? "quiz" : "quizzes"}`}
           />
-          <StatTile className="bg-paper" label="Topics needing revision" value={data.quizzes_completed === 0 ? null : data.topics_needing_revision} context={`${data.documents_ready} ${data.documents_ready === 1 ? "document" : "documents"} ready`} />
+          <StatTile
+            bare
+            className="py-4"
+            label="Topics needing revision"
+            value={data.quizzes_completed === 0 ? null : data.topics_needing_revision}
+            context={`${data.documents_ready} ${data.documents_ready === 1 ? "document" : "documents"} ready`}
+          />
         </section>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
-        <Panel title="Needs revision" action={revision.length > 0 ? <Link href="/progress" className="text-sm font-medium text-clay-strong underline-offset-4 hover:underline">View all progress</Link> : undefined}>
+      <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+        <FlatSection title="Needs revision" action={revision.length > 0 ? <Link href="/progress" className="text-sm font-medium text-clay-strong underline-offset-4 hover:underline">View all progress</Link> : undefined}>
           {revision.length === 0 ? (
             <p className="text-ink-2">No topics need revision right now</p>
           ) : (
@@ -151,9 +172,9 @@ function Dashboard({ data }: { data: ProgressSummary }) {
               ))}
             </ul>
           )}
-        </Panel>
+        </FlatSection>
 
-        <Panel title="Recent activity">
+        <FlatSection title="Recent activity">
           {data.recent_activity.length === 0 ? (
             <p className="text-ink-2">No completed quizzes yet</p>
           ) : (
@@ -171,7 +192,7 @@ function Dashboard({ data }: { data: ProgressSummary }) {
               ))}
             </ul>
           )}
-        </Panel>
+        </FlatSection>
       </div>
 
       {data.score_history.length >= MIN_POINTS_FOR_CHART ? (

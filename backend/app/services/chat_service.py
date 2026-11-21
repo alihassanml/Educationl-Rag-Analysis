@@ -4,8 +4,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import NotFoundError
-from app.models.chat import ChatCitation, ChatMessage, ChatThread
-from app.schemas.chat import CitationOut, MessageOut, ThreadDetail
+from app.models.chat import (
+    ROLE_ASSISTANT,
+    ROLE_USER,
+    ChatCitation,
+    ChatMessage,
+    ChatThread,
+    MessageFeedback,
+)
+from app.schemas.chat import CitationOut, FeedbackIn, FeedbackItem, MessageOut, ThreadDetail
 
 DEFAULT_TITLE = "New chat"
 
@@ -97,3 +104,64 @@ def thread_detail(db: Session, user_id: uuid.UUID, thread_id: uuid.UUID) -> Thre
         updated_at=thread.updated_at,
         messages=[message_out(m, user_id) for m in thread.messages],
     )
+
+
+def save_feedback(
+    db: Session, user_id: uuid.UUID, message_id: uuid.UUID, body: FeedbackIn
+) -> MessageFeedback:
+    """One rating per student and answer; rating again replaces the earlier one."""
+    message = db.scalar(
+        select(ChatMessage).where(
+            ChatMessage.id == message_id,
+            ChatMessage.user_id == user_id,
+            ChatMessage.role == ROLE_ASSISTANT,
+        )
+    )
+    if message is None:
+        raise NotFoundError("Message")
+    feedback = db.scalar(
+        select(MessageFeedback).where(
+            MessageFeedback.message_id == message_id, MessageFeedback.user_id == user_id
+        )
+    )
+    if feedback is None:
+        feedback = MessageFeedback(message_id=message_id, user_id=user_id, rating=body.rating)
+        db.add(feedback)
+    feedback.rating = body.rating
+    feedback.reason = body.reason
+    db.commit()
+    return feedback
+
+
+def recent_feedback(db: Session, limit: int) -> list[FeedbackItem]:
+    """Newest feedback first, with the question it answered. For administrators only."""
+    rows = db.execute(
+        select(MessageFeedback, ChatMessage)
+        .join(ChatMessage, ChatMessage.id == MessageFeedback.message_id)
+        .order_by(MessageFeedback.created_at.desc(), MessageFeedback.id)
+        .limit(limit)
+    ).all()
+    items = []
+    for feedback, answer in rows:
+        question = db.scalar(
+            select(ChatMessage.content)
+            .where(
+                ChatMessage.thread_id == answer.thread_id,
+                ChatMessage.role == ROLE_USER,
+                ChatMessage.created_at <= answer.created_at,
+            )
+            .order_by(ChatMessage.created_at.desc())
+            .limit(1)
+        )
+        items.append(
+            FeedbackItem(
+                message_id=answer.id,
+                rating=feedback.rating,  # type: ignore[arg-type]
+                reason=feedback.reason,
+                question=question or "",
+                answer=answer.content,
+                abstained=answer.abstained,
+                created_at=feedback.created_at,
+            )
+        )
+    return items

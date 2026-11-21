@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ThreadCreate(BaseModel):
@@ -60,3 +60,29 @@ class ThreadDetail(ThreadOut):
 class MessageCreate(BaseModel):
     question: str = Field(min_length=3, max_length=1000)
     document_ids: list[uuid.UUID] | None = Field(default=None, max_length=50)
+
+
+class FeedbackIn(BaseModel):
+    rating: Literal["up", "down"]
+    reason: Literal["wrong", "missing_source", "unclear"] | None = None
+
+    @model_validator(mode="after")
+    def reason_only_with_thumbs_down(self) -> "FeedbackIn":
+        if self.reason is not None and self.rating != "down":
+            raise ValueError("A reason can only be given with a thumbs down")
+        return self
+
+
+class FeedbackOut(BaseModel):
+    message_id: uuid.UUID
+    rating: Literal["up", "down"]
+    reason: str | None
+
+
+class FeedbackItem(FeedbackOut):
+    """One row of the admin "Live feedback" list. It carries no student identity."""
+
+    question: str
+    answer: str
+    abstained: bool
+    created_at: datetime

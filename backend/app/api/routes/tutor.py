@@ -9,8 +9,17 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 from fastapi.sse import format_sse_event
 
-from app.api.deps import CurrentUser, DbSession
-from app.schemas.chat import MessageCreate, ThreadCreate, ThreadDetail, ThreadOut, ThreadRename
+from app.api.deps import AdminUser, CurrentUser, DbSession
+from app.schemas.chat import (
+    FeedbackIn,
+    FeedbackItem,
+    FeedbackOut,
+    MessageCreate,
+    ThreadCreate,
+    ThreadDetail,
+    ThreadOut,
+    ThreadRename,
+)
 from app.schemas.tutor import AskRequest, AskResponse
 from app.services import chat_service, chat_stream_service, rag_service
 from app.services.embedding_service import Embedder, get_embedder
@@ -101,3 +110,22 @@ def send_message(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.post("/messages/{message_id}/feedback", response_model=FeedbackOut)
+def rate_message(
+    message_id: uuid.UUID, body: FeedbackIn, user: CurrentUser, db: DbSession
+) -> FeedbackOut:
+    feedback = chat_service.save_feedback(db, user.id, message_id, body)
+    return FeedbackOut(
+        message_id=feedback.message_id,
+        rating=feedback.rating,  # type: ignore[arg-type]
+        reason=feedback.reason,
+    )
+
+
+@router.get("/feedback", response_model=list[FeedbackItem])
+def list_feedback(
+    admin: AdminUser, db: DbSession, limit: Annotated[int, Query(ge=1, le=200)] = 50
+) -> list[FeedbackItem]:
+    return chat_service.recent_feedback(db, limit)

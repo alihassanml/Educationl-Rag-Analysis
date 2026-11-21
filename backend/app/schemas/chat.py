@@ -55,3 +55,8 @@ class MessageOut(BaseModel):
 
 class ThreadDetail(ThreadOut):
     messages: list[MessageOut]
+
+
+class MessageCreate(BaseModel):
+    question: str = Field(min_length=3, max_length=1000)
+    document_ids: list[uuid.UUID] | None = Field(default=None, max_length=50)

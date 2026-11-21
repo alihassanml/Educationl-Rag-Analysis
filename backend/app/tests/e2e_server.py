@@ -6,6 +6,8 @@ It never contacts Groq. Replies are deterministic so the UI flow can be asserted
 
 import os
 import re
+import time
+from collections.abc import Iterator
 from typing import Any
 
 import uvicorn
@@ -29,6 +31,12 @@ class ScriptedLLM(GroqService):
     def complete_json(
         self, system: str, user: str, *, temperature: float, max_tokens: int
     ) -> dict[str, Any]:
+        if "standalone_question" in system:
+            # Follow-up rewrite: attach the follow-up to the previous student question
+            previous = re.findall(r"^Student: (.+)$", user, flags=re.M)[-1]
+            follow_up = re.search(r"Follow-up question: (.+)$", user, flags=re.M).group(1)  # type: ignore[union-attr]
+            joined = f"{previous.rstrip('?')}, {follow_up[0].lower()}{follow_up[1:]}"
+            return {"standalone_question": joined}
         passages = re.findall(r"\[(\d+)\]\n(.+?)(?=\n\n\[|\n</passages>)", user, flags=re.S)
         if "multiple-choice" in system:
             count = int(re.search(r"Write (\d+)", user).group(1))  # type: ignore[union-attr]
@@ -65,6 +73,16 @@ class ScriptedLLM(GroqService):
             "insufficient_evidence": False,
             "used_passages": [1],
         }
+
+    def stream_text(
+        self, system: str, user: str, *, temperature: float, max_tokens: int
+    ) -> Iterator[str]:
+        """Streams the same quote word by word, slowly enough for Stop to be pressed."""
+        reply = self.complete_json(system, user, temperature=temperature, max_tokens=max_tokens)
+        text = str(reply["answer"]).rstrip(".") + " [1]."
+        for word in re.findall(r"\S+\s*", text):
+            time.sleep(float(os.environ.get("E2E_TOKEN_DELAY", "0.05")))
+            yield word
 
 
 app.dependency_overrides[get_groq_service] = lambda: ScriptedLLM()

@@ -58,6 +58,11 @@ class FakeGroq(GroqService):
         super().__init__(None, "fake-model")
         self.replies: list[Any] = []
         self.calls: list[dict[str, str]] = []
+        # Streaming: each queued item is a list of text pieces. An Exception inside the list is
+        # raised at that point; an Exception as the whole item is raised before the first piece.
+        self.stream_replies: list[Any] = []
+        self.stream_calls: list[dict[str, str]] = []
+        self.stream_closed = False
 
     def complete_json(self, system: str, user: str, *, temperature: float, max_tokens: int):  # type: ignore[override]
         self.calls.append({"system": system, "user": user})
@@ -67,6 +72,22 @@ class FakeGroq(GroqService):
         if isinstance(reply, Exception):
             raise reply
         return reply
+
+    def stream_text(self, system: str, user: str, *, temperature: float, max_tokens: int):  # type: ignore[override]
+        self.stream_calls.append({"system": system, "user": user})
+        if not self.stream_replies:
+            raise AssertionError("FakeGroq has no queued stream reply")
+        reply = self.stream_replies.pop(0)
+        if isinstance(reply, Exception):
+            raise reply
+        self.stream_closed = False
+        try:
+            for piece in reply:
+                if isinstance(piece, Exception):
+                    raise piece
+                yield piece
+        finally:
+            self.stream_closed = True
 
 
 def _ensure_test_database() -> None:

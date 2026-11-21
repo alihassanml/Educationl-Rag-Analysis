@@ -44,12 +44,19 @@ type SourceCardProps = {
   snippet?: string;
   marker?: number;
   active?: boolean;
+  /** For use inside a surface that is already a card: no border or fill of its own, so cards never nest. */
+  flat?: boolean;
   children?: ReactNode;
 };
 
-export function SourceCard({ title, page, snippet, marker, active, children }: SourceCardProps) {
+export function SourceCard({ title, page, snippet, marker, active, flat, children }: SourceCardProps) {
   return (
-    <article className={cn("rounded-panel border bg-paper p-4", active ? "border-clay" : "border-stone")}>
+    <article
+      className={cn(
+        flat ? "border-l-2 py-1 pl-4" : "rounded-panel border bg-paper p-4",
+        active ? "border-clay" : flat ? "border-transparent" : "border-stone",
+      )}
+    >
       <div className="flex items-start gap-3">
         <FileText size={20} strokeWidth={1.75} className="mt-0.5 shrink-0 text-ink-2" aria-hidden="true" />
         <div className="min-w-0 flex-1">

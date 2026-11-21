@@ -9,7 +9,7 @@ export function SourcesList({ sources, activeMarker }: { sources: Source[]; acti
     return <p className="text-sm text-ink-2">Sources for an answer appear here once you ask a question</p>;
   }
   return (
-    <ul className="flex flex-col gap-3">
+    <ul className="flex flex-col gap-5">
       {sources.map((source) => (
         <li key={source.marker} id={`source-${source.marker}`}>
           <SourceCard
@@ -18,6 +18,7 @@ export function SourcesList({ sources, activeMarker }: { sources: Source[]; acti
             page={source.deleted ? `${pageText(source.page)} · Source deleted` : pageText(source.page)}
             snippet={source.snippet || undefined}
             active={source.marker === activeMarker}
+            flat
           />
         </li>
       ))}

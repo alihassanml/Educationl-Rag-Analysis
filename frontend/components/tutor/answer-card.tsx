@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, RotateCcw, SearchX } from "lucide-react";
+import { SearchX } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { CitationPill } from "@/components/ui/citation";
@@ -157,20 +157,15 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
       {answer.status === "complete" || answer.status === "stopped" ? (
         <div className="mt-3 flex flex-wrap items-center gap-1">
           <Button variant="ghost" size="sm" onClick={copy} aria-label="Copy answer">
-            <Copy size={16} strokeWidth={1.75} aria-hidden="true" />
             Copy
           </Button>
           {onAskAgain ? (
             <Button variant="ghost" size="sm" onClick={onAskAgain}>
-              <RotateCcw size={16} strokeWidth={1.75} aria-hidden="true" />
               Ask again
             </Button>
           ) : null}
           {answer.id && onFeedback ? <FeedbackButtons value={answer.feedback ?? null} onRate={onFeedback} /> : null}
         </div>
-      ) : null}
-      {answer.status === "complete" && answer.sources.length > 0 ? (
-        <p className="mt-3 text-small text-ink-2">Sources show where the supporting passages came from. Check them yourself before relying on an answer</p>
       ) : null}
     </div>
   );

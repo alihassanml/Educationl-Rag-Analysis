@@ -421,6 +421,8 @@ export function TutorView({ threadId }: { threadId?: string }) {
                   onScopeChange={setScope}
                   inputRef={composerRef}
                 />
+                {/* Said once here, not repeated under every answer */}
+                <p className="mt-2 text-center text-small text-ink-2">Answers come only from your uploaded material. Check the sources before relying on one</p>
               </div>
             </div>
           </div>

@@ -134,3 +134,13 @@ The split layout, the static illustration and the caption wording are specified 
 | Scan distance | The first-run checklist stretched 1130px, so a step's label and its button were about 1000px apart | Checklist is 672px wide |
 
 Kept: the clay left border on the next-step card and its caps label (brief 12.2), the caps stat labels (brief 7) and equal row heights (brief 5.3).
+
+### Study tutor
+
+| Tell | Where (before) | Fix |
+| --- | --- | --- |
+| 14 Boilerplate repeated | `answer-card.tsx:173` the sentence "Sources show where the supporting passages came from…" under every answer | Said once, under the composer (`tutor-view.tsx`) |
+| 11 Decorative icons | `answer-card.tsx` an icon beside the text on both "Copy" and "Ask again" | Text-only buttons. The thumbs stay icon-only, with accessible names |
+| 8 Nested cards | `sources-panel.tsx` white bordered source cards inside the muted Sources panel | `SourceCard` has a `flat` variant: a left rule and the highlighted passage, no card |
+
+Kept: the suggestion cards and the empty Sources panel (brief 13.1 and 13.3), the stone question bubble, and sources shown above the answer text (brief 20.6).

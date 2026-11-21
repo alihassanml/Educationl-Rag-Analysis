@@ -97,3 +97,22 @@ Legend: keep, change, remove.
 6. Pages that set their own padding: `auth/layout.tsx` (own `max-w-5xl`), `session-provider` loading and error states.
 7. Hard-coded hex values in components: none found.
 8. Nav items for unbuilt features: none today (the registry in step 5 keeps it that way).
+
+## AI-look review (Prompt C, docs/UI_REDESIGN.md section 21)
+
+Method: `frontend/e2e/review/capture.mjs` saves 1440px and 390px screenshots of every screen to `artifacts/screens/review/before/` and `.../after/` from a seeded review stack (scripted LLM, real embeddings, a student account and a separate admin account). Each screen is scored against the 16 tells in 21.1, fixed, re-captured and committed on its own. Mechanical checks over `app/` and `components/` found no banned words (tell 5), gradients or blur (3, 13), hover scale or lift (9), sparkle or robot icons (4) or emoji (16), so the hits below are about structure.
+
+Decisions that follow the brief rather than the tells: the clay accent phrase in the hero headline, the caps eyebrow in the hero, the caps sidebar group labels and the caps stat-tile labels are all specified in sections 4, 8.1 and 9.2, so they stay.
+
+### Landing
+
+| Tell | Where (before) | Fix |
+| --- | --- | --- |
+| 10 Pills everywhere | `teachers-roadmap.tsx:27` eight "Planned" chips under a heading that already says "Planned, not built yet" | Plain label and description rows with hairlines, no chips |
+| 11 Decorative icons | `features.tsx:44` a clay check icon on each of 12 bullets | Hairline-separated rows, no icons |
+| 7 Uniform sections, holes | Evaluation section had no image (`evaluation.png` was never captured) and an empty half. Teachers was a text slab with an empty half. All features were identical 50/50 splits | Evaluation image captured from the run page. Feature sections are 5/7 with the copy sticky beside tall images. Teachers, roadmap and team use a 5/7 or 4/8 heading-and-list split |
+| Template chrome | `section.tsx:19`, `features.tsx:35`, `how-it-works.tsx:20`, `faq-team-footer.tsx` a caps eyebrow above every heading, repeating the heading or the nav label, plus a "STEP n" label next to a numbered timeline | Removed. The hero eyebrow stays (brief 9.2) |
+| 2 Identical card grid | `faq-team-footer.tsx` four identical bordered cards with initials avatars | Hairline rows, avatars kept |
+| 6 / "real UI as the visual" | Feature images were whole screens scaled until the text was about 7px, and the sample PDF produced "Recursion Recursion is a method" in a snippet | Tight crops of the conversation and sources, evaluation run page, quiz result and progress topics. Clean demo notes. Source snippets now end at a word boundary with an ellipsis (`chat_stream_service.make_snippet`, with a test) |
+
+Not changed: product images are small on a 390px screen (they are desktop screenshots).

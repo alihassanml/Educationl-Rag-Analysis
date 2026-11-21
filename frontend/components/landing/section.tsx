@@ -13,10 +13,9 @@ export function Section({ id, tone = "paper", children, className }: { id?: stri
   );
 }
 
-export function SectionHeading({ overline, title, lead }: { overline?: string; title: string; lead?: string }) {
+export function SectionHeading({ title, lead, className }: { title: string; lead?: string; className?: string }) {
   return (
-    <div className="mb-8 max-w-2xl lg:mb-12">
-      {overline ? <p className="mb-2 text-xs font-semibold uppercase tracking-[0.06em] text-ink-2">{overline}</p> : null}
+    <div className={cn("mb-8 max-w-2xl lg:mb-12", className)}>
       <h2 className="text-h1 font-medium text-ink lg:text-h1-lg">{title}</h2>
       {lead ? <p className="mt-3 text-lead text-ink-2">{lead}</p> : null}
     </div>

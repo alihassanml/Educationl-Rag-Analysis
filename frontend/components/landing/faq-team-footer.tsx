@@ -25,7 +25,7 @@ const FAQ = [
 export function Faq() {
   return (
     <Section id="faq">
-      <SectionHeading overline="FAQ" title="Questions students ask first" />
+      <SectionHeading title="Questions students ask first" />
       <div className="max-w-3xl divide-y divide-stone border-y border-stone">
         {FAQ.map((item) => (
           <details key={item.q} className="group py-4">
@@ -58,20 +58,25 @@ function initials(name: string) {
 export function Team() {
   return (
     <Section tone="muted">
-      <SectionHeading overline="Team" title="Built at Lahore Garrison University" lead="Department of Computer Science" />
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {PEOPLE.map((person) => (
-          <li key={person.name} className="flex items-center gap-4 rounded-panel border border-stone bg-paper p-4">
-            <span aria-hidden="true" className="flex size-12 shrink-0 items-center justify-center rounded-full bg-stone-100 text-sm font-semibold text-ink-2">
-              {initials(person.name)}
-            </span>
-            <div>
-              <p className="font-medium text-ink">{person.name}</p>
-              <p className="text-small text-ink-2">{person.role}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
+        <div className="lg:col-span-5">
+          <h2 className="text-h1 font-medium text-ink lg:text-h1-lg">Built at Lahore Garrison University</h2>
+          <p className="mt-3 text-lead text-ink-2">Department of Computer Science</p>
+        </div>
+        <ul className="grid gap-x-8 sm:grid-cols-2 lg:col-span-7">
+          {PEOPLE.map((person) => (
+            <li key={person.name} className="flex items-center gap-4 border-t border-stone py-4">
+              <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-stone-100 text-sm font-medium text-ink-2">
+                {initials(person.name)}
+              </span>
+              <div>
+                <p className="font-medium text-ink">{person.name}</p>
+                <p className="text-small text-ink-2">{person.role}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </Section>
   );
 }
@@ -124,7 +129,7 @@ export function SiteFooter() {
         <div className="grid gap-8 sm:grid-cols-3">
           {FOOTER_GROUPS.map((group) => (
             <nav key={group.title} aria-label={group.title}>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.06em] text-ink-2">{group.title}</p>
+              <p className="mb-3 text-sm font-medium text-ink-2">{group.title}</p>
               <ul className="flex flex-col gap-2">
                 {group.links.map((link) => (
                   <li key={link.href}>

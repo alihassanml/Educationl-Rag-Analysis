@@ -40,7 +40,7 @@ function Mark({ cell }: { cell: Cell }) {
 export function Comparison() {
   return (
     <Section id="why" tone="muted">
-      <SectionHeading overline="Why EduRAG" title="One study loop instead of four separate tools" lead="General chatbots don’t use your syllabus, notes tools don’t run quizzes, and quiz apps don’t build from your files" />
+      <SectionHeading title="One study loop instead of four separate tools" lead="General chatbots don’t use your syllabus, notes tools don’t run quizzes, and quiz apps don’t build from your files" />
 
       <div className="hidden overflow-hidden rounded-panel border border-stone bg-paper md:block">
         <table className="w-full border-collapse text-sm">

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, MessageCircleQuestion, Trash2 } from "lucide-react";
+import { MessageCircleQuestion, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Menu, type MenuItem } from "@/components/ui/menu";
@@ -74,8 +74,16 @@ export function DocumentList({ documents, onDeleted }: Props) {
       ) : null}
 
       <div className="hidden overflow-hidden rounded-panel border border-stone bg-paper sm:block">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full table-fixed border-collapse text-sm">
           <caption className="sr-only">Your uploaded documents</caption>
+          {/* The title is what a student scans for, so it gets the room */}
+          <colgroup>
+            <col className="w-[44%]" />
+            <col className="w-[12%]" />
+            <col className="w-[16%]" />
+            <col className="w-[20%]" />
+            <col className="w-16" />
+          </colgroup>
           <thead className="bg-stone text-left text-ink">
             <tr>
               <th scope="col" className="px-4 py-3 font-medium">Title</th>
@@ -88,11 +96,10 @@ export function DocumentList({ documents, onDeleted }: Props) {
           <tbody>
             {documents.map((doc) => (
               <tr key={doc.id} className="h-12 border-t border-stone align-middle">
-                <td className="min-w-0 max-w-0 px-4 py-2">
-                  <div className="flex items-center gap-2">
-                    <FileText size={20} strokeWidth={1.75} className="shrink-0 text-ink-2" aria-hidden="true" />
-                    <span className="truncate font-medium text-ink">{doc.title}</span>
-                  </div>
+                <td className="px-4 py-2">
+                  <p className="truncate font-medium text-ink" title={doc.title}>
+                    {doc.title}
+                  </p>
                   <FailureNote doc={doc} />
                 </td>
                 <td className="px-4 py-2 text-ink-2">{pagesText(doc)}</td>

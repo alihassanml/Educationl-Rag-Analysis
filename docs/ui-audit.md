@@ -144,3 +144,12 @@ Kept: the clay left border on the next-step card and its caps label (brief 12.2)
 | 8 Nested cards | `sources-panel.tsx` white bordered source cards inside the muted Sources panel | `SourceCard` has a `flat` variant: a left rule and the highlighted passage, no card |
 
 Kept: the suggestion cards and the empty Sources panel (brief 13.1 and 13.3), the stone question bubble, and sources shown above the answer text (brief 20.6).
+
+### Library
+
+| Tell | Where (before) | Fix |
+| --- | --- | --- |
+| 11 Decorative icons | `document-list.tsx` a file icon on every row (every document is a PDF, so it says nothing) and an icon beside the "Upload PDF" label in `library-view.tsx` | Removed. The 24px icon in the empty dropzone stays (brief 7) |
+| Hierarchy | The table used automatic column widths, so the title, the one thing a student scans for, was the narrowest column and was cut off ("Intro to Program…") | Fixed column widths: title 44%, pages 12%, status 16%, uploaded 20% |
+
+Kept: the stone header fill, the status chip (a status, so allowed by tell 10) and stacked cards below 640px (brief 14.1).

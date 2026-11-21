@@ -1,6 +1,5 @@
 "use client";
 
-import { FileUp } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,6 @@ export function LibraryView() {
         description="PDFs you upload are private to your account"
         action={
           <Button onClick={upload.choose} loading={upload.uploading}>
-            {upload.uploading ? null : <FileUp size={16} strokeWidth={1.75} aria-hidden="true" />}
             Upload PDF
           </Button>
         }

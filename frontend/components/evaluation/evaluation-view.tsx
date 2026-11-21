@@ -8,6 +8,7 @@ import { Panel } from "@/components/ui/panel";
 import { evalApi } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { ComparePanel } from "./compare-panel";
+import { LiveFeedback } from "./live-feedback";
 import { RunList } from "./run-list";
 import { StartRunPanel } from "./start-run-panel";
 import { StatGrid } from "./stat-grid";
@@ -70,6 +71,7 @@ export function EvaluationView() {
               </Panel>
             )}
             <ComparePanel runs={completed} />
+            <LiveFeedback />
           </>
         ) : null}
       </div>

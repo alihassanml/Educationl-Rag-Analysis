@@ -14,7 +14,7 @@ export class ApiError extends Error {
 }
 
 type RequestOptions = {
-  method?: "GET" | "POST" | "DELETE";
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
   json?: unknown;
   formData?: FormData;
   signal?: AbortSignal;
@@ -28,6 +28,41 @@ function redirectToLogin(): void {
     // A full page load is deliberate here: it discards all client state of the ended session.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     .finally(() => window.location.assign("/login?expired=1"));
+}
+
+async function failFromResponse(response: Response, path: string): Promise<never> {
+  const payload = await response.json().catch(() => null);
+  const error = payload?.error;
+  if (response.status === 401 && !path.startsWith("/auth/")) redirectToLogin();
+  throw new ApiError(
+    error?.message ?? "Something went wrong. Please try again.",
+    response.status,
+    error?.code ?? "unknown_error",
+    Array.isArray(error?.details) ? error.details : [],
+  );
+}
+
+const networkError = () => new ApiError("Could not reach the server. Check your connection and try again.", 0, "network_error");
+
+/** POST JSON and return the response so the caller can read its body as a stream. Errors that arrive
+ *  before streaming starts (404, 422, 401) are thrown as ApiError, like any other request. */
+export async function apiStream(path: string, json: unknown, signal?: AbortSignal): Promise<Response> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      body: JSON.stringify(json),
+      signal,
+      credentials: "include",
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    throw networkError();
+  }
+  if (!response.ok) return failFromResponse(response, path);
+  if (!response.body) throw networkError();
+  return response;
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -46,21 +81,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     response = await fetch(`${BASE_URL}${path}`, { method, headers, body, signal, credentials: "include" });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
-    throw new ApiError("Could not reach the server. Check your connection and try again.", 0, "network_error");
+    throw networkError();
   }
 
   if (response.status === 204) return undefined as T;
-
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) {
-    const error = payload?.error;
-    if (response.status === 401 && !path.startsWith("/auth/")) redirectToLogin();
-    throw new ApiError(
-      error?.message ?? "Something went wrong. Please try again.",
-      response.status,
-      error?.code ?? "unknown_error",
-      Array.isArray(error?.details) ? error.details : [],
-    );
-  }
-  return payload as T;
+  if (!response.ok) return failFromResponse(response, path);
+  return (await response.json().catch(() => null)) as T;
 }

@@ -1,8 +1,9 @@
 import { SourceCard } from "@/components/ui/citation";
-import { pageText, type Source } from "./sources";
+import type { Source } from "@/lib/chat-state";
+import { pageText } from "./sources";
 
-/** Sources of the selected answer. The API returns document and page for each citation (no snippet yet),
- *  so each card shows exactly that. */
+/** Sources of the selected answer, each with the passage that was found. A source whose document was
+ *  deleted keeps its title and passage and says so. */
 export function SourcesList({ sources, activeMarker }: { sources: Source[]; activeMarker: number | null }) {
   if (sources.length === 0) {
     return <p className="text-sm text-ink-2">Sources for an answer appear here once you ask a question</p>;
@@ -10,8 +11,14 @@ export function SourcesList({ sources, activeMarker }: { sources: Source[]; acti
   return (
     <ul className="flex flex-col gap-3">
       {sources.map((source) => (
-        <li key={source.key}>
-          <SourceCard marker={source.marker} title={source.document_title} page={pageText(source.page_number)} active={source.marker === activeMarker} />
+        <li key={source.marker} id={`source-${source.marker}`}>
+          <SourceCard
+            marker={source.marker}
+            title={source.title}
+            page={source.deleted ? `${pageText(source.page)} · Source deleted` : pageText(source.page)}
+            snippet={source.snippet || undefined}
+            active={source.marker === activeMarker}
+          />
         </li>
       ))}
     </ul>

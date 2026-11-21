@@ -16,6 +16,8 @@ import type { EvalMetrics, EvalResult, EvalRun } from "@/types/api";
 
 vi.mock("@/lib/api", () => ({
   evalApi: { datasets: vi.fn(), startRun: vi.fn(), runs: vi.fn(), run: vi.fn(), results: vi.fn(), compare: vi.fn() },
+  // The Live feedback list is part of this page but is tested in live-feedback.test.tsx
+  tutorApi: { recentFeedback: vi.fn(() => new Promise(() => undefined)) },
 }));
 vi.mock("@/components/evaluation/hit-rate-chart", () => ({ HitRateChart: () => <div>hit rate chart</div> }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard", useRouter: () => ({ push: vi.fn() }) }));

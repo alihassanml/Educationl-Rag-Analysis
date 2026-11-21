@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, FileText } from "lucide-react";
+import { ArrowUp, FileText, Square } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import { cn } from "@/lib/cn";
 import { useDismiss } from "@/lib/use-dismiss";
@@ -11,7 +11,9 @@ type Props = {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
-  busy: boolean;
+  /** An answer is being written: Send becomes Stop, and sending another question waits. */
+  streaming: boolean;
+  onStop: () => void;
   documents: StudyDocument[];
   scope: string[];
   onScopeChange: (ids: string[]) => void;
@@ -21,7 +23,7 @@ type Props = {
 const MIN_QUESTION_LENGTH = 3;
 
 /** Sticky composer: auto-growing textarea (1 to 6 lines). Enter sends, Shift+Enter adds a line. */
-export function Composer({ value, onChange, onSubmit, busy, documents, scope, onScopeChange, inputRef }: Props) {
+export function Composer({ value, onChange, onSubmit, streaming, onStop, documents, scope, onScopeChange, inputRef }: Props) {
   const [scopeOpen, setScopeOpen] = useState(false);
   const scopeRoot = useRef<HTMLDivElement>(null);
   useDismiss(scopeRoot, scopeOpen, () => setScopeOpen(false));
@@ -33,7 +35,7 @@ export function Composer({ value, onChange, onSubmit, busy, documents, scope, on
     el.style.height = `${Math.min(el.scrollHeight, 144)}px`; // 6 lines of 24px
   }, [value, inputRef]);
 
-  const canSend = !busy && value.trim().length >= MIN_QUESTION_LENGTH;
+  const canSend = !streaming && value.trim().length >= MIN_QUESTION_LENGTH;
 
   function submit(event?: FormEvent) {
     event?.preventDefault();
@@ -50,7 +52,7 @@ export function Composer({ value, onChange, onSubmit, busy, documents, scope, on
   const scopeLabel = scope.length === 0 ? "All my documents" : `${scope.length} ${scope.length === 1 ? "document" : "documents"}`;
 
   return (
-    <form onSubmit={submit} className="sticky bottom-4 z-10 rounded-composer border border-stone bg-paper p-3 shadow-md">
+    <form onSubmit={submit} className="rounded-composer border border-stone bg-paper p-3 shadow-md">
       <label htmlFor="question" className="sr-only">
         Your question
       </label>
@@ -72,7 +74,7 @@ export function Composer({ value, onChange, onSubmit, busy, documents, scope, on
             aria-expanded={scopeOpen}
             aria-controls="scope-popover"
             onClick={() => setScopeOpen((v) => !v)}
-            disabled={busy}
+            disabled={streaming}
             className={cn(
               "inline-flex h-8 items-center gap-1.5 rounded-full border border-stone-strong bg-paper px-3 text-small text-ink hover:bg-stone-100 disabled:opacity-50",
               scope.length > 0 && "border-clay bg-clay-soft text-clay-stronger",
@@ -87,14 +89,25 @@ export function Composer({ value, onChange, onSubmit, busy, documents, scope, on
             </div>
           ) : null}
         </div>
-        <button
-          type="submit"
-          disabled={!canSend}
-          aria-label="Send question"
-          className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-clay-strong text-paper transition-colors duration-[120ms] hover:bg-clay-stronger disabled:cursor-not-allowed disabled:opacity-50 max-sm:size-10"
-        >
-          <ArrowUp size={18} strokeWidth={1.75} aria-hidden="true" />
-        </button>
+        {streaming ? (
+          <button
+            type="button"
+            onClick={onStop}
+            aria-label="Stop answer"
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-stone-strong bg-paper text-ink transition-colors duration-[120ms] hover:bg-stone-100 max-sm:size-10"
+          >
+            <Square size={14} strokeWidth={1.75} fill="currentColor" aria-hidden="true" />
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={!canSend}
+            aria-label="Send question"
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-clay-strong text-paper transition-colors duration-[120ms] hover:bg-clay-stronger disabled:cursor-not-allowed disabled:opacity-50 max-sm:size-10"
+          >
+            <ArrowUp size={18} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        )}
       </div>
     </form>
   );

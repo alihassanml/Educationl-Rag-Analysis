@@ -1,4 +1,5 @@
-import { apiRequest } from "./api-client";
+import { apiRequest, apiStream } from "./api-client";
+import { readSse, type SseEvent } from "./sse";
 import type {
   AskResponse,
   AttemptResult,
@@ -9,12 +10,17 @@ import type {
   EvalResultList,
   EvalRun,
   EvalRunList,
+  FeedbackItem,
+  FeedbackReason,
+  FeedbackRating,
   GenerateQuizInput,
   ProgressSummary,
   QuizDetail,
   QuizList,
   StartEvalRunInput,
   StudyDocument,
+  ThreadDetail,
+  ThreadSummary,
   TopicProgressList,
   User,
 } from "@/types/api";
@@ -38,11 +44,40 @@ export const documentsApi = {
   remove: (id: string) => apiRequest<void>(`/documents/${id}`, { method: "DELETE" }),
 };
 
+const scopeOf = (documentIds: string[] | null) => (documentIds && documentIds.length > 0 ? documentIds : null);
+
 export const tutorApi = {
+  threads: (signal?: AbortSignal) => apiRequest<ThreadSummary[]>("/tutor/threads?limit=100", { signal }),
+  createThread: () => apiRequest<ThreadSummary>("/tutor/threads", { method: "POST", json: {} }),
+  thread: (id: string, signal?: AbortSignal) => apiRequest<ThreadDetail>(`/tutor/threads/${id}`, { signal }),
+  renameThread: (id: string, title: string) =>
+    apiRequest<ThreadSummary>(`/tutor/threads/${id}`, { method: "PATCH", json: { title } }),
+  deleteThread: (id: string) => apiRequest<void>(`/tutor/threads/${id}`, { method: "DELETE" }),
+  /** Send a question and read the answer as it is written. Aborting the signal is how the student stops it. */
+  async streamMessage(
+    threadId: string,
+    question: string,
+    documentIds: string[] | null,
+    onEvent: (event: SseEvent) => void,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    const response = await apiStream(
+      `/tutor/threads/${threadId}/messages`,
+      { question, document_ids: scopeOf(documentIds) },
+      signal,
+    );
+    for await (const event of readSse(response.body!)) onEvent(event);
+  },
+  feedback: (messageId: string, rating: FeedbackRating, reason?: FeedbackReason) =>
+    apiRequest<{ message_id: string; rating: FeedbackRating; reason: FeedbackReason | null }>(
+      `/tutor/messages/${messageId}/feedback`,
+      { method: "POST", json: { rating, reason: reason ?? null } },
+    ),
+  recentFeedback: (signal?: AbortSignal) => apiRequest<FeedbackItem[]>("/tutor/feedback?limit=50", { signal }),
   ask: (question: string, documentIds: string[] | null) =>
     apiRequest<AskResponse>("/tutor/ask", {
       method: "POST",
-      json: { question, document_ids: documentIds && documentIds.length > 0 ? documentIds : null },
+      json: { question, document_ids: scopeOf(documentIds) },
     }),
 };
 

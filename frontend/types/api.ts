@@ -214,3 +214,45 @@ export type EvalResultList = { items: EvalResult[]; total: number };
 export type EvalCompare = { runs: EvalRun[]; config_diff: Record<string, unknown[]> };
 
 export type StartEvalRunInput = { dataset_id: string; retrieval_mode?: EvalMode; min_similarity?: number };
+
+// --- Tutor chat (docs/UI_REDESIGN.md section 20) ---
+
+export type ThreadSummary = { id: string; title: string; created_at: string; updated_at: string };
+
+export type ChatCitation = {
+  marker: number;
+  chunk_id: string | null;
+  document_id: string | null;
+  document_title: string;
+  page_number: number | null;
+  snippet: string;
+  source_deleted: boolean;
+};
+
+export type FeedbackRating = "up" | "down";
+export type FeedbackReason = "wrong" | "missing_source" | "unclear";
+
+export type ChatMessageDto = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  standalone_query: string | null;
+  rewrite_used: boolean;
+  abstained: boolean;
+  status: "complete" | "stopped" | "failed";
+  created_at: string;
+  citations: ChatCitation[];
+  feedback: FeedbackRating | null;
+};
+
+export type ThreadDetail = ThreadSummary & { messages: ChatMessageDto[] };
+
+export type FeedbackItem = {
+  message_id: string;
+  rating: FeedbackRating;
+  reason: FeedbackReason | null;
+  question: string;
+  answer: string;
+  abstained: boolean;
+  created_at: string;
+};

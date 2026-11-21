@@ -43,8 +43,8 @@ export const FEATURES: Feature[] = [
     landing: {
       overline: "Study tutor",
       title: "Ask a question and check the source",
-      body: "Answers are written only from the passages found in your own uploads. Every answer lists the document and page it came from, and when your notes do not cover a question it says so instead of guessing.",
-      bullets: ["Answers cite the document and page", "Says “Not found in your material” when unsure", "Searches only your own files"],
+      body: "Answers are written only from the passages found in your own uploads. The sources appear before the answer, every answer lists the document and page it came from, and when your notes do not cover a question it says so instead of guessing.",
+      bullets: ["Ask follow-up questions, see sources before the answer", "Says “Not found in your material” when unsure", "Chats are saved, and you can stop an answer at any time"],
     },
   },
   {
@@ -89,8 +89,10 @@ export const FEATURES: Feature[] = [
       bullets: ["Hit rate, MRR and abstention accuracy", "Per-question drill-down", "Dense versus hybrid retrieval compared"],
     },
   },
-  { id: "chat-history", status: "planned", label: "Chat history and follow-up questions", roadmap: "Keep conversations and ask follow-up questions in the study tutor" },
-  { id: "streaming", status: "planned", label: "Streamed answers", roadmap: "Watch the answer appear with its sources shown first" },
+  // Part of the study tutor: no nav entry or landing section of their own, but recorded as live
+  { id: "chat-history", status: "live", label: "Chat history" },
+  { id: "follow-ups", status: "live", label: "Follow-up questions" },
+  { id: "streaming", status: "live", label: "Streamed answers" },
   { id: "diagnostic", status: "planned", label: "Diagnostic test", roadmap: "A short starting test that sets your first topic levels" },
   { id: "ingestion", status: "planned", label: "More file types", roadmap: "Upload DOCX files and YouTube lectures, not only PDFs" },
   { id: "teacher-style", status: "planned", label: "Teacher-style mode", roadmap: "Answers in the wording and structure your teacher uses" },

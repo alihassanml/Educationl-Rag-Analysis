@@ -58,13 +58,64 @@ test("uploading a PDF indexes it and rejects non-PDFs", async () => {
   await expect(row.getByText("2 pages")).toBeVisible();
 });
 
-test("the tutor answers with sources and admits when material has no answer", async () => {
-  await page.getByRole("link", { name: "Study tutor" }).first().click();
-  await page.getByLabel("Your question").fill("What does a recursive function need to stop calling itself?");
-  await page.getByRole("button", { name: "Send question" }).click();
-  await expect(page.getByText("According to your notes")).toBeVisible();
-  await expect(page.getByText("recursion-notes, page 1")).toBeVisible();
+const FIRST_QUESTION = "What does a recursive function need to stop calling itself?";
 
+async function openHistory() {
+  // The history panel sits inline from 1536px; below that it opens as a drawer
+  const drawer = page.getByRole("dialog", { name: "History" });
+  if (!(await drawer.isVisible())) await page.getByRole("button", { name: "History" }).click();
+  return drawer;
+}
+
+test("a new chat streams an answer with a citation that opens the source", async () => {
+  await page.getByRole("link", { name: "Study tutor" }).first().click();
+  await page.getByLabel("Your question").fill(FIRST_QUESTION);
+  await page.getByRole("button", { name: "Send question" }).click();
+
+  // Sources arrive first, then the text; the address follows the saved chat
+  const sources = page.getByRole("list", { name: "Sources for this answer" });
+  await expect(sources.getByRole("button", { name: /recursion-notes/ })).toBeVisible();
+  await expect(page.getByText("According to your notes")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy answer" })).toBeVisible(); // the answer has finished
+  await expect(page).toHaveURL(/\/tutor\/[0-9a-f-]{36}$/);
+
+  // Opening the citation shows the passage in the sources panel
+  await page.getByRole("button", { name: /^Source 1/ }).first().click();
+  const panel = page.getByRole("complementary", { name: "Sources" });
+  await expect(panel.getByText("recursion-notes")).toBeVisible();
+  await expect(panel.getByText("Page 1")).toBeVisible();
+});
+
+test("a follow-up shows what was searched, and the chat survives a reload, rename and delete", async () => {
+  await page.getByLabel("Your question").fill("Why does it need that?");
+  await page.getByRole("button", { name: "Send question" }).click();
+  await expect(page.getByText(/^Searched your material for:/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy answer" })).toHaveCount(2);
+
+  await page.reload();
+  await expect(page.locator("main ol p").filter({ hasText: FIRST_QUESTION })).toBeVisible(); // the saved question, not the history link
+  await expect(page.getByText(/^Searched your material for:/)).toBeVisible();
+  await expect(page.getByRole("list", { name: "Sources for this answer" }).first()).toBeVisible();
+  await expect(page.getByText("According to your notes").first()).toBeVisible();
+
+  let drawer = await openHistory();
+  await drawer.getByRole("button", { name: /^Options for / }).click();
+  await drawer.getByRole("menuitem", { name: "Rename" }).click();
+  await drawer.getByRole("textbox", { name: "Chat title" }).fill("Recursion revision");
+  await page.keyboard.press("Enter");
+  await expect(drawer.getByRole("link", { name: "Recursion revision" })).toBeVisible();
+
+  await drawer.getByRole("button", { name: "Options for Recursion revision" }).click();
+  await drawer.getByRole("menuitem", { name: "Delete" }).click();
+  await page.getByRole("button", { name: "Delete chat" }).click();
+  await expect(page).toHaveURL(/\/tutor$/);
+  drawer = await openHistory();
+  await expect(drawer.getByRole("link", { name: "Recursion revision" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+});
+
+test("a question the material cannot answer is declined in a new chat", async () => {
+  await page.goto("/tutor");
   await page.getByLabel("Your question").fill("How do volcanoes erupt in Iceland?");
   await page.getByRole("button", { name: "Send question" }).click();
   await expect(page.getByText("Not found in your material")).toBeVisible();

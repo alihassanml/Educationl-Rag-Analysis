@@ -55,7 +55,7 @@ test("capture landing images and sweep every screen", async ({ browser }) => {
   await page.getByRole("link", { name: "Study tutor" }).first().click();
   await page.getByLabel("Your question").fill("What does a recursive function need to stop calling itself?");
   await page.getByRole("button", { name: "Send question" }).click();
-  await page.getByText("recursion-notes, page 1").waitFor();
+  await page.getByRole("button", { name: "Copy answer" }).waitFor(); // the answer has finished
   // Crop to the conversation, sources panel and composer (no empty space below)
   const mainBox = await page.locator("main:visible").boundingBox();
   const composerBox = await page.locator("form").filter({ has: page.getByLabel("Your question") }).boundingBox();
@@ -65,6 +65,7 @@ test("capture landing images and sweep every screen", async ({ browser }) => {
     clip: { x: mainBox.x, y: mainBox.y, width: mainBox.width, height: composerBox.y + composerBox.height - mainBox.y + 24 },
   });
 
+  await page.goto("/tutor"); // a new chat: a second question in the same chat would be treated as a follow-up
   await page.getByLabel("Your question").fill("How do volcanoes erupt in Iceland?");
   await page.getByRole("button", { name: "Send question" }).click();
   await page.getByRole("heading", { name: "Not found in your material" }).waitFor();

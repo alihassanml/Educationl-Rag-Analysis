@@ -28,6 +28,20 @@ describe("feature registry", () => {
     }
   });
 
+  it("lists chat history, follow-up questions and streamed answers as live, not on the roadmap", () => {
+    const live = liveFeatures().map((f) => f.id);
+    expect(live).toEqual(expect.arrayContaining(["chat-history", "follow-ups", "streaming"]));
+    const roadmap = plannedFeatures().map((f) => f.id);
+    for (const id of ["chat-history", "follow-ups", "streaming"]) expect(roadmap).not.toContain(id);
+  });
+
+  it("describes the tutor with follow-ups and sources shown before the answer", () => {
+    const tutor = FEATURES.find((f) => f.id === "tutor")!;
+    const copy = [tutor.landing!.body, ...tutor.landing!.bullets].join(" ").toLowerCase();
+    expect(copy).toContain("follow-up");
+    expect(copy).toContain("before the answer");
+  });
+
   it("writes headings and labels without a trailing full stop", () => {
     for (const feature of FEATURES) {
       expect(feature.label.endsWith(".")).toBe(false);

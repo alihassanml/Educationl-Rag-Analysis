@@ -7,18 +7,21 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-2">
       <main className="bg-paper">
-        <PageContainer className="flex min-h-screen flex-col">
-          <Link href="/" className="text-lg font-semibold tracking-tight text-ink">
-            EduRAG
-          </Link>
-          <div className="flex flex-1 items-center py-10">
-            <div className="mx-auto w-full max-w-[400px]">{children}</div>
+        <PageContainer className="flex min-h-screen items-center">
+          {/* One column: the logo, the heading and the fields share a left edge */}
+          <div className="mx-auto w-full max-w-[400px]">
+            <Link href="/" className="mb-12 inline-block text-lg font-semibold tracking-tight text-ink">
+              EduRAG
+            </Link>
+            {children}
           </div>
         </PageContainer>
       </main>
-      <aside aria-label="About EduRAG" className="hidden flex-col items-center justify-center gap-6 bg-stone-50 p-12 lg:flex">
-        <HeroIllustration animated={false} className="max-w-[460px]" />
-        <p className="text-lead text-ink">Every answer shows where it came from</p>
+      <aside aria-label="About EduRAG" className="hidden items-center justify-center bg-stone-50 p-12 lg:flex">
+        <div className="w-full max-w-[460px]">
+          <HeroIllustration animated={false} />
+          <p className="mt-6 text-lead text-ink">Every answer shows where it came from</p>
+        </div>
       </aside>
     </div>
   );

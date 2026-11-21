@@ -116,3 +116,11 @@ Decisions that follow the brief rather than the tells: the clay accent phrase in
 | 6 / "real UI as the visual" | Feature images were whole screens scaled until the text was about 7px, and the sample PDF produced "Recursion Recursion is a method" in a snippet | Tight crops of the conversation and sources, evaluation run page, quiz result and progress topics. Clean demo notes. Source snippets now end at a word boundary with an ellipsis (`chat_stream_service.make_snippet`, with a test) |
 
 Not changed: product images are small on a 390px screen (they are desktop screenshots).
+
+### Auth (`/login`, `/register`)
+
+| Tell | Where (before) | Fix |
+| --- | --- | --- |
+| 7 Centred text, floating layout | `(auth)/layout.tsx` the logo sat at the page edge (x 32) while the form sat at x 160, so nothing shared a left edge. The caption under the illustration was centred in an empty panel | Logo, heading and fields share one 400px column. The illustration and its caption share one left-aligned block |
+
+The split layout, the static illustration and the caption wording are specified in section 11 and stay. No other tells found: no gradients, no decorative icons, one primary button.

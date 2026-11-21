@@ -13,8 +13,9 @@ export function TopicRow({ topic, compact = false }: { topic: TopicProgress; com
         <TopicStatusLabel status={topic.status} />
       </div>
       <ProgressBar value={percent ?? 0} label={`${topic.topic_name} accuracy`} />
+      {/* The bar already shows the percentage, so it is not repeated here */}
       <p className="text-small text-ink-2">
-        {percent ?? 0}% · {topic.correct_answers} of {topic.questions_attempted} correct
+        {topic.correct_answers} of {topic.questions_attempted} correct
       </p>
       {compact ? null : (
         <>

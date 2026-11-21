@@ -165,3 +165,11 @@ Kept: the stone header fill, the status chip (a status, so allowed by tell 10) a
 | 17.5 Stat shown twice | "3 / 3" and then "3 of 3 correct (100%)" | "3 of 3 correct" once at metric size, with the percentage under it |
 
 A test for the result screen was added first (`tests/quiz-result.test.tsx`).
+
+### Progress
+
+| Tell | Where (before) | Fix |
+| --- | --- | --- |
+| 17.5 Stat shown twice | `topic-row.tsx` the stacked mobile and dashboard rows printed "67%" beside the bar and again in "67% · 4 of 6 correct" | The bar carries the percentage, the line under it says only "4 of 6 correct". The desktop table already separated them |
+
+No other tells: the table is the right pattern for a topic list, chips are status only, there are no decorative icons, and clay appears only in the bar. The test that checked the combined text now checks the bar label and the counts separately, with the reason in a comment.

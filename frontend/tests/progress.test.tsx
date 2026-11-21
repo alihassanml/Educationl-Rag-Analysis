@@ -24,7 +24,9 @@ beforeEach(() => vi.clearAllMocks());
 describe("TopicRow", () => {
   it("shows accuracy as text, not only as a bar, plus the explainable recommendation", () => {
     render(<TopicRow topic={topic} />);
-    expect(screen.getByText("40% · 2 of 5 correct")).toBeInTheDocument();
+    // The percentage sits beside the bar as text, and the counts are written out once, not repeated with it
+    expect(screen.getByText("40%")).toBeInTheDocument();
+    expect(screen.getByText("2 of 5 correct")).toBeInTheDocument();
     expect(screen.getByText("Needs revision")).toBeInTheDocument();
     expect(screen.getByText(/2\/5 correctly on Recursion/)).toBeInTheDocument();
   });

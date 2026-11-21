@@ -1,43 +1,31 @@
-import { Check } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { ButtonLink } from "@/components/ui/button";
-import { HeroIllustration } from "./hero-illustration";
-
-const TRUST = ["Private to your account", "Page-level citations", "Says when it doesn’t know"];
+import { HeroShot } from "./hero-shot";
+import { Reveal } from "./reveal";
 
 export function Hero() {
   return (
     <section className="bg-paper">
-      <PageContainer padded={false} className="grid min-h-[560px] items-center gap-12 py-12 lg:grid-cols-2 lg:py-16">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.06em] text-ink-2">Final year project · Lahore Garrison University</p>
-          <h1 className="mt-4 text-display font-medium tracking-[-0.02em] text-ink lg:text-display-lg">
-            Study from your own notes, with <span className="text-clay">answers you can check</span>
-          </h1>
-          <p className="mt-6 max-w-[52ch] text-lead text-ink-2">
-            Upload your PDFs and EduRAG becomes a private tutor. Every answer cites the document and page it came from, it tells you when your notes don&apos;t
-            cover a question, and your quiz results decide what you revise next
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <ButtonLink href="/register" size="lg">
-              Get started
-            </ButtonLink>
-            <ButtonLink href="#how-it-works" variant="secondary" size="lg">
-              See how it works
-            </ButtonLink>
-          </div>
-          <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-small text-ink-2">
-            {TRUST.map((item) => (
-              <li key={item} className="flex items-center gap-1.5">
-                <Check size={14} strokeWidth={1.75} className="text-success" aria-hidden="true" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="flex justify-center lg:justify-end">
-          <HeroIllustration />
-        </div>
+      <PageContainer padded={false} className="flex flex-col items-center pt-20 text-center lg:pt-32">
+        <Reveal className="rounded-full border border-stone bg-paper px-4 py-1.5 text-sm text-ink-2">Built only from your own PDFs</Reveal>
+        <Reveal as="h1" delay={80} className="mt-8 text-balance text-[clamp(2.25rem,5vw,4rem)] font-medium leading-[1.02] tracking-[-0.035em] text-ink">
+          Study from your own notes
+          <span className="block text-clay">Check every answer</span>
+        </Reveal>
+        <Reveal as="p" delay={160} className="mt-6 max-w-[40ch] text-balance text-lead text-ink-2 lg:text-[20px] lg:leading-8">
+          Upload your PDFs and ask questions. Every answer shows the page it came from.
+        </Reveal>
+        <Reveal delay={240} className="mt-8 flex flex-wrap justify-center gap-3">
+          <ButtonLink href="/register" size="lg">
+            Get started
+          </ButtonLink>
+          <ButtonLink href="#how-it-works" variant="secondary" size="lg">
+            See how it works
+          </ButtonLink>
+        </Reveal>
+        <Reveal delay={320} className="dot-grid mt-16 w-full overflow-hidden rounded-[28px] border border-stone bg-stone-50 px-4 pt-10 sm:px-12 sm:pt-14 lg:mt-20 lg:px-24">
+          <HeroShot />
+        </Reveal>
       </PageContainer>
     </section>
   );

@@ -1,59 +1,84 @@
-import { existsSync } from "node:fs";
-import path from "node:path";
-import { liveFeatures } from "@/lib/features";
+import { FileText, Lock } from "lucide-react";
+import Image from "next/image";
+import type { ReactNode } from "react";
+import { PageContainer } from "@/components/layout/page-container";
 import { cn } from "@/lib/cn";
-import { Section } from "./section";
+import { Reveal } from "./reveal";
 
-// Real screenshots captured with Playwright into public/landing (step 9 of the brief).
-// A section shows its image only if the file exists, so nothing is ever mocked up.
-const IMAGES: Record<string, { file: string; alt: string }[]> = {
-  tutor: [
-    { file: "tutor-answer.png", alt: "The study tutor answering a question with a source panel listing document and page" },
-    { file: "tutor-not-found.png", alt: "The study tutor saying a question is not found in the student’s material" },
-  ],
-  quizzes: [{ file: "quiz-result.png", alt: "A quiz result with explanations and source pages" }],
-  progress: [{ file: "progress.png", alt: "Progress page with weak topics and the rule used to find them" }],
-  evaluation: [{ file: "evaluation.png", alt: "Evaluation Lab with retrieval metrics and the abstention matrix" }],
-};
+/** A big heading with one short sentence: the only text any feature gets. */
+function Copy({ title, body, large = false }: { title: string; body: string; large?: boolean }) {
+  return (
+    <div className="flex flex-col justify-center gap-4 p-8 lg:p-14">
+      <h2 className={cn("text-balance font-medium tracking-[-0.03em] text-ink", large ? "text-[clamp(2.25rem,4.5vw,3.5rem)] leading-[1.06]" : "text-[clamp(1.75rem,3vw,2.5rem)] leading-[1.1]")}>
+        {title}
+      </h2>
+      <p className="max-w-[34ch] text-balance text-lead text-ink-2">{body}</p>
+    </div>
+  );
+}
 
-function available(id: string) {
-  return (IMAGES[id] ?? []).filter((image) => existsSync(path.join(process.cwd(), "public", "landing", image.file)));
+function Window({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn("overflow-hidden rounded-xl border border-stone bg-paper shadow-lg", className)}>{children}</div>;
 }
 
 export function Features() {
-  const sections = liveFeatures().filter((feature) => feature.landing);
   return (
-    <div id="features">
-      {sections.map((feature, i) => {
-        const copy = feature.landing!;
-        const images = available(feature.id);
-        const flip = images.length > 0 && i % 2 === 1;
-        return (
-          <Section key={feature.id} id={feature.id === "evaluation" ? "evaluation" : undefined} tone={i % 2 === 0 ? "paper" : "muted"} className={i === 0 ? "lg:py-24" : "lg:py-20"}>
-            <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
-              <div className={cn("lg:sticky lg:top-24", images.length > 0 ? "lg:col-span-5" : "lg:col-span-7", flip && "lg:order-2")}>
-                <h2 className="text-h1 font-medium text-ink lg:text-h1-lg">{copy.title}</h2>
-                <p className="mt-4 max-w-[60ch] text-base text-ink-2">{copy.body}</p>
-                <ul className="mt-6 divide-y divide-stone border-y border-stone">
-                  {copy.bullets.map((bullet) => (
-                    <li key={bullet} className="py-2.5 text-ink">
-                      {bullet}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              {images.length > 0 ? (
-                <div className="flex flex-col gap-4 lg:col-span-7">
-                  {images.map((image) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img key={image.file} src={`/landing/${image.file}`} alt={image.alt} loading="lazy" className="w-full rounded-panel border border-stone bg-paper" />
-                  ))}
-                </div>
-              ) : null}
+    <div id="features" className="scroll-mt-16">
+      {/* One large panel: text on the left, a real screenshot on a clay background on the right */}
+      <section className="bg-paper">
+        <PageContainer padded={false} className="pt-24 lg:pt-36">
+          <Reveal className="grid overflow-hidden rounded-[28px] border border-stone lg:grid-cols-2">
+            <Copy large title="It says when it doesn’t know" body="If your notes don’t cover a question, EduRAG tells you instead of guessing." />
+            <div className="flex items-center bg-clay p-8 lg:p-14">
+              <Window className="w-full">
+                <Image src="/landing/tutor-not-found.png" alt="The study tutor saying a question is not found in the student’s material" width={1272} height={572} className="h-auto w-full" />
+              </Window>
             </div>
-          </Section>
-        );
-      })}
+          </Reveal>
+        </PageContainer>
+      </section>
+
+      {/* Three joined rows with a visual beside each, like a bento grid */}
+      <section className="bg-paper">
+        <PageContainer padded={false} className="py-6 lg:py-8">
+          <Reveal className="overflow-hidden rounded-[28px] border border-stone">
+            <div className="grid border-b border-stone lg:grid-cols-2">
+              <Copy title="Quizzes from your own files" body="See the right answer, an explanation and the source page." />
+              <div className="dot-grid flex items-end justify-center bg-stone-50 px-8 pt-10 lg:border-l lg:border-stone lg:px-14">
+                <Window className="h-[300px] w-full rounded-b-none border-b-0">
+                  <Image src="/landing/quiz-result.png" alt="A quiz result with explanations and source pages" width={1584} height={1640} className="h-auto w-full" />
+                </Window>
+              </div>
+            </div>
+
+            <div className="grid border-b border-stone lg:grid-cols-2">
+              <div className="dot-grid order-2 flex items-center justify-center bg-stone-50 p-8 lg:order-1 lg:border-r lg:border-stone lg:p-6">
+                <Window className="w-full">
+                  <Image src="/landing/progress.png" alt="Progress page with accuracy for each topic and the rule used to find weak topics" width={2000} height={880} className="h-auto w-full" />
+                </Window>
+              </div>
+              <div className="order-1 lg:order-2">
+                <Copy title="Know what to revise next" body="Your quiz results point to the topics that need more work." />
+              </div>
+            </div>
+
+            <div className="grid lg:grid-cols-2">
+              <Copy title="Your notes stay yours" body="Files are private to your account. Nobody else can search them." />
+              <div className="dot-grid flex items-center justify-center bg-stone-50 p-12 lg:border-l lg:border-stone">
+                <div className="flex items-center gap-4">
+                  <span className="flex size-20 items-center justify-center rounded-2xl border border-stone bg-paper shadow-md">
+                    <FileText size={32} strokeWidth={1.5} className="text-ink-2" aria-hidden="true" />
+                  </span>
+                  <span aria-hidden="true" className="h-px w-10 bg-stone-strong" />
+                  <span className="flex size-20 items-center justify-center rounded-2xl bg-clay-strong shadow-md">
+                    <Lock size={32} strokeWidth={1.5} className="text-paper" aria-hidden="true" />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </PageContainer>
+      </section>
     </div>
   );
 }

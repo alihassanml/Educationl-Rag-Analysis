@@ -94,6 +94,28 @@ body {
     scroll-behavior: auto !important;
   }
 }
+/* Dotted panel background used behind landing screenshots */
+.dot-grid {
+  background-image: radial-gradient(circle, var(--stone) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Landing reveal (components/landing/reveal.tsx): content fades up once as it enters the viewport.
+   Only hidden when scripting is on and motion is allowed, so the page always reads without it. */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity 700ms var(--ease) var(--reveal-delay, 0ms),
+      transform 700ms var(--ease) var(--reveal-delay, 0ms);
+  }
+  [data-reveal][data-in="true"] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 
 /* Hero illustration (components/landing/hero-illustration.tsx): one pass on load, then static.
    Reduced motion is handled by the global rule above, which lands every element on its final frame. */

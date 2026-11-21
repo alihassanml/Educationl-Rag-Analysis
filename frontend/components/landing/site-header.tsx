@@ -3,7 +3,6 @@
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { PageContainer } from "@/components/layout/page-container";
 import { ButtonLink } from "@/components/ui/button";
 import { authApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -11,8 +10,6 @@ import { cn } from "@/lib/cn";
 const LINKS = [
   { label: "How it works", href: "#how-it-works" },
   { label: "Features", href: "#features" },
-  { label: "Why EduRAG", href: "#why" },
-  { label: "Evaluation", href: "#evaluation" },
   { label: "FAQ", href: "#faq" },
 ];
 
@@ -51,22 +48,22 @@ export function SiteHeader() {
 
   return (
     <header className={cn("sticky top-0 z-40 border-b bg-paper transition-shadow duration-[180ms]", scrolled ? "border-stone shadow-md" : "border-transparent")}>
-      <PageContainer padded={false} className="flex h-16 items-center justify-between gap-6">
-        <Link href="/" className="text-lg font-semibold tracking-tight text-ink">
+      <div className="flex h-16 w-full items-center justify-between gap-6 px-4 sm:px-6 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-8">
+        <Link href="/" className="justify-self-start text-lg font-semibold tracking-tight text-ink">
           EduRAG
         </Link>
         <nav aria-label="Sections" className="hidden lg:block">
-          <ul className="flex items-center gap-1">
+          <ul className="flex items-center gap-1 rounded-full border border-stone bg-paper p-1">
             {LINKS.map((link) => (
               <li key={link.href}>
-                <a href={link.href} className="rounded-control px-3 py-2 text-sm font-medium text-ink-2 hover:bg-stone-100 hover:text-ink">
+                <a href={link.href} className="block rounded-full px-4 py-1.5 text-sm font-medium text-ink-2 hover:bg-stone-100 hover:text-ink">
                   {link.label}
                 </a>
               </li>
             ))}
           </ul>
         </nav>
-        <div className="hidden items-center gap-2 lg:flex">{cta}</div>
+        <div className="hidden items-center justify-end gap-2 lg:flex">{cta}</div>
         <button
           type="button"
           aria-expanded={open}
@@ -77,17 +74,17 @@ export function SiteHeader() {
         >
           {open ? <X size={20} strokeWidth={1.75} aria-hidden="true" /> : <Menu size={20} strokeWidth={1.75} aria-hidden="true" />}
         </button>
-      </PageContainer>
+      </div>
       {open ? (
         <div id="landing-menu" className="border-t border-stone bg-paper shadow-md lg:hidden">
-          <PageContainer padded={false} className="flex flex-col gap-1 py-3">
+          <div className="flex flex-col gap-1 px-4 py-3 sm:px-6">
             {LINKS.map((link) => (
               <a key={link.href} href={link.href} onClick={() => setOpen(false)} className="flex h-10 items-center rounded-control px-3 text-sm font-medium text-ink hover:bg-stone-100">
                 {link.label}
               </a>
             ))}
             <div className="mt-2 flex gap-2">{cta}</div>
-          </PageContainer>
+          </div>
         </div>
       ) : null}
     </header>

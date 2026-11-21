@@ -1,27 +1,33 @@
-import { Section, SectionHeading } from "./section";
+import { PageContainer } from "@/components/layout/page-container";
+import { Reveal } from "./reveal";
 
 const STEPS = [
-  { title: "Upload your material", body: "PDF notes, slides and books stay private to your account" },
-  { title: "EduRAG builds your knowledge base", body: "Text is split into passages and indexed so it can be searched by meaning" },
-  { title: "Ask, and check the source", body: "Answers cite the document and page, or say “Not found in your material”" },
-  { title: "Practise and improve", body: "Quizzes from your files find weak topics and suggest your next step" },
+  { title: "Upload your notes", body: "PDFs stay private to your account." },
+  { title: "Ask a question", body: "Get an answer with the document and page." },
+  { title: "Practise and revise", body: "Quizzes show what to study next." },
 ];
 
 export function HowItWorks() {
   return (
-    <Section id="how-it-works" tone="muted">
-      <SectionHeading title="From your notes to your next step in four steps" />
-      <ol className="relative grid gap-10 lg:grid-cols-4 lg:gap-8">
-        {/* Thin stone line joining the steps, with a clay dot at each one */}
-        <span aria-hidden="true" className="absolute left-[7px] top-2 bottom-2 w-px bg-stone lg:inset-x-0 lg:bottom-auto lg:top-[7px] lg:h-px lg:w-auto" />
-        {STEPS.map((step) => (
-          <li key={step.title} className="relative pl-10 lg:pl-0 lg:pt-10">
-            <span aria-hidden="true" className="absolute left-0 top-1 size-[15px] rounded-full border-2 border-stone-50 bg-clay lg:top-0" />
-            <h3 className="text-lg font-semibold text-ink">{step.title}</h3>
-            <p className="mt-2 text-ink-2">{step.body}</p>
-          </li>
-        ))}
-      </ol>
-    </Section>
+    <section id="how-it-works" className="scroll-mt-16 bg-paper">
+      <PageContainer padded={false} className="pb-8 pt-24 lg:pt-36">
+        <Reveal as="h2" className="mx-auto max-w-[16ch] text-balance text-center text-[clamp(2.25rem,5vw,3.75rem)] font-medium leading-[1.05] tracking-[-0.03em] text-ink">
+          Three steps to study smarter
+        </Reveal>
+        <Reveal delay={100}>
+          <ol className="mt-14 grid overflow-hidden rounded-[28px] border border-stone md:grid-cols-3">
+            {STEPS.map((step, i) => (
+              <li key={step.title} className="flex flex-col gap-10 border-b border-stone p-8 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0 lg:p-10">
+                <span className="flex size-10 items-center justify-center rounded-full bg-clay-soft text-base font-semibold text-clay-strong">{i + 1}</span>
+                <div>
+                  <h3 className="text-[24px] font-medium leading-8 text-ink">{step.title}</h3>
+                  <p className="mt-2 text-base text-ink-2">{step.body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Reveal>
+      </PageContainer>
+    </section>
   );
 }

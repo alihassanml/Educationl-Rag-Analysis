@@ -153,3 +153,15 @@ Kept: the suggestion cards and the empty Sources panel (brief 13.1 and 13.3), th
 | Hierarchy | The table used automatic column widths, so the title, the one thing a student scans for, was the narrowest column and was cut off ("Intro to Program…") | Fixed column widths: title 44%, pages 12%, status 16%, uploaded 20% |
 
 Kept: the stone header fill, the status chip (a status, so allowed by tell 10) and stacked cards below 640px (brief 14.1).
+
+### Quizzes (list and result)
+
+| Tell | Where (before) | Fix |
+| --- | --- | --- |
+| 11 Decorative icon | `quizzes-view.tsx` a plus icon beside "New quiz" | Removed |
+| 2 / 8 Identical cards | `quiz-result.tsx:48` every question was the same bordered card | One flat list with hairlines |
+| 10 Pills everywhere | A "Question n: Correct" chip on every card | Correct or Incorrect in words with a small icon, no badge |
+| 3.3 Clay budget | A clay-soft "Source:" tag on every question, so clay appeared well over three times per viewport | Source is plain ink-2 text |
+| 17.5 Stat shown twice | "3 / 3" and then "3 of 3 correct (100%)" | "3 of 3 correct" once at metric size, with the percentage under it |
+
+A test for the result screen was added first (`tests/quiz-result.test.tsx`).

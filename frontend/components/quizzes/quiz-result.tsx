@@ -2,9 +2,9 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { ButtonLink } from "@/components/ui/button";
-import { Chip } from "@/components/ui/chip";
 import { Panel } from "@/components/ui/panel";
 import { TopicStatusLabel } from "@/components/ui/status-label";
+import { cn } from "@/lib/cn";
 import { pageLabel } from "@/lib/formatters";
 import type { AttemptResult } from "@/types/api";
 
@@ -16,11 +16,9 @@ export function QuizResult({ result }: { result: AttemptResult }) {
       <div className="flex max-w-3xl flex-col gap-6">
         <Panel>
           <p className="text-metric font-medium text-ink">
-            {result.score} / {result.total_questions}
+            {result.score} of {result.total_questions} correct
           </p>
-          <p className="mt-1 text-ink-2">
-            {result.score} of {result.total_questions} correct ({result.percent}%)
-          </p>
+          <p className="mt-1 text-ink-2">{result.percent}%</p>
           {result.recommendation ? (
             <div className="mt-4 border-t border-stone pt-4">
               <div className="flex items-center gap-3">
@@ -47,15 +45,18 @@ export function QuizResult({ result }: { result: AttemptResult }) {
           </div>
         </Panel>
 
-        <ol className="flex flex-col gap-4">
+        {/* One flat list: the questions are not cards, and correct or incorrect is said in words, not in a badge */}
+        <ol className="divide-y divide-stone border-y border-stone">
           {result.results.map((r, index) => (
-            <li key={r.question_id} className="rounded-panel border border-stone bg-paper p-6">
-              <div className="flex items-center gap-2">
-                <Chip tone={r.is_correct ? "success" : "danger"} icon={r.is_correct ? CheckCircle2 : XCircle}>
-                  Question {index + 1}: {r.is_correct ? "Correct" : "Incorrect"}
-                </Chip>
+            <li key={r.question_id} className="py-6">
+              <div className="flex items-baseline justify-between gap-4">
+                <p className="text-small text-ink-2">Question {index + 1}</p>
+                <p className={cn("inline-flex items-center gap-1 text-sm font-medium", r.is_correct ? "text-success" : "text-danger")}>
+                  {r.is_correct ? <CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true" /> : <XCircle size={16} strokeWidth={1.75} aria-hidden="true" />}
+                  <span>{r.is_correct ? "Correct" : "Incorrect"}</span>
+                </p>
               </div>
-              <p className="mt-3 text-base font-medium text-ink">{r.question_text}</p>
+              <p className="mt-2 text-base font-medium text-ink">{r.question_text}</p>
               <dl className="mt-3 space-y-1 text-sm">
                 <div className="flex gap-2">
                   <dt className="shrink-0 text-ink-2">Your answer:</dt>
@@ -70,9 +71,7 @@ export function QuizResult({ result }: { result: AttemptResult }) {
               </dl>
               <p className="mt-3 text-sm text-ink">{r.explanation}</p>
               {r.sources.length > 0 ? (
-                <p className="mt-2 inline-block rounded-md bg-clay-soft px-2 py-1 text-small text-clay-stronger">
-                  Source: {r.sources.map((s) => `${s.document_title}, ${pageLabel(s.page_number)}`).join("; ")}
-                </p>
+                <p className="mt-2 text-small text-ink-2">Source: {r.sources.map((s) => `${s.document_title}, ${pageLabel(s.page_number)}`).join("; ")}</p>
               ) : null}
             </li>
           ))}

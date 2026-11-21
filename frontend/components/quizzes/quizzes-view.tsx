@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -30,7 +30,6 @@ export function QuizzesView() {
         action={
           ready.length > 0 ? (
             <Button onClick={() => setOpen(true)}>
-              <Plus size={16} strokeWidth={1.75} aria-hidden="true" />
               New quiz
             </Button>
           ) : undefined

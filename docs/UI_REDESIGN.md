@@ -1,14 +1,3 @@
-# EduRAG UI Redesign Brief: "Paper, Clay & Stone"
-
-Owner decision dated 2026-11-18. This file replaces the "Midnight & Ice" design direction (Guide v2 section 13 and appendix 20). Save it in the repo as `docs/UI_REDESIGN.md`. CLAUDE.md product rules, coding rules and the required workflow still apply. Where this file and Guide v2 disagree on visual design, this file wins.
-
-Source of truth for the product is the approved proposal (`EduRAG.pdf`, Amber Rehan and Ali Ahmed, Lahore Garrison University, supervised by Talha Javeed, co-supervised by Hamas Fayyaz). The two implementation guides are planning documents and are not the product definition.
-
----
-
-## 0. Paste this prompt into Claude Code
-
-```text
 Read CLAUDE.md, then read docs/UI_REDESIGN.md in full before doing anything.
 
 The owner has replaced the "Midnight & Ice" design with the light "Paper, Clay & Stone"

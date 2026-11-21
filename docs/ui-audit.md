@@ -173,3 +173,14 @@ A test for the result screen was added first (`tests/quiz-result.test.tsx`).
 | 17.5 Stat shown twice | `topic-row.tsx` the stacked mobile and dashboard rows printed "67%" beside the bar and again in "67% · 4 of 6 correct" | The bar carries the percentage, the line under it says only "4 of 6 correct". The desktop table already separated them |
 
 No other tells: the table is the right pattern for a topic list, chips are status only, there are no decorative icons, and clay appears only in the bar. The test that checked the combined text now checks the bar label and the counts separately, with the reason in a comment.
+
+### Evaluation Lab
+
+| Tell | Where (before) | Fix |
+| --- | --- | --- |
+| 2 / 8 Card kit | `evaluation-view.tsx` four equal bordered panels (New run, Runs, Compare runs, Live feedback) stacked in the order they were built, with the two setup forms above the results | `FlatSection` (now a shared component in `ui/`, also used by the dashboard): hairline sections, Runs first, then the tools |
+| 8 Nested card | `live-feedback.tsx` an `EmptyState` (a muted card) inside the Live feedback card | Plain two-line message |
+
+Kept: the four headline tiles with caps labels and the small-sample warning banner (brief 15). The "No change" line under unchanged tiles is real information about the previous run, so it stays.
+
+Housekeeping: `screenshots.spec.ts` no longer writes the landing images (they come from `e2e/review/capture.mjs landing-images`, which crops tightly), and `playwright.config.ts` reads `E2E_API_PORT` and `E2E_WEB_PORT` so the e2e run can use other ports when something else holds 3001 or 8001.

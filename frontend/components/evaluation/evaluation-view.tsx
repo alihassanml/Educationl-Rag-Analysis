@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState, ErrorBlock, LoadingBlock, Notice } from "@/components/ui/feedback";
-import { Panel } from "@/components/ui/panel";
+import { FlatSection } from "@/components/ui/flat-section";
 import { evalApi } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { ComparePanel } from "./compare-panel";
@@ -60,16 +60,16 @@ export function EvaluationView() {
               <Notice tone="warning">Small test set ({completed[0].items_total} items). Results may not reflect real course material</Notice>
             ) : null}
             {completed.length > 0 ? <StatGrid latest={completed[0]} previous={completed[1] ?? null} /> : null}
-            <StartRunPanel datasets={datasets.data?.items ?? []} onStarted={() => runs.reload()} />
             {items.length === 0 ? (
               <EmptyState title="No evaluation runs yet">
-                Start a run above. It scores whether the expected page appears among the retrieved passages
+                Start a run below. It scores whether the expected page appears among the retrieved passages
               </EmptyState>
             ) : (
-              <Panel title="Runs">
+              <FlatSection title="Runs">
                 <RunList runs={items} />
-              </Panel>
+              </FlatSection>
             )}
+            <StartRunPanel datasets={datasets.data?.items ?? []} onStarted={() => runs.reload()} />
             <ComparePanel runs={completed} />
             <LiveFeedback />
           </>

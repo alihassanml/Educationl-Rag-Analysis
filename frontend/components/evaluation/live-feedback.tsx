@@ -2,8 +2,8 @@
 
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
-import { EmptyState, ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
-import { Panel } from "@/components/ui/panel";
+import { ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
+import { FlatSection } from "@/components/ui/flat-section";
 import { tutorApi } from "@/lib/api";
 import { formatDateTime } from "@/lib/formatters";
 import { useApi } from "@/lib/use-api";
@@ -22,11 +22,14 @@ export function LiveFeedback() {
   const items = feedback.data ?? [];
 
   return (
-    <Panel title="Live feedback">
+    <FlatSection title="Live feedback">
       {feedback.loading ? <LoadingBlock label="Loading feedback" /> : null}
       {feedback.error ? <ErrorBlock message={feedback.error.message} onRetry={feedback.reload} /> : null}
       {!feedback.loading && !feedback.error && items.length === 0 ? (
-        <EmptyState title="No feedback yet">Thumbs up and down from the study tutor appear here</EmptyState>
+        <div>
+          <p className="font-medium text-ink">No feedback yet</p>
+          <p className="text-ink-2">Thumbs up and down from the study tutor appear here</p>
+        </div>
       ) : null}
       {items.length > 0 ? (
         <ul className="divide-y divide-stone">
@@ -46,6 +49,6 @@ export function LiveFeedback() {
           ))}
         </ul>
       ) : null}
-    </Panel>
+    </FlatSection>
   );
 }

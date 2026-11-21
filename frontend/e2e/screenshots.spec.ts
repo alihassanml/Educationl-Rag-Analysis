@@ -2,14 +2,13 @@ import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
-// Captures real application states. Run with: SCREENSHOTS=1 npx playwright test screenshots
-//  - landing images go to frontend/public/landing (shown by the landing page when the file exists)
-//  - the viewport sweep goes to artifacts/screens (390, 768, 1280 and 1440px) with layout checks
+// Viewport sweep. Run with: SCREENSHOTS=1 npx playwright test screenshots
+//  - saves every screen at 390, 768, 1280 and 1440px to artifacts/screens, with layout checks
+//  - the cropped product images on the landing page are written by e2e/review/capture.mjs (landing-images)
 // The e2e backend replaces the LLM with a deterministic script, so answer wording is scripted;
 // pages, citations, quizzes and scores all come from the real pipeline and database.
 test.skip(!process.env.SCREENSHOTS, "set SCREENSHOTS=1 to capture screenshots");
 
-const landing = path.join(__dirname, "..", "public", "landing");
 const sweep = path.join(__dirname, "..", "..", "artifacts", "screens");
 const pdf = path.join(__dirname, "fixtures", "recursion-notes.pdf");
 const WIDTHS = [390, 768, 1280, 1440];
@@ -21,8 +20,7 @@ async function overflow(page: Page) {
   return page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 }
 
-test("capture landing images and sweep every screen", async ({ browser }) => {
-  fs.mkdirSync(landing, { recursive: true });
+test("sweep every screen", async ({ browser }) => {
   fs.mkdirSync(sweep, { recursive: true });
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2 })).newPage();
 
@@ -56,25 +54,6 @@ test("capture landing images and sweep every screen", async ({ browser }) => {
   await page.getByLabel("Your question").fill("What does a recursive function need to stop calling itself?");
   await page.getByRole("button", { name: "Send question" }).click();
   await page.getByRole("button", { name: "Copy answer" }).waitFor(); // the answer has finished
-  // Crop to the conversation, sources panel and composer (no empty space below)
-  const mainBox = await page.locator("main:visible").boundingBox();
-  const composerBox = await page.locator("form").filter({ has: page.getByLabel("Your question") }).boundingBox();
-  if (!mainBox || !composerBox) throw new Error("Tutor layout not found");
-  await page.screenshot({
-    path: path.join(landing, "tutor-answer.png"),
-    clip: { x: mainBox.x, y: mainBox.y, width: mainBox.width, height: composerBox.y + composerBox.height - mainBox.y + 24 },
-  });
-
-  await page.goto("/tutor"); // a new chat: a second question in the same chat would be treated as a follow-up
-  await page.getByLabel("Your question").fill("How do volcanoes erupt in Iceland?");
-  await page.getByRole("button", { name: "Send question" }).click();
-  await page.getByRole("heading", { name: "Not found in your material" }).waitFor();
-  const notFound = page.getByRole("heading", { name: "Not found in your material" }).locator("xpath=ancestor::div[contains(@class,'bg-stone-100')][1]");
-  await notFound.scrollIntoViewIfNeeded();
-  const box = await notFound.boundingBox();
-  if (!box) throw new Error("The not-found card has no bounding box");
-  await page.screenshot({ path: path.join(landing, "tutor-not-found.png"), clip: { x: box.x - 4, y: box.y - 4, width: box.width + 8, height: box.height + 8 } });
-
   await page.getByRole("link", { name: "Quizzes" }).first().click();
   await page.getByRole("button", { name: "New quiz" }).first().click();
   await page.getByLabel("Number of questions").selectOption("3");
@@ -87,11 +66,9 @@ test("capture landing images and sweep every screen", async ({ browser }) => {
   await page.getByText("A base case", { exact: true }).click();
   await page.getByRole("button", { name: "Submit quiz" }).click();
   await page.getByText("3 of 3 correct").first().waitFor();
-  await page.locator("main:visible").screenshot({ path: path.join(landing, "quiz-result.png") });
 
   await page.getByRole("link", { name: "Progress" }).first().click();
   await page.getByText("How we decide").waitFor();
-  await page.locator("main:visible").screenshot({ path: path.join(landing, "progress.png") });
 
   // Sweep every app screen at every width: no horizontal scroll, and record where the content starts
   for (const width of WIDTHS) {

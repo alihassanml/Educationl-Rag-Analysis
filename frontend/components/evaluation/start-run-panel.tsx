@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Select } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/feedback";
-import { Panel } from "@/components/ui/panel";
+import { FlatSection } from "@/components/ui/flat-section";
 import { ApiError } from "@/lib/api-client";
 import { evalApi } from "@/lib/api";
 import type { EvalDataset, EvalMode, EvalRun } from "@/types/api";
@@ -23,13 +23,13 @@ export function StartRunPanel({
 
   if (datasets.length === 0) {
     return (
-      <Panel title="New run">
+      <FlatSection title="New run">
         <p className="text-ink-2">
           There is no question set yet. Create one for your account with{" "}
           <code className="rounded-control bg-stone-100 px-1.5 py-0.5 text-sm">python -m eval.seed_lab --email you@example.com</code>{" "}
           from the backend folder.
         </p>
-      </Panel>
+      </FlatSection>
     );
   }
 
@@ -47,7 +47,7 @@ export function StartRunPanel({
   }
 
   return (
-    <Panel title="New run">
+    <FlatSection title="New run">
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field id="eval-dataset" label="Question set">
@@ -82,6 +82,6 @@ export function StartRunPanel({
           </Button>
         </div>
       </form>
-    </Panel>
+    </FlatSection>
   );
 }

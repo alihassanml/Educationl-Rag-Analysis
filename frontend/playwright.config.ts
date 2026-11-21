@@ -2,8 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 import os from "node:os";
 import path from "node:path";
 
-const API_PORT = 8001;
-const WEB_PORT = 3001;
+// Override when another project is using these ports: E2E_API_PORT=8031 E2E_WEB_PORT=3031 npm run e2e
+const API_PORT = Number(process.env.E2E_API_PORT ?? 8001);
+const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 3001);
 const dbUrl = `postgresql+psycopg://${os.userInfo().username}@localhost:5432/edurag_e2e`;
 
 export default defineConfig({

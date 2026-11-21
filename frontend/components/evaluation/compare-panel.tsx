@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Select } from "@/components/ui/field";
 import { ErrorBlock, Spinner } from "@/components/ui/feedback";
-import { Panel } from "@/components/ui/panel";
+import { FlatSection } from "@/components/ui/flat-section";
 import { ApiError } from "@/lib/api-client";
 import { evalApi } from "@/lib/api";
 import { formatDelta, formatLatency, formatPercent, modeLabel, type Delta } from "@/lib/eval-format";
@@ -56,9 +56,9 @@ export function ComparePanel({ runs }: { runs: EvalRun[] }) {
 
   if (runs.length < 2) {
     return (
-      <Panel title="Compare runs">
+      <FlatSection title="Compare runs">
         <p className="text-ink-2">Complete two runs to compare them</p>
-      </Panel>
+      </FlatSection>
     );
   }
 
@@ -82,7 +82,7 @@ export function ComparePanel({ runs }: { runs: EvalRun[] }) {
   ));
 
   return (
-    <Panel title="Compare runs">
+    <FlatSection title="Compare runs">
       <div className="flex flex-col gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field id="compare-a" label="Run A">
@@ -157,6 +157,6 @@ export function ComparePanel({ runs }: { runs: EvalRun[] }) {
           </div>
         ) : null}
       </div>
-    </Panel>
+    </FlatSection>
   );
 }

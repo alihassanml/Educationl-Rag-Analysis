@@ -2,13 +2,13 @@
 
 import { Check, Circle } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { ScoreChart, MIN_POINTS_FOR_CHART } from "@/components/progress/score-chart";
 import { TopicRow } from "@/components/progress/topic-row";
 import { ButtonLink } from "@/components/ui/button";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
+import { FlatSection } from "@/components/ui/flat-section";
 import { Panel } from "@/components/ui/panel";
 import { StatTile } from "@/components/ui/stat-tile";
 import { progressApi } from "@/lib/api";
@@ -106,19 +106,6 @@ function NextStep({ data }: { data: ProgressSummary }) {
         {body.primary}
         {body.secondary}
       </div>
-    </section>
-  );
-}
-
-/** A titled section with a hairline above it. Lists on the dashboard are not wrapped in cards. */
-function FlatSection({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="border-t border-stone pt-5">
-      <div className="mb-4 flex items-baseline justify-between gap-4">
-        <h2 className="text-lg font-semibold text-ink">{title}</h2>
-        {action}
-      </div>
-      {children}
     </section>
   );
 }

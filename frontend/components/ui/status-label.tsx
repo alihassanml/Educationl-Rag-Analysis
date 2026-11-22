@@ -1,37 +1,31 @@
-import { AlertCircle, CheckCircle2, CircleDashed, Clock, Loader2, TrendingUp } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { Chip, type ChipTone } from "@/components/ui/chip";
 import type { DocumentStatus, EvalRunStatus, TopicStatus } from "@/types/api";
 
-type Style = { label: string; tone: ChipTone; icon: LucideIcon };
+type Style = { label: string; tone: ChipTone };
 
 const topicStyles: Record<TopicStatus, Style> = {
-  needs_revision: { label: "Needs revision", tone: "danger", icon: AlertCircle },
-  practicing: { label: "Practising", tone: "warning", icon: TrendingUp },
-  doing_well: { label: "Doing well", tone: "success", icon: CheckCircle2 },
-  insufficient_data: { label: "Not enough data", tone: "neutral", icon: CircleDashed },
+  needs_revision: { label: "Needs revision", tone: "danger" },
+  practicing: { label: "Practising", tone: "warning" },
+  doing_well: { label: "Doing well", tone: "success" },
+  insufficient_data: { label: "Not enough data", tone: "neutral" },
 };
 
 const documentStyles: Record<DocumentStatus, Style> = {
-  ready: { label: "Ready", tone: "success", icon: CheckCircle2 },
-  processing: { label: "Processing", tone: "warning", icon: Loader2 },
-  uploaded: { label: "Uploaded", tone: "neutral", icon: Clock },
-  failed: { label: "Failed", tone: "danger", icon: AlertCircle },
+  ready: { label: "Ready", tone: "success" },
+  processing: { label: "Processing", tone: "warning" },
+  uploaded: { label: "Uploaded", tone: "neutral" },
+  failed: { label: "Failed", tone: "danger" },
 };
 
 const runStyles: Record<EvalRunStatus, Style> = {
-  queued: { label: "Queued", tone: "neutral", icon: Clock },
-  running: { label: "Running", tone: "warning", icon: Loader2 },
-  completed: { label: "Completed", tone: "success", icon: CheckCircle2 },
-  failed: { label: "Failed", tone: "danger", icon: AlertCircle },
+  queued: { label: "Queued", tone: "neutral" },
+  running: { label: "Running", tone: "warning" },
+  completed: { label: "Completed", tone: "success" },
+  failed: { label: "Failed", tone: "danger" },
 };
 
-function Label({ label, tone, icon }: Style) {
-  return (
-    <Chip tone={tone} icon={icon}>
-      {label}
-    </Chip>
-  );
+function Label({ label, tone }: Style) {
+  return <Chip tone={tone}>{label}</Chip>;
 }
 
 export function TopicStatusLabel({ status }: { status: TopicStatus }) {

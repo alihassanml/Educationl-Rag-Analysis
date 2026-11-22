@@ -1,13 +1,11 @@
 "use client";
 
-import { ChevronRight, Pin } from "lucide-react";
 import Link from "next/link";
 import { useId, useState } from "react";
 import { LevelChip } from "@/components/quizzes/level-change";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Chip, type ChipTone } from "@/components/ui/chip";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { cn } from "@/lib/cn";
 import { examApi } from "@/lib/api";
 import type { EvidenceQuestion, PredictedTopic } from "@/types/api";
 
@@ -83,7 +81,6 @@ export function TopicCard({ topic, rank }: { topic: PredictedTopic; rank: number
             Explain this topic
           </ButtonLink>
           <Button size="sm" variant="secondary" aria-pressed={pinned} onClick={() => void togglePin()} disabled={saving}>
-            <Pin size={14} strokeWidth={1.75} aria-hidden="true" />
             {pinned ? "On your Course Map priority" : "Add to my Course Map priority"}
           </Button>
         </div>
@@ -100,7 +97,6 @@ export function TopicCard({ topic, rank }: { topic: PredictedTopic; rank: number
           onClick={() => setOpen((v) => !v)}
           className="mt-3 inline-flex items-center gap-1 rounded-control text-sm font-medium text-ink-2 hover:text-ink"
         >
-          <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true" className={cn("transition-transform duration-[120ms]", open && "rotate-90")} />
           Past questions ({topic.question_count})
         </button>
         {open ? (

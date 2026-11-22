@@ -39,9 +39,8 @@ export function EvaluationView() {
     <PageContainer>
       <PageHeader
         title="Evaluation Lab"
-        description="How accurately EduRAG retrieves, cites and abstains, measured on a labelled question set"
       />
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         {forbidden ? <Notice>This area is for administrators</Notice> : null}
         {loading && !forbidden ? <LoadingBlock label="Loading evaluation runs" /> : null}
         {error && !forbidden ? (
@@ -62,7 +61,7 @@ export function EvaluationView() {
             {completed.length > 0 ? <StatGrid latest={completed[0]} previous={completed[1] ?? null} /> : null}
             {items.length === 0 ? (
               <EmptyState title="No evaluation runs yet">
-                Start a run below. It scores whether the expected page appears among the retrieved passages
+                Start a run below.
               </EmptyState>
             ) : (
               <FlatSection title="Runs">

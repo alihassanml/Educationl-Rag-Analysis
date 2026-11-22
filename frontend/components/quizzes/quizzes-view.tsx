@@ -1,6 +1,5 @@
 "use client";
 
-import { ClipboardList, Plus } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -26,22 +25,20 @@ export function QuizzesView() {
     <PageContainer>
       <PageHeader
         title="Quizzes"
-        description="Multiple-choice questions written from your own material"
         action={
           ready.length > 0 ? (
             <Button onClick={() => setOpen(true)}>
-              <Plus size={16} strokeWidth={1.75} aria-hidden="true" />
               New quiz
             </Button>
           ) : undefined
         }
       />
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         {docs.loading ? <LoadingBlock label="Loading" /> : null}
         {docs.error ? <ErrorBlock message={docs.error.message} onRetry={docs.reload} /> : null}
         {docs.data && ready.length === 0 ? (
-          <EmptyState title="Upload a document to create quizzes" icon={ClipboardList} action={<ButtonLink href="/library">Go to My library</ButtonLink>}>
-            Quizzes are generated from your processed PDFs
+          <EmptyState title="Upload a document to create quizzes" action={<ButtonLink href="/library">Go to My library</ButtonLink>}>
+            Quizzes are made from your documents.
           </EmptyState>
         ) : null}
 
@@ -50,8 +47,8 @@ export function QuizzesView() {
             {quizzes.loading ? <LoadingBlock label="Loading your quizzes" /> : null}
             {quizzes.error ? <ErrorBlock message={quizzes.error.message} onRetry={quizzes.reload} /> : null}
             {quizzes.data && quizzes.data.items.length === 0 ? (
-              <EmptyState title="No quizzes yet" icon={ClipboardList}>
-                Create one with New quiz, or say “quiz me” in the chat. Each quiz and its score is listed here
+              <EmptyState title="No quizzes yet">
+                Press New quiz, or say “quiz me” in the chat.
               </EmptyState>
             ) : null}
             {quizzes.data && quizzes.data.items.length > 0 ? (

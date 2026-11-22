@@ -1,4 +1,3 @@
-import { ArrowDown, ArrowUp } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 import type { AttemptResult, Difficulty } from "@/types/api";
 
@@ -23,7 +22,7 @@ export function LevelChangeNote({ result }: { result: AttemptResult }) {
     <div className="mt-3 flex flex-col gap-1">
       <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-ink">
         {moved ? (
-          <Chip tone={change === "up" ? "success" : "warning"} icon={change === "up" ? ArrowUp : ArrowDown}>
+          <Chip tone={change === "up" ? "success" : "warning"}>
             {change === "up" ? "Level up" : "Level down"}
           </Chip>
         ) : (

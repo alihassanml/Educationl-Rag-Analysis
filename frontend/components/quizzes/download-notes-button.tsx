@@ -1,6 +1,5 @@
 "use client";
 
-import { Download } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -37,7 +36,6 @@ export function DownloadNotesButton({ quizId }: { quizId: string }) {
   return (
     <>
       <Button variant="secondary" loading={pending} onClick={() => void download()}>
-        {pending ? null : <Download size={16} strokeWidth={1.75} aria-hidden="true" />}
         Download notes (PDF)
       </Button>
       {error ? (

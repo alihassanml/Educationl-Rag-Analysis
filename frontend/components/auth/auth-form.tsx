@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -92,7 +92,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
         {expired && !formError ? <Notice>Your session ended. Please sign in again.</Notice> : null}
         {formError ? (
           <div role="alert" className="flex items-start gap-2 rounded-control bg-danger-soft px-3 py-2 text-sm text-danger">
-            <AlertCircle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
             {formError}
           </div>
         ) : null}

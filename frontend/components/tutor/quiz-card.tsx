@@ -1,6 +1,5 @@
 "use client";
 
-import { CheckCircle2, ExternalLink, RotateCcw, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { DownloadNotesButton } from "@/components/quizzes/download-notes-button";
@@ -178,7 +177,6 @@ export function QuizCard({ request, documentIds, onAgain, onNext, onCreated }: P
             <div className="flex items-baseline justify-between gap-4">
               <p className="text-small text-ink-2">Question {index + 1}</p>
               <p className={cn("inline-flex items-center gap-1 text-sm font-medium", r.is_correct ? "text-success" : "text-danger")}>
-                {r.is_correct ? <CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true" /> : <XCircle size={16} strokeWidth={1.75} aria-hidden="true" />}
                 {r.is_correct ? "Correct" : "Incorrect"}
               </p>
             </div>
@@ -204,12 +202,10 @@ export function QuizCard({ request, documentIds, onAgain, onNext, onCreated }: P
           </Button>
         ) : null}
         <Button variant="secondary" size="sm" onClick={onAgain}>
-          <RotateCcw size={14} strokeWidth={1.75} aria-hidden="true" />
           Quiz me again
         </Button>
         <DownloadNotesButton quizId={quiz.id} />
         <Link href={`/quizzes/${quiz.id}`} className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm text-ink-2 hover:bg-stone-100 hover:text-ink">
-          <ExternalLink size={14} strokeWidth={1.75} aria-hidden="true" />
           Open full page
         </Link>
       </div>

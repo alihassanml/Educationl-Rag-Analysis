@@ -23,5 +23,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|landing/).*)"],
+  // /api is the backend, forwarded by next.config.ts: it must never be redirected to the login page
+  matcher: ["/((?!api/|_next/static|_next/image|favicon.ico|landing/).*)"],
 };

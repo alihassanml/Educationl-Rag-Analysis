@@ -1,6 +1,5 @@
 "use client";
 
-import { FileText, FileUp, Globe, Type, Video } from "lucide-react";
 import { useId, useState, type DragEvent, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
@@ -12,11 +11,11 @@ import type { UploadState } from "./use-upload";
 
 type Tab = "pdf" | "link" | "youtube" | "text";
 
-const TABS: { id: Tab; label: string; icon: typeof FileText }[] = [
-  { id: "pdf", label: "PDF file", icon: FileUp },
-  { id: "link", label: "Link", icon: Globe },
-  { id: "youtube", label: "YouTube lecture", icon: Video },
-  { id: "text", label: "Paste text", icon: Type },
+const TABS: { id: Tab; label: string }[] = [
+  { id: "pdf", label: "PDF file" },
+  { id: "link", label: "Link" },
+  { id: "youtube", label: "YouTube lecture" },
+  { id: "text", label: "Paste text" },
 ];
 
 /** Three ways to add material. The file input and status line are always mounted, so a normal file
@@ -81,7 +80,7 @@ export function UploadPanel({ state, showPanel }: { state: UploadState; showPane
       {showPanel ? (
         <div className="rounded-panel border border-stone bg-paper p-5 sm:p-6">
           <div role="tablist" aria-label="How to add material" className="mb-5 inline-flex gap-1 rounded-lg bg-stone-100 p-1">
-            {TABS.map(({ id, label, icon: Icon }) => (
+            {TABS.map(({ id, label }) => (
               <button
                 key={id}
                 type="button"
@@ -95,7 +94,6 @@ export function UploadPanel({ state, showPanel }: { state: UploadState; showPane
                   tab === id ? "bg-paper text-ink shadow-sm" : "text-ink-2 hover:text-ink",
                 )}
               >
-                <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
                 {label}
               </button>
             ))}
@@ -137,7 +135,6 @@ export function UploadPanel({ state, showPanel }: { state: UploadState; showPane
                   dragging ? "border-clay bg-clay-soft" : "border-stone-strong bg-stone-100",
                 )}
               >
-                <FileUp size={24} strokeWidth={1.75} className="text-ink-2" aria-hidden="true" />
                 <h2 className="text-base font-semibold text-ink">Drop a PDF here or choose a file</h2>
                 <p className="max-w-prose text-ink-2">Notes, textbooks, slides or past papers. Text-based PDFs up to {MAX_UPLOAD_MB} MB.</p>
                 <Button variant="secondary" onClick={choose} loading={uploading}>

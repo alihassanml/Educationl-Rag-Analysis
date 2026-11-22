@@ -176,7 +176,7 @@ test("progress and dashboard reflect the completed quiz", async () => {
   await expect(page.getByText("Doing well").first()).toBeVisible();
 
   await page.getByRole("link", { name: "Dashboard" }).first().click();
-  await expect(page.getByText("Recommended next step")).toBeVisible();
+  await expect(page.getByText("Next step", { exact: true })).toBeVisible();
   await expect(page.getByText("Average quiz score")).toBeVisible();
   await expect(page.getByText("100%").first()).toBeVisible();
 });
@@ -187,7 +187,7 @@ test("deleting a document asks first and removes it", async () => {
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByRole("dialog", { name: /Delete recursion-notes/ }).or(page.getByRole("dialog"))).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
-  await expect(page.getByRole("cell", { name: "PDF recursion-notes My notes", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "recursion-notes My notes", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Actions for recursion-notes" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();

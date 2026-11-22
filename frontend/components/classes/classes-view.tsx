@@ -1,6 +1,5 @@
 "use client";
 
-import { BookOpen, Users } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
@@ -27,7 +26,6 @@ function SharedDocuments({ id }: { id: string }) {
       {data.documents.map((doc) => (
         <li key={doc.id} className="flex items-center justify-between gap-3 py-2.5">
           <span className="flex min-w-0 items-center gap-2 text-sm text-ink">
-            <BookOpen size={16} strokeWidth={1.75} className="shrink-0 text-ink-2" aria-hidden="true" />
             <span className="truncate">{doc.title}</span>
           </span>
           {doc.status !== "ready" ? <Chip tone="warning">Not ready yet</Chip> : null}
@@ -85,8 +83,8 @@ export function ClassesView() {
 
   return (
     <PageContainer>
-      <PageHeader title="My classes" description="Join a class to use the material your teacher shares, alongside your own" />
-      <div className="flex max-w-3xl flex-col gap-6">
+      <PageHeader title="My classes" />
+      <div className="flex flex-col gap-4">
         <Panel title="Join a class">
           <form onSubmit={join} noValidate className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <div className="flex-1">
@@ -114,8 +112,8 @@ export function ClassesView() {
         {loading && !data ? <LoadingBlock label="Loading your classes" /> : null}
         {error && !data ? <ErrorBlock message={error.message} onRetry={reload} /> : null}
         {data && data.length === 0 ? (
-          <EmptyState title="You have not joined a class" icon={Users}>
-            Ask your teacher for the class code. Shared material is read-only, and your own uploads stay private.
+          <EmptyState title="You have not joined a class">
+            Ask your teacher for the class code.
           </EmptyState>
         ) : null}
         {data?.map((c) => (

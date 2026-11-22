@@ -1,6 +1,5 @@
 "use client";
 
-import { GraduationCap } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { PageContainer } from "@/components/layout/page-container";
@@ -44,8 +43,8 @@ export function TeacherView() {
 
   return (
     <PageContainer>
-      <PageHeader title="Your classes" description="Share material with a class and see which topics your students find hard" />
-      <div className="flex max-w-3xl flex-col gap-6">
+      <PageHeader title="Your classes" />
+      <div className="flex flex-col gap-4">
         <Panel title="New class">
           <form onSubmit={create} noValidate className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <div className="flex-1">
@@ -62,8 +61,8 @@ export function TeacherView() {
         {loading && !data ? <LoadingBlock label="Loading your classes" /> : null}
         {error && !data ? <ErrorBlock message={error.message} onRetry={reload} /> : null}
         {data && data.length === 0 ? (
-          <EmptyState title="No classes yet" icon={GraduationCap}>
-            Create a class, share a document with it, and give your students the class code.
+          <EmptyState title="No classes yet">
+            Create a class and share a document.
           </EmptyState>
         ) : null}
         {data && data.length > 0 ? (

@@ -7,11 +7,9 @@ export function DiagnosticCard({ status }: { status: DiagnosticStatus }) {
   if (!status.suggested) return null;
   const resume = status.pending_quiz_id !== null;
   return (
-    <DashCard title="Start your diagnostic">
-      <p className="text-sm text-ink">
-        A short test with one or two questions on each of the {status.topic_count} topics found in your material. Your answers set where each topic starts, so quizzes begin at the right level.
-      </p>
-      <div className="mt-4">
+    <DashCard title="Diagnostic">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-ink">{status.topic_count} topics, one or two questions each.</p>
         <StartDiagnosticButton label={resume ? "Continue your diagnostic" : "Start your diagnostic"} />
       </div>
     </DashCard>

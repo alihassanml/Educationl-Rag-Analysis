@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ArrowUpDown, BarChart3 } from "lucide-react";
 import { useState } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
@@ -47,8 +46,8 @@ export function ProgressView() {
 
   return (
     <PageContainer>
-      <PageHeader title="Progress" description="How you are doing on each topic, from your quiz results" />
-      <div className="flex flex-col gap-6">
+      <PageHeader title="Progress" />
+      <div className="flex flex-col gap-4">
         {loading ? <LoadingBlock label="Loading your progress" /> : null}
         {error ? (
           <ErrorBlock
@@ -61,8 +60,8 @@ export function ProgressView() {
         ) : null}
 
         {topics.data && topics.data.items.length === 0 ? (
-          <EmptyState title="No quiz results yet" icon={BarChart3} action={<ButtonLink href="/tutor?mode=quiz">Start a quiz</ButtonLink>}>
-            Complete a quiz and your topic progress will appear here
+          <EmptyState title="No quiz results yet" action={<ButtonLink href="/tutor?mode=quiz">Start a quiz</ButtonLink>}>
+            Complete a quiz to see your topics
           </EmptyState>
         ) : null}
 
@@ -77,9 +76,8 @@ export function ProgressView() {
                     <th scope="col" className={th} aria-sort={order === "none" ? "none" : order === "asc" ? "ascending" : "descending"}>
                       <button type="button" onClick={cycleOrder} className="-mx-1.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium hover:bg-stone hover:text-ink" aria-label="Sort by accuracy">
                         Accuracy
-                        {order === "asc" ? <ArrowUp size={14} strokeWidth={1.75} aria-hidden="true" /> : null}
-                        {order === "desc" ? <ArrowDown size={14} strokeWidth={1.75} aria-hidden="true" /> : null}
-                        {order === "none" ? <ArrowUpDown size={14} strokeWidth={1.75} className="text-ink-3" aria-hidden="true" /> : null}
+                        {order === "asc" ? <span aria-hidden="true">↑</span> : null}
+                        {order === "desc" ? <span aria-hidden="true">↓</span> : null}
                       </button>
                     </th>
                     <th scope="col" className={th}>Attempts</th>

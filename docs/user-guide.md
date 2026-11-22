@@ -10,7 +10,7 @@
 7. **Exam Predictor:** upload at least two past papers (kind *past paper*, with year) to see which topics they ask about most, with the questions as evidence.
 8. **Teacher style:** with teacher material uploaded, ask the tutor to answer in your teacher's style.
 9. **Peer Match:** turn it on in *Settings*. You can challenge another opted-in student with the same weak topic; they see only your display name.
-10. **Viva Bot:** an oral exam on a topic. Answer by voice or typing; follow-up questions follow your answers; each answer has a time limit. You get a report with a rubric and citations.
+10. **Viva Bot:** pick a topic and press *Start exam* once. The bot asks each question out loud, listens as soon as it finishes, sends your answer when you stop talking, then asks the follow-up or the next question by itself. *Pause voice*, *Repeat question* and *Type instead* are there if you need them. Each answer has a time limit. You get a report with a rubric and citations.
 11. **Reminders and slip tests:** topics due for review create at most one notification a day. A slip test is a short quiz that updates your progress.
 12. **Classes:** join a teacher's class with the 8-character code to search the material they share.
 

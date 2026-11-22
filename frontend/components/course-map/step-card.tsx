@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import { useId, useState } from "react";
 import { LevelChip } from "@/components/quizzes/level-change";
 import { ButtonLink } from "@/components/ui/button";
@@ -67,7 +66,6 @@ export function StepCard({ step, last }: { step: PathStep; last: boolean }) {
             onClick={() => setShowSources((v) => !v)}
             className="inline-flex h-8 items-center gap-1 rounded-control px-2 text-sm text-ink-2 hover:bg-stone-100 hover:text-ink"
           >
-            <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true" className={cn("transition-transform duration-[120ms]", showSources && "rotate-90")} />
             Source
           </button>
         </div>

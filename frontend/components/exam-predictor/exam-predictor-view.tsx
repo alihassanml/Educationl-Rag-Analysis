@@ -1,6 +1,5 @@
 "use client";
 
-import { Target } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
@@ -16,7 +15,7 @@ import { EvidenceItem, TopicCard } from "./topic-card";
 function Results({ prediction }: { prediction: ExamPrediction }) {
   const questions = prediction.papers.reduce((n, p) => n + p.question_count, 0);
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <p className="text-sm text-ink-2">
         Read {prediction.papers.length} past papers and {questions} questions. {prediction.rule}
       </p>
@@ -74,7 +73,7 @@ export function ExamPredictorView() {
 
   return (
     <PageContainer>
-      <PageHeader title="Exam predictor" description="Which topics your past papers ask about most, with the questions as evidence" />
+      <PageHeader title="Exam predictor" />
       {loaded.loading ? <LoadingBlock label="Loading" /> : null}
       {loaded.error && !prediction ? <ErrorBlock message={loaded.error.message} onRetry={loaded.reload} /> : null}
       {analysing ? <LoadingBlock label="Reading your past papers. This can take a minute" /> : null}
@@ -83,7 +82,6 @@ export function ExamPredictorView() {
       {prediction && prediction.status !== "ok" ? (
         <EmptyState
           title={prediction.status === "need_more_papers" ? "Add more past papers" : prediction.status === "no_papers" ? "No past papers yet" : "Add your study material"}
-          icon={Target}
           action={<ButtonLink href="/library">Go to My library</ButtonLink>}
         >
           {prediction.message}
@@ -91,9 +89,9 @@ export function ExamPredictorView() {
       ) : null}
 
       {prediction && prediction.status === "ok" ? (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           {prediction.failed_papers > 0 || (prediction.pending_papers > 0 && !analysing && !error) ? (
-            <div role="status" className="flex max-w-3xl flex-wrap items-center gap-3 rounded-panel bg-stone-100 px-4 py-3 text-sm text-ink">
+            <div role="status" className="flex flex-wrap items-center gap-3 rounded-panel bg-stone-100 px-4 py-3 text-sm text-ink">
               {prediction.pending_papers} past {prediction.pending_papers === 1 ? "paper has" : "papers have"} not been read yet.
               <Button size="sm" variant="secondary" onClick={() => void analyse()} loading={analysing}>
                 Read them now
@@ -101,10 +99,10 @@ export function ExamPredictorView() {
             </div>
           ) : null}
           {prediction.pending_papers < prediction.papers.length ? <Results prediction={prediction} /> : null}
-          <p className="max-w-3xl text-small font-medium text-ink-2">{prediction.disclaimer}</p>
+          <p className="text-small font-medium text-ink-2">{prediction.disclaimer}</p>
         </div>
       ) : null}
-      {prediction && prediction.status !== "ok" ? <p className="mt-6 max-w-3xl text-small font-medium text-ink-2">{prediction.disclaimer}</p> : null}
+      {prediction && prediction.status !== "ok" ? <p className="mt-4 text-small font-medium text-ink-2">{prediction.disclaimer}</p> : null}
     </PageContainer>
   );
 }

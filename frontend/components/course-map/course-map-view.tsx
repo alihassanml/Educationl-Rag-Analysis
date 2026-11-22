@@ -1,6 +1,6 @@
 "use client";
 
-import { Route, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useState } from "react";
 import { StartDiagnosticButton } from "@/components/diagnostic/start-diagnostic-button";
 import { PageContainer } from "@/components/layout/page-container";
@@ -70,7 +70,7 @@ function History({ events }: { events: PathEvent[] }) {
 
 function Path({ path }: { path: LearningPath }) {
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {path.latest_event ? <RouteBanner event={path.latest_event} /> : null}
       <ol aria-label="Your study path" className="flex flex-col gap-3">
         {path.steps.map((step, i) => (
@@ -93,7 +93,6 @@ export function CourseMapView() {
     <PageContainer>
       <PageHeader
         title="Course Map"
-        description="Your topics in the order to study them, from your own documents and results"
         action={
           diagnostic.data?.available ? (
             <StartDiagnosticButton label={diagnostic.data.taken ? "Retake the diagnostic" : "Take the diagnostic"} variant="secondary" />
@@ -103,13 +102,13 @@ export function CourseMapView() {
       {path.loading ? <LoadingBlock label="Loading your Course Map" /> : null}
       {path.error && !path.data ? <ErrorBlock message={path.error.message} onRetry={path.reload} /> : null}
       {path.data && path.data.steps.length === 0 ? (
-        <EmptyState title="Your Course Map is empty" icon={Route} action={<ButtonLink href="/library">Go to My library</ButtonLink>}>
-          Upload a document and its topics will appear here, in the order to study them
+        <EmptyState title="Your Course Map is empty" action={<ButtonLink href="/library">Go to My library</ButtonLink>}>
+          Upload a document to see your topics.
         </EmptyState>
       ) : null}
       {path.data && path.data.steps.length > 0 ? <Path path={path.data} /> : null}
       {path.data && path.data.steps.length > 0 && levels.length === 0 && diagnostic.data?.suggested ? (
-        <p className="mt-6 max-w-3xl text-small text-ink-2">Take the diagnostic to set the level each topic starts at</p>
+        <p className="mt-4 text-small text-ink-2">Take the diagnostic to set the level each topic starts at</p>
       ) : null}
     </PageContainer>
   );

@@ -26,7 +26,7 @@ export function Features() {
     <div id="features" className="scroll-mt-16">
       {/* One large panel: text on the left, a real screenshot on a clay background on the right */}
       <section className="bg-paper">
-        <PageContainer padded={false} className="pt-24 lg:pt-36">
+        <PageContainer site padded={false} className="pt-24 lg:pt-36">
           <Reveal className="grid overflow-hidden rounded-[28px] border border-stone lg:grid-cols-2">
             <Copy large title="It says when it doesn’t know" body="If your notes don’t cover a question, EduRAG tells you instead of guessing." />
             <div className="flex items-center bg-clay p-8 lg:p-14">
@@ -40,7 +40,7 @@ export function Features() {
 
       {/* Three joined rows with a visual beside each, like a bento grid */}
       <section className="bg-paper">
-        <PageContainer padded={false} className="py-6 lg:py-8">
+        <PageContainer site padded={false} className="py-6 lg:py-8">
           <Reveal className="overflow-hidden rounded-[28px] border border-stone">
             <div className="grid border-b border-stone lg:grid-cols-2">
               <Copy title="Quizzes from your own files" body="See the right answer, an explanation and the source page." />

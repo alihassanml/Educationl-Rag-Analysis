@@ -106,7 +106,7 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" ref={sectionRef} className={cn("scroll-mt-16 bg-paper", !still && "h-[420vh]")}>
       <div className={cn("flex items-center", !still && "sticky top-16 h-[calc(100svh-4rem)]")}>
-        <PageContainer padded={false} className={cn("w-full", still && "py-24")}>
+        <PageContainer site padded={false} className={cn("w-full", still && "py-24")}>
           <div
             aria-hidden="true"
             className={cn("dot-grid relative mx-auto w-full overflow-hidden rounded-[28px] border border-stone bg-stone-50 [container-type:inline-size]", wide ? "aspect-[1200/540]" : "aspect-[6/5] max-w-[640px]")}

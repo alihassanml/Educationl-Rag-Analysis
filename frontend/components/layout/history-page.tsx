@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { PageContainer } from "./page-container";
+import { PageHeader } from "./page-header";
 import { SearchInput } from "@/components/ui/search-input";
 import { tutorApi } from "@/lib/api";
 import { filterThreads } from "@/lib/thread-groups";
@@ -15,17 +17,17 @@ export function HistoryPage() {
   const shown = filterThreads(all, query);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:py-8">
-      <h1 className="text-page font-semibold tracking-tight text-ink">Chats</h1>
+    <PageContainer reading>
+      <PageHeader title="Chats" />
 
-      <SearchInput value={query} onChange={setQuery} label="Search chats" size="lg" autoFocus className="mt-6" />
+      <SearchInput value={query} onChange={setQuery} label="Search chats" size="lg" autoFocus />
 
-      {threads.error ? <p className="mt-6 text-ink-2">{threads.error.message}</p> : null}
-      {threads.loading && all.length === 0 ? <p className="mt-6 text-ink-2">Loading chats</p> : null}
-      {!threads.loading && !threads.error && all.length === 0 ? <p className="mt-6 text-ink-2">Your chats are saved here. Press + to start one</p> : null}
-      {all.length > 0 && shown.length === 0 ? <p className="mt-6 text-ink-2">No chats match “{query.trim()}”</p> : null}
+      {threads.error ? <p className="mt-4 text-ink-2">{threads.error.message}</p> : null}
+      {threads.loading && all.length === 0 ? <p className="mt-4 text-ink-2">Loading chats</p> : null}
+      {!threads.loading && !threads.error && all.length === 0 ? <p className="mt-4 text-ink-2">Your chats are saved here. Press + to start one</p> : null}
+      {all.length > 0 && shown.length === 0 ? <p className="mt-4 text-ink-2">No chats match “{query.trim()}”</p> : null}
 
       <ChatList threads={shown} onChanged={threads.reload} />
-    </div>
+    </PageContainer>
   );
 }

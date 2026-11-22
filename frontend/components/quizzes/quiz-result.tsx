@@ -1,4 +1,3 @@
-import { CheckCircle2, XCircle } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { DownloadNotesButton } from "./download-notes-button";
@@ -66,8 +65,8 @@ export function QuizResult({ result }: { result: AttemptResult }) {
   const needsReview = result.topic_status === "needs_revision" && result.topic;
   return (
     <PageContainer>
-      <PageHeader title={result.quiz_title} description="Your result" />
-      <div className="flex max-w-3xl flex-col gap-6">
+      <PageHeader title={result.quiz_title} />
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
         <Panel>
           <p className="text-metric font-medium text-ink">
             {result.score} of {result.total_questions} correct
@@ -109,8 +108,7 @@ export function QuizResult({ result }: { result: AttemptResult }) {
               <div className="flex items-baseline justify-between gap-4">
                 <p className="text-small text-ink-2">Question {index + 1}</p>
                 <p className={cn("inline-flex items-center gap-1 text-sm font-medium", r.is_correct ? "text-success" : "text-danger")}>
-                  {r.is_correct ? <CheckCircle2 size={16} strokeWidth={1.75} aria-hidden="true" /> : <XCircle size={16} strokeWidth={1.75} aria-hidden="true" />}
-                  <span>{r.is_correct ? "Correct" : "Incorrect"}</span>
+                  {r.is_correct ? "Correct" : "Incorrect"}
                 </p>
               </div>
               <p className="mt-2 text-base font-medium text-ink">{r.question_text}</p>

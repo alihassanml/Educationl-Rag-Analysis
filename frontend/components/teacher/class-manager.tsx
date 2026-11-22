@@ -1,7 +1,5 @@
 "use client";
 
-import { Copy } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageContainer } from "@/components/layout/page-container";
@@ -129,25 +127,24 @@ export function ClassManager({ classId }: { classId: string }) {
     <PageContainer>
       <PageHeader
         title={c.name}
-        description={
-          <Link href="/teacher" className="text-accent-link underline-offset-4 hover:underline">
-            All classes
-          </Link>
-        }
         action={
-          <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
-            Delete class
-          </Button>
+          <>
+            <ButtonLink href="/teacher" variant="secondary" size="sm">
+              All classes
+            </ButtonLink>
+            <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
+              Delete class
+            </Button>
+          </>
         }
       />
-      <div className="flex max-w-3xl flex-col gap-6">
+      <div className="flex flex-col gap-4">
         <Panel title="Class code">
           <div className="flex flex-wrap items-center gap-3">
             <code className="rounded-control bg-stone-100 px-3 py-2 font-mono text-lg tracking-widest text-ink" aria-label="Class code">
               {c.join_code}
             </code>
             <Button variant="secondary" size="sm" onClick={() => void copyCode(c.join_code ?? "")}>
-              <Copy size={14} strokeWidth={1.75} aria-hidden="true" />
               Copy code
             </Button>
           </div>
@@ -185,7 +182,7 @@ export function ClassManager({ classId }: { classId: string }) {
             </div>
           ) : (
             <EmptyState title="No document to share">
-              Upload a document in My library first. <ButtonLink href="/library" variant="secondary" size="sm" className="ml-1">My library</ButtonLink>
+              Upload a document first. <ButtonLink href="/library" variant="secondary" size="sm" className="ml-1">My library</ButtonLink>
             </EmptyState>
           )}
         </Panel>

@@ -1,6 +1,5 @@
 "use client";
 
-import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import { FlatSection } from "@/components/ui/flat-section";
@@ -36,7 +35,7 @@ export function LiveFeedback() {
           {items.map((item) => (
             <li key={item.message_id} className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0">
               <div className="flex flex-wrap items-center gap-2">
-                <Chip tone={item.rating === "up" ? "success" : "danger"} icon={item.rating === "up" ? ThumbsUp : ThumbsDown}>
+                <Chip tone={item.rating === "up" ? "success" : "danger"}>
                   {item.rating === "up" ? "Thumbs up" : "Thumbs down"}
                 </Chip>
                 {item.reason ? <Chip>{REASON_LABEL[item.reason]}</Chip> : null}

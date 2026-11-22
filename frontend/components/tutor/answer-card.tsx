@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, Copy, RotateCcw, SearchX } from "lucide-react";
+import { Check, Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
@@ -8,7 +8,6 @@ import { IconButton } from "@/components/ui/icon-button";
 import { CitationPill } from "@/components/ui/citation";
 import { ErrorBlock } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
-import { cn } from "@/lib/cn";
 import { hideOpenMarkup, parseAnswer } from "@/lib/markdown";
 import { useSmoothText } from "@/lib/use-smooth-text";
 import type { LiveStage, Source } from "@/lib/chat-state";
@@ -64,8 +63,7 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
   if (answer.abstained && answer.status === "complete") {
     return (
       <div className="rounded-panel bg-stone-100 p-6">
-        <SearchX size={24} strokeWidth={1.75} className="text-ink-2" aria-hidden="true" />
-        <h3 className="mt-3 text-base font-semibold text-ink">Not found in your material</h3>
+        <h3 className="text-base font-semibold text-ink">Not found in your material</h3>
         <p className="mt-1 max-w-prose text-ink-2">
           Your uploaded documents don&apos;t cover this, so I won&apos;t guess. Try rephrasing, or upload a source that covers it.
         </p>
@@ -121,7 +119,6 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
             className="-ml-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-ink-2 transition-colors duration-[120ms] hover:bg-stone-100 hover:text-ink"
           >
             {answer.sources.length === 1 ? "1 source" : `${answer.sources.length} sources`}
-            <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true" className={cn("transition-transform duration-[120ms]", sourcesOpen && "rotate-90")} />
           </button>
           {sourcesOpen ? (
             <ul id="answer-sources" aria-label="Sources for this answer" className="mt-1 flex flex-col">

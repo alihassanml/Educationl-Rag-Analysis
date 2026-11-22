@@ -62,8 +62,8 @@ export function QuizRunner({ quiz, onSubmitted }: Props) {
 
   return (
     <PageContainer>
-      <PageHeader title={quiz.title} description={`${quiz.question_count} questions · ${quiz.source_documents.join(", ") || "Your material"}`} />
-      <form onSubmit={onSubmit} onKeyDown={onKeyDown} className="flex max-w-3xl flex-col gap-6">
+      <PageHeader title={quiz.title} />
+      <form onSubmit={onSubmit} onKeyDown={onKeyDown} className="mx-auto flex w-full max-w-3xl flex-col gap-4">
         <ProgressBar value={((index + 1) / total) * 100} label={`Question ${index + 1} of ${total}`} className="[&>span]:hidden" />
         <fieldset key={question.id} className="rounded-panel border border-stone bg-paper p-6">
           <legend className="px-1 text-small text-ink-2">

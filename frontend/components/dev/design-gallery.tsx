@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Plus, SearchX } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
@@ -51,7 +51,7 @@ export function DesignGallery() {
 
   return (
     <PageContainer>
-      <PageHeader title="Design components" description="Every shared component in every state. Development only." action={<Button onClick={() => toast.show("Document deleted")}>Show a toast</Button>} />
+      <PageHeader title="Design components" action={<Button onClick={() => toast.show("Document deleted")}>Show a toast</Button>} />
 
       <Section title="Colour tokens">
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
@@ -128,7 +128,7 @@ export function DesignGallery() {
           <TopicStatusLabel status="practicing" />
           <TopicStatusLabel status="doing_well" />
           <Chip>Planned</Chip>
-          <Chip tone="clay" icon={FileText}>
+          <Chip tone="clay">
             Source
           </Chip>
         </div>
@@ -167,7 +167,7 @@ export function DesignGallery() {
 
       <Section title="States">
         <div className="grid gap-4 md:grid-cols-2">
-          <EmptyState title="No documents yet" icon={SearchX} action={<Button>Upload PDF</Button>}>
+          <EmptyState title="No documents yet" action={<Button>Upload PDF</Button>}>
             Uploaded PDFs appear here once they are processed.
           </EmptyState>
           <ErrorBlock message="Could not load your documents. Check your connection and try again." onRetry={() => undefined} />

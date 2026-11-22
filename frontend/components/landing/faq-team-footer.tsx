@@ -16,7 +16,7 @@ const FAQ = [
 export function Faq() {
   return (
     <section id="faq" className="scroll-mt-16 bg-paper">
-      <PageContainer padded={false} className="grid gap-12 py-24 lg:grid-cols-12 lg:gap-12 lg:py-36">
+      <PageContainer site padded={false} className="grid gap-12 py-24 lg:grid-cols-12 lg:gap-12 lg:py-36">
         <Reveal as="h2" className="text-balance text-[clamp(2.25rem,5vw,3.75rem)] font-medium leading-[1.05] tracking-[-0.03em] text-ink lg:col-span-5">
           Questions, answered
         </Reveal>
@@ -42,7 +42,7 @@ export function Faq() {
 export function FinalCta() {
   return (
     <section className="bg-clay-strong text-paper">
-      <PageContainer padded={false} className="flex flex-col items-center pb-24 pt-28 text-center lg:pb-32 lg:pt-36">
+      <PageContainer site padded={false} className="flex flex-col items-center pb-24 pt-28 text-center lg:pb-32 lg:pt-36">
         <Reveal as="h2" className="max-w-[14ch] text-balance text-[clamp(2.5rem,6vw,4.75rem)] font-medium leading-[1.04] tracking-[-0.035em]">
           Start with one PDF
         </Reveal>

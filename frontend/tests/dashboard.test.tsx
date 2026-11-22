@@ -62,7 +62,7 @@ describe("DashboardView", () => {
     expect(screen.getByRole("link", { name: "Upload PDF" }).className).toContain("bg-clay-strong"); // current step is primary
     expect(screen.getByRole("link", { name: "Ask a question" }).className).not.toContain("bg-clay-strong");
     expect(screen.queryByText("Average quiz score")).not.toBeInTheDocument();
-    expect(screen.queryByText("Recommended next step")).not.toBeInTheDocument();
+    expect(screen.queryByText("Next step")).not.toBeInTheDocument();
   });
 
   it("marks 'Ask your first question' done only when the student has a saved chat", async () => {
@@ -77,7 +77,7 @@ describe("DashboardView", () => {
   it("shows the returning layout once a document exists", async () => {
     vi.mocked(progressApi.summary).mockResolvedValue({ ...empty, documents_total: 1, documents_ready: 1, quizzes_completed: 0 });
     render(<DashboardView />);
-    expect(await screen.findByText("Recommended next step")).toBeInTheDocument();
+    expect(await screen.findByText("Next step")).toBeInTheDocument();
   });
 
   it("lists recent chats once, with no second 'continue' card and no New chat link (the chat screen has it)", async () => {
@@ -96,7 +96,7 @@ describe("DashboardView", () => {
     vi.mocked(progressApi.summary).mockResolvedValue({ ...empty, documents_total: 1, documents_ready: 1, latest_document: { id: "d", title: "OS Notes" } });
     vi.mocked(tutorApi.threads).mockRejectedValue(new Error("down"));
     render(<DashboardView />);
-    expect(await screen.findByText("Recommended next step")).toBeInTheDocument();
+    expect(await screen.findByText("Next step")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ask the tutor" })).toHaveAttribute("href", "/tutor");
     expect(screen.queryByText("Recent chats")).not.toBeInTheDocument();
   });
@@ -108,11 +108,11 @@ describe("DashboardView", () => {
       recent_activity: [{ quiz_id: "q1", quiz_title: "Recursion", topic: "Recursion", score: 2, total_questions: 5, percent: 40, completed_at: "2026-01-02T00:00:00Z" }],
     });
     render(<DashboardView />);
-    const card = (await screen.findByText("Recommended next step")).closest("section")!;
+    const card = (await screen.findByText("Next step")).closest("section")!;
     expect(within(card).getByText("Recursion")).toBeInTheDocument();
     expect(within(card).getByText(/start with a beginner quiz/)).toBeInTheDocument();
-    expect(within(card).getByRole("link", { name: "Practise this topic" })).toHaveAttribute("href", "/tutor?mode=quiz&q=Recursion"); // quizzes happen in the chat
-    expect(within(card).getByRole("link", { name: "Ask the tutor about this" }).getAttribute("href")).toContain("/tutor?q=");
+    expect(within(card).getByRole("link", { name: "Practise" })).toHaveAttribute("href", "/tutor?mode=quiz&q=Recursion"); // quizzes happen in the chat
+    expect(within(card).getByRole("link", { name: "Ask the tutor" }).getAttribute("href")).toContain("/tutor?q=");
     expect(screen.getByText("55%")).toBeInTheDocument();
     expect(screen.queryByText("chart")).not.toBeInTheDocument(); // fewer than 3 attempts
   });
@@ -140,15 +140,15 @@ describe("DashboardView", () => {
     expect(screen.getByRole("heading", { name: "Recent quizzes" })).toBeInTheDocument();
   });
 
-  it("limits the revision list to five rows", async () => {
+  it("limits the revision list to four rows", async () => {
     const many = Array.from({ length: 7 }, (_, i) => ({ ...topic, topic_id: `t${i}`, topic_name: `Topic ${i}` }));
     vi.mocked(progressApi.summary).mockResolvedValue({ ...empty, documents_total: 1, documents_ready: 1, quizzes_completed: 3, needs_revision: many, next_step: many[0] });
     render(<DashboardView />);
     await screen.findByRole("heading", { name: "Needs revision" });
-    expect(screen.getAllByRole("link", { name: "Practise" })).toHaveLength(5);
+    expect(within(screen.getByRole("region", { name: "Needs revision" })).getAllByRole("link", { name: "Practise" })).toHaveLength(4);
   });
 
-  it("shows the streak, activity, library coverage and most cited pages from study insights", async () => {
+  it("shows the streak, activity and library coverage from study insights", async () => {
     vi.mocked(progressApi.summary).mockResolvedValue({ ...empty, documents_total: 2, documents_ready: 2, latest_document: { id: "d1", title: "Algorithms" } });
     vi.mocked(progressApi.insights).mockResolvedValue(insightsFixture());
     render(<DashboardView />);
@@ -157,36 +157,16 @@ describe("DashboardView", () => {
     const snapshot = await screen.findByRole("region", { name: "Snapshot" });
     expect(within(snapshot).getByText("Study streak")).toBeInTheDocument();
     expect(within(snapshot).getByText("3 days")).toBeInTheDocument();
-    expect(within(snapshot).getByText(/Done today/)).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Study streak" })).not.toBeInTheDocument();
-
-    // Only real numbers: 5 of 6 answers had sources, and no quiz tile before the first quiz
-    expect(within(snapshot).getByText("83%")).toBeInTheDocument();
-    expect(within(snapshot).queryByText("Average quiz score")).not.toBeInTheDocument();
+    expect(within(snapshot).getByText("Pages indexed")).toBeInTheDocument();
+    expect(within(snapshot).queryByText("Average quiz score")).not.toBeInTheDocument(); // no quiz yet
     expect(screen.queryByText("No data yet")).not.toBeInTheDocument();
     expect(screen.getByRole("img", { name: /6 questions and 0 quizzes on 3 days/ })).toBeInTheDocument();
 
-    // Least explored document first, with small icon actions scoped to it
+    // Least explored document first; a title opens a chat about it
     const library = screen.getByRole("region", { name: "Library" });
-    expect(within(library).getByText(/Not explored yet/)).toBeInTheDocument();
-    expect(within(library).getByRole("meter", { name: "40% of pages explored" })).toBeInTheDocument();
-    expect(within(library).getByRole("link", { name: "Summarise Networks" })).toHaveAttribute("href", "/tutor?mode=summary&doc=d2");
-    expect(within(library).getByRole("meter", { name: "20% of your library explored" })).toBeInTheDocument();
-    expect(within(library).getByRole("link", { name: /Start Networks/ })).toHaveAttribute("href", "/tutor?mode=summary&doc=d2");
-
-    expect(screen.getByRole("link", { name: /Page 3 of Algorithms, cited 5 times/ })).toHaveAttribute("href", "/tutor?mode=quiz&doc=d1");
-    // No card that repeats the chat's modes, and no decorative card icons
+    expect(within(library).getByRole("meter", { name: "40% of Algorithms explored" })).toBeInTheDocument();
+    expect(within(library).getByRole("link", { name: "Algorithms" })).toHaveAttribute("href", "/tutor?doc=d1");
     expect(screen.queryByRole("region", { name: "Quick actions" })).not.toBeInTheDocument();
-    expect(within(library).getByRole("link", { name: "Algorithms" })).toHaveAttribute("href", "/tutor?doc=d1"); // a title opens a chat about it
-  });
-
-  it("asks for today's study when the streak is alive but today is still empty", async () => {
-    const base = insightsFixture();
-    const activity = base.activity.map((d, i) => (i === base.activity.length - 1 ? { ...d, questions: 0 } : d));
-    vi.mocked(progressApi.summary).mockResolvedValue({ ...empty, documents_total: 1, documents_ready: 1 });
-    vi.mocked(progressApi.insights).mockResolvedValue({ ...base, activity, current_streak: 2 });
-    render(<DashboardView />);
-    expect(await screen.findByText(/Study today to keep it/)).toBeInTheDocument();
   });
 });
 
@@ -199,7 +179,7 @@ describe("diagnostic card", () => {
     vi.mocked(diagnosticApi.status).mockResolvedValue(status);
     render(<DashboardView />);
     expect(await screen.findByRole("button", { name: "Start your diagnostic" })).toBeInTheDocument();
-    expect(screen.getByText(/4 topics found in your material/)).toBeInTheDocument();
+    expect(screen.getByText(/4 topics/)).toBeInTheDocument();
   });
 
   it("starts the diagnostic and opens it", async () => {
@@ -224,12 +204,12 @@ describe("diagnostic card", () => {
     vi.mocked(progressApi.summary).mockResolvedValue(studying);
     vi.mocked(diagnosticApi.status).mockResolvedValue({ ...status, taken: true, suggested: false });
     const { unmount } = render(<DashboardView />);
-    await screen.findByText("Recommended next step");
+    await screen.findByText("Next step");
     expect(screen.queryByRole("button", { name: /diagnostic/i })).not.toBeInTheDocument();
     unmount();
     vi.mocked(diagnosticApi.status).mockRejectedValue(new Error("offline"));
     render(<DashboardView />);
-    await screen.findByText("Recommended next step");
+    await screen.findByText("Next step");
     expect(screen.queryByRole("button", { name: /diagnostic/i })).not.toBeInTheDocument();
   });
 
@@ -249,33 +229,32 @@ describe("Course Map card", () => {
     sources: [], next_action: { kind: "revise" as const, message: "Revise this topic with the tutor, then take a quiz at your level." }, is_current: true, ...over,
   });
 
-  it("shows the current step and the latest route update", async () => {
+  it("shows the current step", async () => {
     vi.mocked(progressApi.summary).mockResolvedValue(studying);
     vi.mocked(pathApi.get).mockResolvedValue({
       steps: [step()], current_topic_id: "t1", events: [],
       latest_event: { id: "e1", topic_id: "t1", topic: "Recursion", old_status: "practicing", new_status: "needs_revision", reason: "Recursion moved up because you scored 2/5.", created_at: "2026-11-22T10:00:00Z" },
     });
     render(<DashboardView />);
-    const card = await screen.findByRole("region", { name: "Your Course Map" });
+    const card = await screen.findByRole("region", { name: "Course map" });
     expect(within(card).getByText("Recursion")).toBeInTheDocument();
     expect(within(card).getByText("Beginner")).toBeInTheDocument();
-    expect(within(card).getByText("Recursion moved up because you scored 2/5.")).toBeInTheDocument();
-    expect(within(card).getByRole("link", { name: "Quiz on this topic" }).getAttribute("href")).toContain("q=Recursion");
-    expect(within(card).getByRole("link", { name: "Open Course Map" })).toHaveAttribute("href", "/course-map");
+    expect(within(card).getByRole("link", { name: "Quiz" }).getAttribute("href")).toContain("q=Recursion");
+    expect(within(card).getByRole("link", { name: "Open" })).toHaveAttribute("href", "/course-map");
   });
 
   it("says so when every topic is doing well", async () => {
     vi.mocked(progressApi.summary).mockResolvedValue(studying);
     vi.mocked(pathApi.get).mockResolvedValue({ steps: [step({ status: "doing_well", is_current: false })], current_topic_id: null, events: [], latest_event: null });
     render(<DashboardView />);
-    expect(await screen.findByText(/doing well on every topic/)).toBeInTheDocument();
+    expect(await screen.findByText(/Every topic is going well/)).toBeInTheDocument();
   });
 
   it("is left out when there are no topics or the path cannot be read", async () => {
     vi.mocked(progressApi.summary).mockResolvedValue(studying);
     vi.mocked(pathApi.get).mockResolvedValue({ steps: [], current_topic_id: null, events: [], latest_event: null });
     render(<DashboardView />);
-    await screen.findByText("Recommended next step");
-    expect(screen.queryByRole("region", { name: "Your Course Map" })).not.toBeInTheDocument();
+    await screen.findByText("Next step");
+    expect(screen.queryByRole("region", { name: "Course map" })).not.toBeInTheDocument();
   });
 });

@@ -30,13 +30,6 @@ function describe(day: DayActivity): string {
   return `${date}: ${parts.length ? parts.join(", ") : "no activity"}`;
 }
 
-/** How the streak stands today, in a few words. */
-export function streakStatus(insights: StudyInsights): string {
-  const activeToday = total(insights.activity[insights.activity.length - 1]) > 0;
-  if (insights.current_streak === 0) return "Study today to start one";
-  return activeToday ? "Done today" : "Study today to keep it";
-}
-
 /** Month name above the first week column of each month, skipped when it would collide with the previous one. */
 function monthLabels(columns: (DayActivity | null)[][]): string[] {
   let lastAt = -3;
@@ -72,11 +65,7 @@ export function ActivityCard({ insights }: { insights: StudyInsights }) {
   return (
     <DashCard
       title="Activity"
-      action={
-        <span className="text-ink-2">
-          {plural(activeDays, "active day")} in the last {weeks} weeks
-        </span>
-      }
+      action={<span className="text-ink-2">{plural(activeDays, "active day")}</span>}
     >
       <figure>
         <div className="grid gap-[3px] text-xs text-ink-2" style={grid} aria-hidden="true">
@@ -104,7 +93,7 @@ export function ActivityCard({ insights }: { insights: StudyInsights }) {
               title={cell ? describe(cell) : undefined}
               style={{ gridColumn: Math.floor(i / 7) + 2, gridRow: (i % 7) + 1 }}
               className={cn(
-                "aspect-square w-full max-w-6 rounded-[3px]",
+                "h-[18px] w-full rounded-[3px]",
                 cell ? LEVELS[activityLevel(total(cell))] : "invisible",
                 cell?.date === insights.today && "ring-1 ring-ink ring-offset-1 ring-offset-paper",
               )}

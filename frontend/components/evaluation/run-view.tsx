@@ -53,7 +53,7 @@ function ResultsPanel({ runId }: { runId: string }) {
 function Summary({ metrics }: { metrics: EvalMetrics }) {
   const { abstention: a, ci } = metrics;
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <Panel title="Retrieval quality">
         <HitRateChart hitRate={metrics.hit_rate} />
         <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
@@ -102,9 +102,9 @@ function Header({ run }: { run: EvalRun }) {
       </Link>
       <PageHeader
         title={`${modeLabel(run.config.retrieval_mode)} retrieval on ${run.dataset_name}`}
-        description="Retrieval only, no answer generation yet. Each question is scored on whether the expected page appears among the retrieved passages."
         action={<RunStatusLabel status={run.status} />}
       />
+      <p className="-mt-2 mb-4 text-ink-2">Retrieval only, no answer generation yet.</p>
     </>
   );
 }
@@ -143,7 +143,7 @@ export function RunView({ runId }: { runId: string }) {
   return (
     <PageContainer>
       <Header run={data} />
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         {inProgress ? (
           <Panel title="In progress">
             <progress

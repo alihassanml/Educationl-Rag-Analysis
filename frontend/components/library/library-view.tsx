@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
@@ -89,11 +88,9 @@ export function LibraryView() {
     <PageContainer>
       <PageHeader
         title="My library"
-        description="The material the tutor answers from. Private to your account."
         action={
           empty ? undefined : (
             <Button variant={adding ? "secondary" : "primary"} onClick={() => setAdding((open) => !open)} aria-expanded={adding}>
-              {adding ? <X size={16} strokeWidth={1.75} aria-hidden="true" /> : <Plus size={16} strokeWidth={1.75} aria-hidden="true" />}
               {adding ? "Close" : "Add source"}
             </Button>
           )

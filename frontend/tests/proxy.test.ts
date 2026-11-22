@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
-import { proxy } from "@/proxy";
+import { config, proxy } from "@/proxy";
 
 function request(path: string, signedIn: boolean): NextRequest {
   return new NextRequest(`http://localhost:3000${path}`, {
@@ -29,5 +29,11 @@ describe("proxy", () => {
 
   it("does not gate the login page for signed-out visitors", () => {
     expect(location(proxy(request("/login", false)))).toBeNull();
+  });
+
+  it("never runs on API calls, which are forwarded to the backend as they are", () => {
+    const matches = (path: string) => new RegExp(`^${config.matcher[0]}$`).test(path);
+    expect(matches("/api/v1/auth/login")).toBe(false);
+    expect(matches("/dashboard")).toBe(true);
   });
 });

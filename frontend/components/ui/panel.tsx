@@ -9,14 +9,12 @@ export function cardStyles(muted = false, className?: string): string {
 
 export function Panel({
   title,
-  description,
   action,
   children,
   className,
   muted = false,
 }: {
   title?: string;
-  description?: string;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -25,12 +23,9 @@ export function Panel({
   return (
     <section className={cardStyles(muted, className)}>
       {title || action ? (
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-3 flex items-center justify-between gap-4">
           {title ? (
-            <div>
-              <h2 className="text-base font-semibold text-ink">{title}</h2>
-              {description ? <p className="mt-0.5 text-sm text-ink-2">{description}</p> : null}
-            </div>
+            <h2 className="text-lg font-semibold text-ink">{title}</h2>
           ) : (
             <span />
           )}

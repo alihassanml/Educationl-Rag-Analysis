@@ -1,6 +1,5 @@
 "use client";
 
-import { AlignLeft, FileText, Globe, ListChecks, MessageCircleQuestion, Tag, Trash2, Type, Video, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -102,22 +101,12 @@ function Uploaded({ doc }: { doc: StudyDocument }) {
   );
 }
 
-export const SOURCE: Record<DocumentSource, { icon: LucideIcon; label: string; retry: string }> = {
-  pdf: { icon: FileText, label: "PDF", retry: "Upload a text-based PDF" },
-  website: { icon: Globe, label: "Web page", retry: "Check the address or add it again" },
-  text: { icon: Type, label: "Pasted text", retry: "Add the text again" },
-  youtube: { icon: Video, label: "YouTube", retry: "Check the link, or paste the transcript instead" },
+export const SOURCE: Record<DocumentSource, { label: string; retry: string }> = {
+  pdf: { label: "PDF", retry: "Upload a text-based PDF" },
+  website: { label: "Web page", retry: "Check the address or add it again" },
+  text: { label: "Pasted text", retry: "Add the text again" },
+  youtube: { label: "YouTube", retry: "Check the link, or paste the transcript instead" },
 };
-
-function SourceIcon({ doc }: { doc: StudyDocument }) {
-  const { icon: Icon, label } = SOURCE[doc.source_type ?? "pdf"];
-  return (
-    <span title={label} className="shrink-0 text-ink-2">
-      <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
-      <span className="sr-only">{label}</span>
-    </span>
-  );
-}
 
 /** A ready document's title opens a chat about it; any other title is plain text. */
 function Title({ doc, className }: { doc: StudyDocument; className?: string }) {
@@ -166,13 +155,13 @@ export function DocumentList({ documents, onDeleted, onChanged }: Props) {
     return [
       ...(doc.status === "ready"
         ? [
-            { label: "Open in tutor", icon: MessageCircleQuestion, href: `/tutor?doc=${doc.id}` },
-            { label: "Summarise", icon: AlignLeft, href: `/tutor?mode=summary&doc=${doc.id}` },
-            { label: "Quiz me", icon: ListChecks, href: `/tutor?mode=quiz&doc=${doc.id}` },
+            { label: "Open in tutor", href: `/tutor?doc=${doc.id}` },
+            { label: "Summarise", href: `/tutor?mode=summary&doc=${doc.id}` },
+            { label: "Quiz me", href: `/tutor?mode=quiz&doc=${doc.id}` },
           ]
         : []),
-      { label: "Change type", icon: Tag, onSelect: () => setRelabel(doc) },
-      { label: "Delete", icon: Trash2, destructive: true, onSelect: () => setTarget(doc) },
+      { label: "Change type", onSelect: () => setRelabel(doc) },
+      { label: "Delete", destructive: true, onSelect: () => setTarget(doc) },
     ];
   }
 
@@ -211,7 +200,6 @@ export function DocumentList({ documents, onDeleted, onChanged }: Props) {
               <tr key={doc.id} className={`${tr} hover:bg-stone-50`}>
                 <td className={td}>
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <SourceIcon doc={doc} />
                     <Title doc={doc} className="truncate font-medium text-ink" />
                     <KindChip doc={doc} />
                   </div>
@@ -240,7 +228,6 @@ export function DocumentList({ documents, onDeleted, onChanged }: Props) {
           <li key={doc.id} className="rounded-panel border border-stone bg-paper p-4">
             <div className="flex items-start justify-between gap-2">
               <p className="flex min-w-0 items-center gap-2 break-words font-medium text-ink">
-                <SourceIcon doc={doc} />
                 <Title doc={doc} />
               </p>
               <Menu label={`Actions for ${doc.title}`} items={menuFor(doc)} />

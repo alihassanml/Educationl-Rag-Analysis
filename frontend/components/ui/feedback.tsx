@@ -1,4 +1,3 @@
-import { AlertCircle, CheckCircle2, Info, TriangleAlert, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { Button } from "./button";
@@ -21,14 +20,11 @@ export function LoadingBlock({ label = "Loading" }: { label?: string }) {
   );
 }
 
-/** Danger icon, plain-language message and a Retry button. Never a raw stack trace. */
+/** Plain-language message and a Retry button. Never a raw stack trace. */
 export function ErrorBlock({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div role="alert" className="flex flex-col items-start gap-3 rounded-panel border border-stone bg-paper p-4 sm:flex-row sm:items-center">
-      <div className="flex flex-1 items-start gap-2 text-danger">
-        <AlertCircle size={20} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
-        <p className="text-ink">{message}</p>
-      </div>
+      <p className="flex-1 text-ink">{message}</p>
       {onRetry ? (
         <Button variant="secondary" onClick={onRetry}>
           Try again
@@ -40,33 +36,26 @@ export function ErrorBlock({ message, onRetry }: { message: string; onRetry?: ()
 
 type Tone = "info" | "success" | "warning";
 
-const notice: Record<Tone, { className: string; icon: LucideIcon }> = {
-  info: { className: "bg-stone-100 text-ink", icon: Info },
-  success: { className: "bg-success-soft text-success", icon: CheckCircle2 },
-  warning: { className: "bg-warning-soft text-warning", icon: TriangleAlert },
+const notice: Record<Tone, string> = {
+  info: "bg-stone-100 text-ink",
+  success: "bg-success-soft text-success",
+  warning: "bg-warning-soft text-warning",
 };
 
 export function Notice({ tone = "info", children }: { tone?: Tone; children: ReactNode }) {
-  const { className, icon: Icon } = notice[tone];
   return (
-    <div role="status" className={cn("flex items-start gap-2 rounded-panel px-4 py-3 text-sm", className)}>
-      <Icon size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
-      <div>{children}</div>
+    <div role="status" className={cn("rounded-panel px-4 py-3 text-sm", notice[tone])}>
+      {children}
     </div>
   );
 }
 
-/** card-muted, 24px icon, title, one sentence, one primary action. */
-export function EmptyState({ title, children, action, icon: Icon }: { title: string; children?: ReactNode; action?: ReactNode; icon?: LucideIcon }) {
+/** Title, at most one short sentence, one primary action. */
+export function EmptyState({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="rounded-panel border border-dashed border-stone-strong/40 px-6 py-10 text-center">
-      {Icon ? (
-        <span className="mx-auto mb-3 flex size-10 items-center justify-center rounded-full bg-stone-100 text-ink-2">
-          <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
-        </span>
-      ) : null}
-      <h2 className="text-base font-semibold text-ink">{title}</h2>
-      {children ? <div className="mx-auto mt-1 max-w-prose text-sm text-ink-2">{children}</div> : null}
+    <div className="rounded-panel border border-dashed border-stone-strong/40 px-6 py-8 text-center">
+      <h2 className="text-lg font-semibold text-ink">{title}</h2>
+      {children ? <div className="mx-auto mt-1 max-w-prose text-ink-2">{children}</div> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>
   );

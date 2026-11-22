@@ -55,8 +55,8 @@ export function LightStepView() {
   const r = recap.data;
   return (
     <PageContainer>
-      <PageHeader title={`A lighter step on ${r.topic}`} description="A quick recap, then a short confidence quiz. Take your time" />
-      <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader title={`A lighter step on ${r.topic}`} />
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
         <Panel title="Quick recap">
           <p className="text-ink">{r.sentences.join(" ")}</p>
           <dl className="mt-4 space-y-3 border-t border-stone pt-4 text-sm">

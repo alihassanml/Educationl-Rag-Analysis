@@ -1,6 +1,6 @@
 "use client";
 
-import { AlignLeft, ArrowDown, Download, FileSearch, Lightbulb, ListChecks, PanelRight, Target, type LucideIcon } from "lucide-react";
+import { AlignLeft, ArrowDown, Download, Lightbulb, ListChecks, PanelRight, Target, type LucideIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -408,8 +408,8 @@ export function TutorView({ threadId }: { threadId?: string }) {
             ) : null}
 
             {noDocuments ? (
-              <EmptyState title="Upload a document first" icon={FileSearch} action={<ButtonLink href="/library">Go to My library</ButtonLink>}>
-                The tutor answers from your own material, so it needs at least one processed PDF
+              <EmptyState title="Upload a document first" action={<ButtonLink href="/library">Go to My library</ButtonLink>}>
+                The tutor needs at least one document.
               </EmptyState>
             ) : null}
 

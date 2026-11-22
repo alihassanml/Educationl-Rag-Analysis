@@ -4,6 +4,7 @@ import { PageContainer } from "@/components/layout/page-container";
 import { ButtonLink } from "@/components/ui/button";
 import { MAX_UPLOAD_MB } from "@/lib/validators";
 import { Reveal } from "./reveal";
+import { Logo } from "@/components/ui/logo";
 
 const FAQ = [
   { q: "Is my material private?", a: "Yes. Your files belong to your account, and other users cannot see or search them." },
@@ -64,7 +65,7 @@ export function SiteFooter() {
       <div className="mx-auto w-full max-w-[1200px] rounded-t-[32px] bg-paper px-8 pb-8 pt-12 lg:px-14 lg:pt-16">
         <div className="grid gap-10 md:grid-cols-12">
           <div className="md:col-span-6">
-            <p className="text-lg font-semibold tracking-tight text-ink">EduRAG</p>
+            <Logo />
             <p className="mt-4 max-w-[22ch] text-balance text-[28px] font-medium leading-9 tracking-[-0.02em] text-ink-2">Study from your own notes. Check every answer.</p>
           </div>
           <nav aria-label="Product" className="md:col-span-3">

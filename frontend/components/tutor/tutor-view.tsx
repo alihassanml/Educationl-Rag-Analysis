@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, Download, FileSearch, FileText, Lightbulb, ListChecks, PanelRight, type LucideIcon } from "lucide-react";
+import { AlignLeft, ArrowDown, Download, FileSearch, Lightbulb, ListChecks, PanelRight, Target, type LucideIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { EmptyState, ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import { ApiError } from "@/lib/api-client";
 import { documentsApi, tutorApi } from "@/lib/api";
 import { applyEvent, initialLive, markStopped, type LiveAnswer, type Source } from "@/lib/chat-state";
-import { useGreeting } from "@/lib/greeting";
 import { cn } from "@/lib/cn";
 import { useApi } from "@/lib/use-api";
 import { chatToMarkdown, downloadText } from "@/lib/export-chat";
@@ -47,11 +46,12 @@ const SUGGESTIONS = [
   (title: string) => `What should I remember from ${title} for an exam?`,
 ];
 
-// Icon and kind for the first three suggestions; the prompt itself names the student's own document
+// Icon and kind for each suggestion; the prompt itself names the student's own document
 const SUGGESTION_KINDS: { icon: LucideIcon; kind: string }[] = [
-  { icon: FileText, kind: "Summary" },
+  { icon: AlignLeft, kind: "Summary" },
   { icon: Lightbulb, kind: "Simple explanation" },
   { icon: ListChecks, kind: "Key definitions" },
+  { icon: Target, kind: "Exam revision" },
 ];
 
 /** Four prompt cards built from the student's real document titles. Clicking one fills the composer; it never sends. */
@@ -141,7 +141,6 @@ export function TutorView({ threadId }: { threadId?: string }) {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const [showJump, setShowJump] = useState(false);
-  const greeting = useGreeting();
 
   const nextKey = useRef(1);
   const threadRef = useRef<string | null>(threadId ?? null);
@@ -364,10 +363,7 @@ export function TutorView({ threadId }: { threadId?: string }) {
     <div className="flex h-[calc(100dvh-3.5625rem)] lg:h-dvh">
       <section aria-label="Study tutor" className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-stone px-4 sm:px-6">
-          <div className="min-w-0">
-            <h1 className="truncate text-lg font-medium text-ink">Study tutor</h1>
-            <p className="hidden truncate text-small text-ink-2 md:block">Answers come from your own uploaded material</p>
-          </div>
+          <h1 className="min-w-0 truncate text-base font-semibold text-ink">Study tutor</h1>
           <div className="flex shrink-0 gap-2">
             {turns.length > 0 ? (
               <IconButton label="Export chat as Markdown" onClick={exportChat}>
@@ -384,7 +380,7 @@ export function TutorView({ threadId }: { threadId?: string }) {
         </header>
 
         <div ref={scrollRef} onScroll={onConversationScroll} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <div className={cn("mx-auto flex w-full flex-col gap-6 px-4 py-6 sm:px-6", turns.length === 0 ? "max-w-[1040px]" : "max-w-[760px]")}>
+          <div className={cn("mx-auto flex w-full flex-col gap-6 px-4 py-6 sm:px-6", "max-w-[800px]")}>
             {docs.loading || detail.loading ? <LoadingBlock label={threadId ? "Loading your chat" : "Loading your documents"} /> : null}
             {docs.error ? <ErrorBlock message={docs.error.message} onRetry={docs.reload} /> : null}
             {detail.error ? (
@@ -405,13 +401,12 @@ export function TutorView({ threadId }: { threadId?: string }) {
             ) : null}
 
             {showWorkspace && turns.length === 0 ? (
-              <section aria-labelledby="empty-title" className="py-6 sm:py-12">
-                <h2 id="empty-title" className="text-display font-medium tracking-tight text-ink xl:text-display-lg">
-                  <span className="block text-ink-2">{greeting},</span>
+              <section aria-labelledby="empty-title" className="py-6 sm:py-16">
+                <h2 id="empty-title" className="text-h1 font-semibold tracking-tight text-ink">
                   Ask about your material
                 </h2>
-                <p className="mt-4 max-w-prose text-lead text-ink-2">Start from a suggestion, or write your own question below</p>
-                <ul className="mt-8 grid gap-4 md:grid-cols-3">
+                <p className="mt-1 text-sm text-ink-2">Answers cite the page they came from. Start from a suggestion or write your own question.</p>
+                <ul className="mt-6 grid gap-2 sm:grid-cols-2">
                   {suggestions.slice(0, SUGGESTION_KINDS.length).map((text, i) => {
                     const { icon: Icon, kind } = SUGGESTION_KINDS[i];
                     return (
@@ -423,13 +418,13 @@ export function TutorView({ threadId }: { threadId?: string }) {
                             setQuestion(text);
                             composerRef.current?.focus();
                           }}
-                          className="flex h-full min-h-48 w-full flex-col justify-between gap-6 rounded-panel border border-stone bg-paper p-6 text-left transition-colors duration-[120ms] hover:border-stone-strong hover:shadow-sm"
+                          className="flex h-full w-full items-start gap-3 rounded-panel border border-stone bg-paper px-4 py-3 text-left transition-colors duration-[120ms] hover:border-clay-300 hover:bg-clay-soft"
                         >
-                          <span className="flex flex-col gap-4">
-                            <Icon size={24} strokeWidth={1.75} className="text-ink-2" aria-hidden="true" />
-                            <span className="text-lg font-medium text-ink">{text}</span>
+                          <Icon size={16} strokeWidth={1.75} className="mt-0.5 shrink-0 text-ink-2" aria-hidden="true" />
+                          <span className="min-w-0">
+                            <span className="block text-sm font-medium text-ink">{text}</span>
+                            <span className="block text-small text-ink-2">{kind}</span>
                           </span>
-                          <span className="text-small text-ink-2">{kind}</span>
                         </button>
                       </li>
                     );
@@ -495,7 +490,7 @@ export function TutorView({ threadId }: { threadId?: string }) {
                 Jump to latest
               </Button>
             ) : null}
-            <div className={cn("mx-auto w-full", turns.length === 0 ? "max-w-[1040px]" : "max-w-[760px]")}>
+            <div className="mx-auto w-full max-w-[800px]">
               <Composer
                 value={question}
                 onChange={setQuestion}

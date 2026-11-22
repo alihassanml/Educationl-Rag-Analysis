@@ -61,7 +61,7 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
     return (
       <div className="rounded-panel bg-stone-100 p-6">
         <SearchX size={24} strokeWidth={1.75} className="text-ink-2" aria-hidden="true" />
-        <h3 className="mt-3 text-lg font-semibold text-ink">Not found in your material</h3>
+        <h3 className="mt-3 text-base font-semibold text-ink">Not found in your material</h3>
         <p className="mt-1 max-w-prose text-ink-2">
           Your uploaded documents don&apos;t cover this, so I won&apos;t guess. Try rephrasing, or upload a source that covers it.
         </p>

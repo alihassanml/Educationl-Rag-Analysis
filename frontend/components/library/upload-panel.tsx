@@ -101,7 +101,7 @@ export function UploadPanel({ state, showPanel }: { state: UploadState; showPane
                 )}
               >
                 <FileUp size={24} strokeWidth={1.75} className="text-ink-2" aria-hidden="true" />
-                <h2 className="text-lg font-semibold text-ink">Drop a PDF here or choose a file</h2>
+                <h2 className="text-base font-semibold text-ink">Drop a PDF here or choose a file</h2>
                 <p className="max-w-prose text-ink-2">Notes, textbooks, slides or past papers. Text-based PDFs up to {MAX_UPLOAD_MB} MB.</p>
                 <Button variant="secondary" onClick={choose} loading={uploading}>
                   {uploading ? "Processing" : "Choose file"}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, BarChart3 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, BarChart3 } from "lucide-react";
 import { useState } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
@@ -9,6 +9,7 @@ import { EmptyState, ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import { Panel } from "@/components/ui/panel";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { TopicStatusLabel } from "@/components/ui/status-label";
+import { tableBase, tableFrame, tableHead, td, th, tr } from "@/components/ui/table";
 import { progressApi } from "@/lib/api";
 import { formatDate } from "@/lib/formatters";
 import { useApi } from "@/lib/use-api";
@@ -46,7 +47,7 @@ export function ProgressView() {
 
   return (
     <PageContainer>
-      <PageHeader title="Progress" description="How you're doing on each topic, and why we suggest what we do" />
+      <PageHeader title="Progress" description="How you are doing on each topic, from your quiz results" />
       <div className="flex flex-col gap-6">
         {loading ? <LoadingBlock label="Loading your progress" /> : null}
         {error ? (
@@ -67,39 +68,40 @@ export function ProgressView() {
 
         {topics.data && topics.data.items.length > 0 && rules ? (
           <>
-            <div className="hidden overflow-hidden rounded-panel border border-stone bg-paper sm:block">
-              <table className="w-full border-collapse text-sm">
+            <div className={tableFrame}>
+              <table className={tableBase}>
                 <caption className="sr-only">Progress by topic</caption>
-                <thead className="bg-stone text-left text-ink">
+                <thead className={tableHead}>
                   <tr>
-                    <th scope="col" className="px-4 py-3 font-medium">Topic</th>
-                    <th scope="col" className="px-4 py-3 font-medium" aria-sort={order === "none" ? "none" : order === "asc" ? "ascending" : "descending"}>
-                      <button type="button" onClick={cycleOrder} className="inline-flex items-center gap-1 rounded-control border border-stone-strong bg-paper px-2 py-0.5 font-medium" aria-label="Sort by accuracy">
+                    <th scope="col" className={th}>Topic</th>
+                    <th scope="col" className={th} aria-sort={order === "none" ? "none" : order === "asc" ? "ascending" : "descending"}>
+                      <button type="button" onClick={cycleOrder} className="-mx-1.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium hover:bg-stone hover:text-ink" aria-label="Sort by accuracy">
                         Accuracy
                         {order === "asc" ? <ArrowUp size={14} strokeWidth={1.75} aria-hidden="true" /> : null}
                         {order === "desc" ? <ArrowDown size={14} strokeWidth={1.75} aria-hidden="true" /> : null}
+                        {order === "none" ? <ArrowUpDown size={14} strokeWidth={1.75} className="text-ink-3" aria-hidden="true" /> : null}
                       </button>
                     </th>
-                    <th scope="col" className="px-4 py-3 font-medium">Attempts</th>
-                    <th scope="col" className="px-4 py-3 font-medium">Last practised</th>
-                    <th scope="col" className="px-4 py-3 font-medium">Status</th>
+                    <th scope="col" className={th}>Attempts</th>
+                    <th scope="col" className={th}>Last practised</th>
+                    <th scope="col" className={th}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((topic) => (
-                    <tr key={topic.topic_id} className="h-12 border-t border-stone align-middle">
-                      <td className="px-4 py-2 font-medium text-ink">{topic.topic_name}</td>
-                      <td className="w-64 px-4 py-2">
+                    <tr key={topic.topic_id} className={tr}>
+                      <td className={`${td} font-medium text-ink`}>{topic.topic_name}</td>
+                      <td className={`${td} w-64`}>
                         <ProgressBar value={topic.accuracy_percent ?? 0} label={`${topic.topic_name} accuracy`} />
                         <span className="sr-only">
                           {topic.accuracy_percent ?? 0}% · {topic.correct_answers} of {topic.questions_attempted} correct
                         </span>
                       </td>
-                      <td className="px-4 py-2 text-ink-2">
+                      <td className={`${td} text-ink-2`}>
                         {topic.correct_answers} of {topic.questions_attempted} correct
                       </td>
-                      <td className="px-4 py-2 text-ink-2">{formatDate(topic.last_practiced_at)}</td>
-                      <td className="px-4 py-2">
+                      <td className={`${td} text-ink-2`}>{formatDate(topic.last_practiced_at)}</td>
+                      <td className={td}>
                         <TopicStatusLabel status={topic.status} />
                       </td>
                     </tr>

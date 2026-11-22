@@ -8,7 +8,7 @@ export default function NotFound() {
   return (
     <main>
       <PageContainer className="max-w-xl py-16">
-        <h1 className="text-page font-medium text-ink">Page not found</h1>
+        <h1 className="text-page font-semibold tracking-tight text-ink">Page not found</h1>
         <p className="mt-2 text-ink-2">This page doesn&apos;t exist or has moved. Check the address, or go back to your dashboard</p>
         <ButtonLink href="/dashboard" className="mt-6">
           Go to dashboard

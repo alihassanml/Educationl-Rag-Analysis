@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { Logo } from "@/components/ui/logo";
 import { HeroIllustration } from "@/components/landing/hero-illustration";
 import { PageContainer } from "@/components/layout/page-container";
 
@@ -10,9 +10,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <PageContainer className="flex min-h-screen items-center">
           {/* One column: the logo, the heading and the fields share a left edge */}
           <div className="mx-auto w-full max-w-[400px]">
-            <Link href="/" className="mb-12 inline-block text-lg font-semibold tracking-tight text-ink">
-              EduRAG
-            </Link>
+            <Logo className="mb-12" />
             {children}
           </div>
         </PageContainer>

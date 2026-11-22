@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useRef, useState, type ReactNode } from "react";
 import { useUser } from "@/components/auth/session-provider";
+import { LogoMark } from "@/components/ui/logo";
 import { authApi } from "@/lib/api";
 import { NEW_CHAT_EVENT } from "@/lib/chat-events";
 import { cn } from "@/lib/cn";
@@ -74,6 +75,15 @@ export function Rail({ expanded }: { expanded: boolean }) {
 
   return (
     <nav aria-label="Main" className="flex h-full flex-col gap-2 px-4 py-4">
+      <Link href="/dashboard" aria-label="EduRAG home" className={cn(row, "mb-2 text-ink")}>
+        <span className="inline-flex size-11 shrink-0 items-center justify-center">
+          <LogoMark className="size-8" />
+        </span>
+        <Label expanded={expanded} className="text-base font-semibold tracking-tight">
+          EduRAG
+        </Label>
+      </Link>
+
       <button type="button" aria-label="New chat" onClick={newChat} className={cn(row, "text-ink")}>
         <span className={cn(circle, "bg-ink text-paper group-hover/row:bg-clay-stronger")}>
           <Plus size={20} strokeWidth={1.75} aria-hidden="true" />

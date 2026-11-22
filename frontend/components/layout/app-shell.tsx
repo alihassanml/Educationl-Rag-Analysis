@@ -3,6 +3,7 @@
 import { History, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/cn";
 import { AccountMenu } from "./account-menu";
 import { PAGE_GUTTER } from "./page-container";
@@ -10,12 +11,7 @@ import { Rail } from "./rail";
 import { SidebarNav } from "./sidebar-nav";
 
 export function Brand() {
-  return (
-    <Link href="/tutor" className="flex items-center gap-2.5 text-lg font-semibold tracking-tight text-ink">
-      <span aria-hidden="true" className="size-6 rounded-lg bg-clay-300" />
-      EduRAG
-    </Link>
-  );
+  return <Logo href="/dashboard" />;
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -39,7 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col bg-paper lg:rounded-l-[28px]">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-paper lg:rounded-l-[28px]">
         <div className="sticky top-0 z-30 border-b border-stone bg-paper lg:hidden">
           <div className={cn("flex h-14 items-center justify-between", PAGE_GUTTER)}>
             <Brand />

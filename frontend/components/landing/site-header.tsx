@@ -1,11 +1,11 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ButtonLink } from "@/components/ui/button";
 import { authApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { Logo } from "@/components/ui/logo";
 
 const LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -49,9 +49,7 @@ export function SiteHeader() {
   return (
     <header className={cn("sticky top-0 z-40 border-b bg-paper transition-shadow duration-[180ms]", scrolled ? "border-stone shadow-md" : "border-transparent")}>
       <div className="flex h-16 w-full items-center justify-between gap-6 px-4 sm:px-6 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-8">
-        <Link href="/" className="justify-self-start text-lg font-semibold tracking-tight text-ink">
-          EduRAG
-        </Link>
+        <Logo className="justify-self-start" />
         <nav aria-label="Sections" className="hidden lg:block">
           <ul className="flex items-center gap-1 rounded-full border border-stone bg-paper p-1">
             {LINKS.map((link) => (

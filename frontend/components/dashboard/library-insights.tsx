@@ -1,24 +1,9 @@
 "use client";
 
-import {
-  AlignLeft,
-  BookOpen,
-  Bookmark,
-  ChevronRight,
-  FileText,
-  Globe,
-  Lightbulb,
-  ListChecks,
-  Quote,
-  Sparkles,
-  Upload,
-  Zap,
-  type LucideIcon,
-} from "lucide-react";
+import { AlignLeft, ChevronRight, FileText, Globe, ListChecks, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/cn";
 import type { DocumentSource, DocumentUsage, HotPage } from "@/types/api";
-import { cardLinkClass, DashCard, IconChip } from "./dash-card";
+import { cardLinkClass, DashCard } from "./dash-card";
 
 const SOURCE_ICON: Record<DocumentSource, LucideIcon> = { pdf: FileText, website: Globe, text: AlignLeft };
 export const MAX_ROWS = 5;
@@ -43,6 +28,11 @@ function IconAction({ href, icon: Icon, label }: { href: string; icon: LucideIco
   );
 }
 
+function SourceIcon({ doc }: { doc: DocumentUsage }) {
+  const Icon = SOURCE_ICON[doc.source_type] ?? FileText;
+  return <Icon size={16} strokeWidth={1.75} className="shrink-0 text-ink-2" aria-hidden="true" />;
+}
+
 function DocRow({ doc }: { doc: DocumentUsage }) {
   const coverage = coveragePercent(doc);
   const used = doc.times_cited > 0;
@@ -52,9 +42,11 @@ function DocRow({ doc }: { doc: DocumentUsage }) {
 
   return (
     <li className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-      <IconChip icon={SOURCE_ICON[doc.source_type] ?? FileText} className="bg-stone-100 text-ink-2" />
+      <SourceIcon doc={doc} />
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-ink">{doc.title}</p>
+        <Link href={`/tutor?doc=${doc.id}`} className="block truncate font-medium text-ink hover:text-accent-link">
+          {doc.title}
+        </Link>
         <p className="truncate text-small text-ink-2">{meta}</p>
       </div>
       {coverage !== null ? (
@@ -73,7 +65,7 @@ function DocRow({ doc }: { doc: DocumentUsage }) {
         </div>
       ) : null}
       <div className="flex shrink-0">
-        <IconAction href={`/tutor?mode=summary&doc=${doc.id}`} icon={Sparkles} label={`Summarise ${doc.title}`} />
+        <IconAction href={`/tutor?mode=summary&doc=${doc.id}`} icon={AlignLeft} label={`Summarise ${doc.title}`} />
         <IconAction href={`/tutor?mode=quiz&doc=${doc.id}`} icon={ListChecks} label={`Quiz me on ${doc.title}`} />
       </div>
     </li>
@@ -114,7 +106,6 @@ export function LibraryCard({ documents }: { documents: DocumentUsage[] }) {
   return (
     <DashCard
       title="Library"
-      icon={BookOpen}
       action={
         <Link href="/library" className={cardLinkClass}>
           Manage
@@ -138,7 +129,7 @@ export function LibraryCard({ documents }: { documents: DocumentUsage[] }) {
 export function TopPagesCard({ pages }: { pages: HotPage[] }) {
   const max = Math.max(1, ...pages.map((p) => p.times_cited));
   return (
-    <DashCard title="Most cited pages" icon={Bookmark}>
+    <DashCard title="Most cited pages">
       {pages.length === 0 ? (
         <p className="text-sm text-ink-2">Pages behind your answers appear here.</p>
       ) : (
@@ -158,47 +149,12 @@ export function TopPagesCard({ pages }: { pages: HotPage[] }) {
                     <span className="block h-full rounded-full bg-clay-300" style={{ width: `${(page.times_cited / max) * 100}%` }} />
                   </span>
                 </span>
-                <span className="flex shrink-0 items-center gap-1 text-small font-medium text-ink-2">
-                  <Quote size={12} strokeWidth={2} aria-hidden="true" />
-                  {page.times_cited}
-                </span>
+                <span className="shrink-0 text-small text-ink-2">{page.times_cited}×</span>
               </Link>
             </li>
           ))}
         </ol>
       )}
-    </DashCard>
-  );
-}
-
-/** One click into each way of studying, scoped to the latest document when there is one. */
-export function QuickActionsCard({ latestDocId, className }: { latestDocId: string | null; className?: string }) {
-  const scope = latestDocId ? `&doc=${latestDocId}` : "";
-  const actions = [
-    { icon: Sparkles, title: "Summarise", hint: "Key ideas with pages", href: `/tutor?mode=summary${scope}` },
-    { icon: ListChecks, title: "Quiz me", hint: "Find weak topics", href: `/tutor?mode=quiz${scope}` },
-    { icon: Lightbulb, title: "Explain simply", hint: "Plain words", href: `/tutor?mode=simple${scope}` },
-    { icon: Upload, title: "Add material", hint: "PDF, link or notes", href: "/library" },
-  ];
-  return (
-    <DashCard title="Quick actions" icon={Zap} className={className}>
-      <ul className="flex flex-1 flex-col gap-2">
-        {actions.map(({ icon, title, hint, href }) => (
-          <li key={title} className="flex flex-1">
-            <Link
-              href={href}
-              className={cn("group flex flex-1 items-center gap-3 rounded-control border border-stone px-3 py-2.5 transition-colors", "hover:border-clay-300 hover:bg-clay-soft")}
-            >
-              <IconChip icon={icon} className="group-hover:bg-paper" />
-              <span className="min-w-0 flex-1">
-                <span className="block font-medium text-ink">{title}</span>
-                <span className="block truncate text-small text-ink-2">{hint}</span>
-              </span>
-              <ChevronRight size={16} strokeWidth={1.75} className="shrink-0 text-ink-2" aria-hidden="true" />
-            </Link>
-          </li>
-        ))}
-      </ul>
     </DashCard>
   );
 }

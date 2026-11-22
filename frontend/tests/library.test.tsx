@@ -115,6 +115,44 @@ describe("LibraryView", () => {
     expect(within(table).getByText(/No readable text found/)).toHaveTextContent("Upload a text-based PDF");
   });
 
+  it("opens a ready document's chat from its title; a failed one's title is not a link", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [doc(), doc({ id: "d2", title: "Scan", status: "failed" })], total: 2 });
+    render(<LibraryView />);
+    const table = (await screen.findAllByRole("table"))[0];
+    expect(within(table).getByRole("link", { name: "OS Notes" })).toHaveAttribute("href", "/tutor?doc=d1");
+    expect(within(table).queryByRole("link", { name: "Scan" })).not.toBeInTheDocument();
+  });
+
+  it("searches by title and filters by type, with a count and a way back", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({
+      items: [doc(), doc({ id: "d2", title: "Biology chapter", source_type: "website" }), doc({ id: "d3", title: "OS lecture", source_type: "text" })],
+      total: 3,
+    });
+    render(<LibraryView />);
+    const table = (await screen.findAllByRole("table"))[0];
+    expect(screen.getByText("3 documents")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search documents" }), "os");
+    expect(within(table).queryByText("Biology chapter")).not.toBeInTheDocument();
+    expect(screen.getByText("2 of 3 documents")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Type" }), "text");
+    expect(within(table).queryByText("OS Notes")).not.toBeInTheDocument();
+    expect(within(table).getByText("OS lecture")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search documents" }), "zzz");
+    expect(screen.getByText(/No documents match/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(screen.getByText("3 documents")).toBeInTheDocument();
+  });
+
+  it("hides the type filter when every document is the same kind", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [doc(), doc({ id: "d2", title: "Scan" })], total: 2 });
+    render(<LibraryView />);
+    await screen.findAllByRole("table");
+    expect(screen.queryByRole("combobox", { name: "Type" })).not.toBeInTheDocument();
+  });
+
   it("offers 'Open in tutor' only for ready documents, scoped to that document", async () => {
     vi.mocked(documentsApi.list).mockResolvedValue({ items: [doc(), doc({ id: "d2", title: "Scan", status: "failed" })], total: 2 });
     render(<LibraryView />);

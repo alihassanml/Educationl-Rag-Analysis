@@ -6,7 +6,7 @@ export function FlatSection({ title, action, children }: { title: string; action
   return (
     <section className="border-t border-stone pt-5">
       <div className="mb-4 flex items-baseline justify-between gap-4">
-        <h2 className="text-lg font-semibold text-ink">{title}</h2>
+        <h2 className="text-base font-semibold text-ink">{title}</h2>
         {action}
       </div>
       {children}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -30,6 +30,7 @@ export function QuizzesView() {
         action={
           ready.length > 0 ? (
             <Button onClick={() => setOpen(true)}>
+              <Plus size={16} strokeWidth={1.75} aria-hidden="true" />
               New quiz
             </Button>
           ) : undefined
@@ -45,31 +46,28 @@ export function QuizzesView() {
         ) : null}
 
         {ready.length > 0 ? (
-          <section aria-labelledby="quiz-history">
-            <h2 id="quiz-history" className="mb-3 text-lg font-semibold text-ink">
-              Your quizzes
-            </h2>
+          <section aria-label="Your quizzes">
             {quizzes.loading ? <LoadingBlock label="Loading your quizzes" /> : null}
             {quizzes.error ? <ErrorBlock message={quizzes.error.message} onRetry={quizzes.reload} /> : null}
             {quizzes.data && quizzes.data.items.length === 0 ? (
-              <EmptyState title="No quizzes yet" icon={ClipboardList} action={<Button onClick={() => setOpen(true)}>New quiz</Button>}>
-                Your quizzes and their scores will be listed here
+              <EmptyState title="No quizzes yet" icon={ClipboardList}>
+                Create one with New quiz, or say “quiz me” in the chat. Each quiz and its score is listed here
               </EmptyState>
             ) : null}
             {quizzes.data && quizzes.data.items.length > 0 ? (
               <ul className="divide-y divide-stone overflow-hidden rounded-panel border border-stone bg-paper">
                 {quizzes.data.items.map((quiz) => (
                   <li key={quiz.id}>
-                    <Link href={`/quizzes/${quiz.id}`} className="flex flex-col gap-2 p-4 hover:bg-stone-100 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <Link href={`/quizzes/${quiz.id}`} className="flex flex-col gap-2 px-4 py-3 hover:bg-stone-50 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                       <span className="min-w-0">
-                        <span className="block truncate font-medium text-ink">{quiz.topic ?? quiz.title}</span>
+                        <span className="block truncate text-sm font-medium text-ink">{quiz.topic ?? quiz.title}</span>
                         <span className="block text-small text-ink-2">
                           {quiz.question_count} questions · {quiz.source_documents.join(", ") || "Source removed"} · {formatDate(quiz.created_at)}
                         </span>
                       </span>
                       <span className="flex shrink-0 items-center gap-3">
                         <Chip className="capitalize">{quiz.difficulty}</Chip>
-                        <span className="w-24 text-right text-sm font-medium text-ink">{quiz.attempt ? `${quiz.attempt.score} of ${quiz.attempt.total_questions} correct` : "Not taken yet"}</span>
+                        <span className="w-32 text-right text-sm font-medium text-ink">{quiz.attempt ? `${quiz.attempt.score} of ${quiz.attempt.total_questions} correct` : "Not taken yet"}</span>
                       </span>
                     </Link>
                   </li>

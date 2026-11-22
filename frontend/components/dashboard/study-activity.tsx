@@ -1,6 +1,5 @@
 "use client";
 
-import { CalendarDays, Flame } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { DayActivity, StudyInsights } from "@/types/api";
 import { DashCard } from "./dash-card";
@@ -31,60 +30,11 @@ function describe(day: DayActivity): string {
   return `${date}: ${parts.length ? parts.join(", ") : "no activity"}`;
 }
 
-/** Days studied in a row, and the last seven days as dots. */
-export function StreakCard({ insights }: { insights: StudyInsights }) {
-  const { current_streak: streak, longest_streak: longest, activity } = insights;
-  const week = activity.slice(-7);
-  const activeToday = total(activity[activity.length - 1]) > 0;
-  const status = streak === 0 ? "Start today" : activeToday ? "Done today" : "Study today to keep it";
-
-  return (
-    <DashCard
-      title="Study streak"
-      icon={Flame}
-      action={<span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", activeToday ? "bg-success-soft text-success" : "bg-clay-soft text-accent-ink")}>{status}</span>}
-    >
-      <p className="flex items-baseline gap-2">
-        <span className="text-display font-semibold tracking-tight text-ink">{streak}</span>
-        <span className="text-lg text-ink-2">{streak === 1 ? "day" : "days"}</span>
-      </p>
-
-      <ol className="mt-auto grid grid-cols-7 gap-1 pt-5" aria-label="Last seven days">
-        {week.map((day, i) => {
-          const date = parseDay(day.date);
-          const active = total(day) > 0;
-          return (
-            <li key={day.date} className="flex flex-col items-center gap-1.5" title={describe(day)}>
-              <span className="text-xs text-ink-2" aria-hidden="true">
-                {date.toLocaleDateString("en", { weekday: "narrow" })}
-              </span>
-              <span
-                className={cn(
-                  "flex size-8 items-center justify-center rounded-full text-xs font-medium",
-                  active ? "bg-clay-strong text-on-accent" : "bg-stone-100 text-ink-2",
-                  i === week.length - 1 && "ring-2 ring-clay ring-offset-2 ring-offset-paper",
-                )}
-              >
-                {date.getDate()}
-              </span>
-              <span className="sr-only">{describe(day)}</span>
-            </li>
-          );
-        })}
-      </ol>
-
-      <dl className="mt-5 grid grid-cols-2 border-t border-stone pt-4 text-sm">
-        <div>
-          <dt className="text-ink-2">Best streak</dt>
-          <dd className="font-semibold text-ink">{plural(longest, "day")}</dd>
-        </div>
-        <div>
-          <dt className="text-ink-2">Study days</dt>
-          <dd className="font-semibold text-ink">{insights.active_days}</dd>
-        </div>
-      </dl>
-    </DashCard>
-  );
+/** How the streak stands today, in a few words. */
+export function streakStatus(insights: StudyInsights): string {
+  const activeToday = total(insights.activity[insights.activity.length - 1]) > 0;
+  if (insights.current_streak === 0) return "Study today to start one";
+  return activeToday ? "Done today" : "Study today to keep it";
 }
 
 /** Month name above the first week column of each month, skipped when it would collide with the previous one. */
@@ -117,25 +67,18 @@ export function ActivityCard({ insights }: { insights: StudyInsights }) {
   const questions = days.reduce((sum, d) => sum + d.questions, 0);
   const quizzes = days.reduce((sum, d) => sum + d.quizzes, 0);
   const activeDays = days.filter((d) => total(d) > 0).length;
-  const stats = [
-    { label: "Questions", value: questions },
-    { label: "Quizzes", value: quizzes },
-    { label: "Active days", value: activeDays },
-  ];
   const grid = { gridTemplateColumns: `28px repeat(${columns.length}, minmax(0, 1fr))` };
 
   return (
-    <DashCard title="Activity" icon={CalendarDays} action={<span className="text-ink-2">Last {weeks} weeks</span>}>
-      <dl className="mb-5 grid grid-cols-3 gap-4">
-        {stats.map((s) => (
-          <div key={s.label}>
-            <dt className="text-small text-ink-2">{s.label}</dt>
-            <dd className="text-page font-semibold tracking-tight text-ink">{s.value}</dd>
-          </div>
-        ))}
-      </dl>
-
-      <figure className="mt-auto">
+    <DashCard
+      title="Activity"
+      action={
+        <span className="text-ink-2">
+          {plural(activeDays, "active day")} in the last {weeks} weeks
+        </span>
+      }
+    >
+      <figure>
         <div className="grid gap-[3px] text-xs text-ink-2" style={grid} aria-hidden="true">
           <span />
           {labels.map((label, i) => (
@@ -161,7 +104,7 @@ export function ActivityCard({ insights }: { insights: StudyInsights }) {
               title={cell ? describe(cell) : undefined}
               style={{ gridColumn: Math.floor(i / 7) + 2, gridRow: (i % 7) + 1 }}
               className={cn(
-                "aspect-square w-full max-w-7 rounded-[3px]",
+                "aspect-square w-full max-w-6 rounded-[3px]",
                 cell ? LEVELS[activityLevel(total(cell))] : "invisible",
                 cell?.date === insights.today && "ring-1 ring-ink ring-offset-1 ring-offset-paper",
               )}

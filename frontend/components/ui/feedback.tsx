@@ -59,10 +59,14 @@ export function Notice({ tone = "info", children }: { tone?: Tone; children: Rea
 /** card-muted, 24px icon, title, one sentence, one primary action. */
 export function EmptyState({ title, children, action, icon: Icon }: { title: string; children?: ReactNode; action?: ReactNode; icon?: LucideIcon }) {
   return (
-    <div className="rounded-panel bg-stone-100 px-6 py-10 text-center">
-      {Icon ? <Icon size={24} strokeWidth={1.75} className="mx-auto mb-3 text-ink-2" aria-hidden="true" /> : null}
-      <h2 className="text-lg font-semibold text-ink">{title}</h2>
-      {children ? <div className="mx-auto mt-1 max-w-prose text-ink-2">{children}</div> : null}
+    <div className="rounded-panel border border-dashed border-stone-strong/40 px-6 py-10 text-center">
+      {Icon ? (
+        <span className="mx-auto mb-3 flex size-10 items-center justify-center rounded-full bg-stone-100 text-ink-2">
+          <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
+        </span>
+      ) : null}
+      <h2 className="text-base font-semibold text-ink">{title}</h2>
+      {children ? <div className="mx-auto mt-1 max-w-prose text-sm text-ink-2">{children}</div> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>
   );

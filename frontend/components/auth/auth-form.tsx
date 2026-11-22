@@ -70,7 +70,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <div className="w-full max-w-[400px]">
-      <h1 className="text-page font-medium text-ink">{copy.title}</h1>
+      <h1 className="text-page font-semibold tracking-tight text-ink">{copy.title}</h1>
       <p className="mt-1 text-ink-2">{copy.description}</p>
 
       <form onSubmit={onSubmit} noValidate className="mt-8 flex flex-col gap-4">

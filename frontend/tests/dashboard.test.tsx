@@ -147,12 +147,14 @@ describe("DashboardView", () => {
     vi.mocked(progressApi.insights).mockResolvedValue(insightsFixture());
     render(<DashboardView />);
 
-    const streak = await screen.findByRole("region", { name: "Study streak" });
-    expect(within(streak).getByText("3", { selector: ".text-display" })).toBeInTheDocument();
-    expect(within(streak).getByText("Done today")).toBeInTheDocument();
+    // The streak is one number in the snapshot strip, not a card of its own
+    const snapshot = await screen.findByRole("region", { name: "Snapshot" });
+    expect(within(snapshot).getByText("Study streak")).toBeInTheDocument();
+    expect(within(snapshot).getByText("3 days")).toBeInTheDocument();
+    expect(within(snapshot).getByText(/Done today/)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Study streak" })).not.toBeInTheDocument();
 
     // Only real numbers: 5 of 6 answers had sources, and no quiz tile before the first quiz
-    const snapshot = screen.getByRole("region", { name: "Snapshot" });
     expect(within(snapshot).getByText("83%")).toBeInTheDocument();
     expect(within(snapshot).queryByText("Average quiz score")).not.toBeInTheDocument();
     expect(screen.queryByText("No data yet")).not.toBeInTheDocument();
@@ -167,7 +169,9 @@ describe("DashboardView", () => {
     expect(within(library).getByRole("link", { name: /Start Networks/ })).toHaveAttribute("href", "/tutor?mode=summary&doc=d2");
 
     expect(screen.getByRole("link", { name: /Page 3 of Algorithms, cited 5 times/ })).toHaveAttribute("href", "/tutor?mode=quiz&doc=d1");
-    expect(screen.getByRole("link", { name: /Quiz me.*Find weak topics/ })).toHaveAttribute("href", "/tutor?mode=quiz&doc=d1");
+    // No card that repeats the chat's modes, and no decorative card icons
+    expect(screen.queryByRole("region", { name: "Quick actions" })).not.toBeInTheDocument();
+    expect(within(library).getByRole("link", { name: "Algorithms" })).toHaveAttribute("href", "/tutor?doc=d1"); // a title opens a chat about it
   });
 
   it("asks for today's study when the streak is alive but today is still empty", async () => {
@@ -176,6 +180,6 @@ describe("DashboardView", () => {
     vi.mocked(progressApi.summary).mockResolvedValue({ ...empty, documents_total: 1, documents_ready: 1 });
     vi.mocked(progressApi.insights).mockResolvedValue({ ...base, activity, current_streak: 2 });
     render(<DashboardView />);
-    expect(await screen.findByText("Study today to keep it")).toBeInTheDocument();
+    expect(await screen.findByText(/Study today to keep it/)).toBeInTheDocument();
   });
 });

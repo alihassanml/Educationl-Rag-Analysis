@@ -17,6 +17,7 @@ class DocumentOut(BaseModel):
     status: str
     error_message: str | None
     page_count: int | None
+    source_url: str | None = None
     kind: str = "notes"
     exam_year: int | None = None
     exam_session: str | None = None
@@ -44,6 +45,14 @@ class WebsiteDocumentIn(BaseModel):
     url: str = Field(min_length=4, max_length=2048)
     title: str | None = Field(default=None, max_length=255)
     kind: DocumentKind = "notes"
+    exam_year: int | None = Field(default=None, ge=1900, le=2100)
+    exam_session: str | None = Field(default=None, max_length=50)
+
+
+class YouTubeDocumentIn(BaseModel):
+    url: str = Field(min_length=4, max_length=2048)
+    title: str | None = Field(default=None, max_length=255)
+    kind: DocumentKind = "lecture"
     exam_year: int | None = Field(default=None, ge=1900, le=2100)
     exam_session: str | None = Field(default=None, max_length=50)
 

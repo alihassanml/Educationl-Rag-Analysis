@@ -9,6 +9,9 @@ export type Source = {
   page: number | null;
   /** Chapter or heading the passage sits under, when the document has one */
   section: string | null;
+  /** A lecture passage: seconds into the video, and the link that opens it there */
+  startSeconds: number | null;
+  url: string | null;
   snippet: string;
   deleted: boolean;
 };
@@ -54,6 +57,8 @@ function toSource(raw: unknown): Source | null {
     title: typeof raw.document_title === "string" ? raw.document_title : "Document",
     page: typeof raw.page_number === "number" ? raw.page_number : null,
     section: typeof raw.section_title === "string" && raw.section_title ? raw.section_title : null,
+    startSeconds: typeof raw.start_seconds === "number" ? raw.start_seconds : null,
+    url: typeof raw.source_url === "string" && raw.source_url ? raw.source_url : null,
     snippet: typeof raw.snippet === "string" ? raw.snippet : "",
     deleted: false,
   };

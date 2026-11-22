@@ -31,6 +31,7 @@ class PdfError(Exception):
 class PageText:
     page_number: int | None  # 1-based; None for sources that have no pages
     text: str
+    start_seconds: int | None = None  # a lecture passage: where it starts in the video
 
 
 @dataclass(frozen=True)

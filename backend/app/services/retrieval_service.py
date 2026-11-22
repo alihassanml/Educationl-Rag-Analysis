@@ -1,7 +1,7 @@
 import re
 import uuid
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 from sqlalchemy import Select, Text, cast, func, select, tuple_
@@ -12,6 +12,7 @@ from app.core.config import get_settings
 from app.core.errors import NotFoundError
 from app.models.document import STATUS_READY, Document, DocumentChunk
 from app.services.embedding_service import Embedder
+from app.services.youtube_service import link_at
 
 RRF_K = 60
 HYBRID_CANDIDATES = 40  # per ranking (guide section 7, step 3)
@@ -26,6 +27,8 @@ class RetrievedChunk:
     content: str
     similarity: float
     section_title: str | None = None
+    start_seconds: int | None = None  # a lecture passage: seconds into the video
+    source_url: str | None = None  # a lecture passage: the video link at that second
     rrf_score: float | None = None  # only set by hybrid retrieval
 
 
@@ -213,12 +216,32 @@ def retrieve(
                 content=candidate.chunk.content,
                 similarity=candidate.similarity,
                 section_title=candidate.chunk.section_title,
+                start_seconds=candidate.chunk.start_seconds,
                 rrf_score=rrf_score,
             )
         )
         if len(selected) == top_k:
             break
-    return selected
+    return attach_source_urls(db, selected)
+
+
+def attach_source_urls(db: Session, chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
+    """Give each lecture passage the link to its video at the right second."""
+    if not any(c.start_seconds is not None for c in chunks):
+        return chunks
+    urls = dict(
+        db.execute(
+            select(Document.id, Document.source_url).where(
+                Document.id.in_({c.document_id for c in chunks})
+            )
+        ).all()
+    )
+    return [
+        replace(c, source_url=link_at(urls[c.document_id], c.start_seconds))
+        if c.start_seconds is not None and urls.get(c.document_id)
+        else c
+        for c in chunks
+    ]
 
 
 def _spread(count: int, picks: int) -> list[int]:
@@ -284,15 +307,19 @@ def retrieve_coverage(
         )
         .order_by(DocumentChunk.document_id, DocumentChunk.chunk_index)
     ).scalars()
-    return [
-        RetrievedChunk(
-            chunk_id=chunk.id,
-            document_id=chunk.document_id,
-            document_title=titles[chunk.document_id],
-            page_number=chunk.page_number,
-            content=chunk.content,
-            similarity=0.0,  # chosen for coverage, not matched to a query
-            section_title=chunk.section_title,
-        )
-        for chunk in rows
-    ]
+    return attach_source_urls(
+        db,
+        [
+            RetrievedChunk(
+                chunk_id=chunk.id,
+                document_id=chunk.document_id,
+                document_title=titles[chunk.document_id],
+                page_number=chunk.page_number,
+                content=chunk.content,
+                similarity=0.0,  # chosen for coverage, not matched to a query
+                section_title=chunk.section_title,
+                start_seconds=chunk.start_seconds,
+            )
+            for chunk in rows
+        ],
+    )

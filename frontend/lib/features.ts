@@ -117,7 +117,18 @@ export const FEATURES: Feature[] = [
       bullets: ["Questions come only from your own uploads", "Sets a starting level for every topic", "Can be retaken from Settings"],
     },
   },
-  { id: "ingestion", status: "planned", label: "More file types", roadmap: "Upload DOCX files and YouTube lectures, not only PDFs" },
+  {
+    id: "ingestion",
+    status: "live",
+    label: "More ways to add material",
+    // No nav entry: they are tabs in My library
+    landing: {
+      overline: "Your own knowledge base",
+      title: "PDFs, notes, web pages and YouTube lectures",
+      body: "Add a PDF, paste notes, read a web page, or add a YouTube lecture from its captions. Label each one as notes, a textbook, a past paper, teacher material or a lecture. Answers cite the page, or the minute of the video.",
+      bullets: ["Lecture answers link to the right second of the video", "A video with no captions can be added by pasting its transcript", "Everything stays private to your account"],
+    },
+  },
   { id: "teacher-style", status: "planned", label: "Teacher-style mode", roadmap: "Answers in the wording and structure your teacher uses" },
   {
     id: "mood-pacing",

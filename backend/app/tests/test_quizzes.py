@@ -148,7 +148,13 @@ def test_attempt_is_scored_stored_once_and_updates_progress(auth_client, materia
     assert result["results"][1]["is_correct"] is True
     assert result["results"][0]["explanation"]
     assert result["results"][0]["sources"] == [
-        {"document_title": "Programming Notes", "page_number": 1, "section_title": None}
+        {
+            "document_title": "Programming Notes",
+            "page_number": 1,
+            "section_title": None,
+            "start_seconds": None,
+            "source_url": None,
+        }
     ]
     assert result["topic_status"] == "doing_well"
 

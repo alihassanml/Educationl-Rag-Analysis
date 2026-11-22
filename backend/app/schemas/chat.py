@@ -37,6 +37,8 @@ class CitationOut(BaseModel):
     document_title: str
     page_number: int | None
     section_title: str | None = None
+    start_seconds: int | None = None
+    source_url: str | None = None
     snippet: str
     source_deleted: bool
 

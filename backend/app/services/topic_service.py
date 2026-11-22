@@ -23,7 +23,7 @@ from app.models.document import STATUS_READY, Document, DocumentChunk
 from app.models.quiz import DocumentTopic, Quiz, Topic, TopicProgress
 from app.services import pdf_service
 from app.services.groq_service import GroqService, LLMOutputError, LLMUnavailableError
-from app.services.retrieval_service import RetrievedChunk
+from app.services.retrieval_service import RetrievedChunk, attach_source_urls
 
 logger = logging.getLogger("app.topics")
 
@@ -273,7 +273,7 @@ def anchor_chunks(
     # Prefer passages with some substance, then take a random handful so repeat quizzes differ
     solid = [r for r in rows if len(r[0].content.split()) >= 30] or rows
     picked = random.sample(solid, min(count, len(solid)))
-    return [
+    built = [
         RetrievedChunk(
             chunk_id=c.id,
             document_id=c.document_id,
@@ -282,9 +282,11 @@ def anchor_chunks(
             content=c.content,
             similarity=1.0,
             section_title=c.section_title,
+            start_seconds=c.start_seconds,
         )
         for c, title in picked
     ]
+    return attach_source_urls(db, built)
 
 
 def chunk_topic_ids(

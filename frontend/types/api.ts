@@ -32,6 +32,8 @@ export type Citation = {
   document_title: string;
   page_number: number | null;
   section_title?: string | null;
+  start_seconds?: number | null;
+  source_url?: string | null;
   chunk_id: string;
 };
 
@@ -83,7 +85,7 @@ export type QuestionResult = {
   correct_index: number;
   is_correct: boolean;
   explanation: string;
-  sources: { document_title: string; page_number: number | null; section_title?: string | null }[];
+  sources: { document_title: string; page_number: number | null; section_title?: string | null; start_seconds?: number | null; source_url?: string | null }[];
 };
 
 export type LightModeNotice = { episode_id: string; topic_id: string; topic: string; state: "active" | "passed"; message: string };
@@ -93,7 +95,7 @@ export type Recap = {
   sentences: string[];
   example: string;
   memory_tip: string;
-  sources: { document_title: string; page_number: number | null; section_title?: string | null }[];
+  sources: { document_title: string; page_number: number | null; section_title?: string | null; start_seconds?: number | null; source_url?: string | null }[];
 };
 
 export type DiagnosticTopic = { topic_id: string; topic: string; correct: number; asked: number; level: Difficulty };
@@ -318,6 +320,8 @@ export type ChatCitation = {
   document_title: string;
   page_number: number | null;
   section_title?: string | null;
+  start_seconds?: number | null;
+  source_url?: string | null;
   snippet: string;
   source_deleted: boolean;
 };

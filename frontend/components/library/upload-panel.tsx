@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, FileUp, Globe, Type } from "lucide-react";
+import { FileText, FileUp, Globe, Type, Video } from "lucide-react";
 import { useId, useState, type DragEvent, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
@@ -10,21 +10,23 @@ import { cn } from "@/lib/cn";
 import { MAX_TEXT_CHARS, MAX_UPLOAD_MB } from "@/lib/validators";
 import type { UploadState } from "./use-upload";
 
-type Tab = "pdf" | "link" | "text";
+type Tab = "pdf" | "link" | "youtube" | "text";
 
 const TABS: { id: Tab; label: string; icon: typeof FileText }[] = [
   { id: "pdf", label: "PDF file", icon: FileUp },
   { id: "link", label: "Link", icon: Globe },
+  { id: "youtube", label: "YouTube lecture", icon: Video },
   { id: "text", label: "Paste text", icon: Type },
 ];
 
 /** Three ways to add material. The file input and status line are always mounted, so a normal file
  *  picker works everywhere and drag and drop is only an enhancement. */
 export function UploadPanel({ state, showPanel }: { state: UploadState; showPanel: boolean }) {
-  const { inputRef, uploading, error, upload, addLink, addText, choose, kind, setKind, examYear, setExamYear, examSession, setExamSession } = state;
+  const { inputRef, uploading, error, errorCode, setError, upload, addLink, addYoutube, addText, choose, kind, setKind, examYear, setExamYear, examSession, setExamSession } = state;
   const [tab, setTab] = useState<Tab>("pdf");
   const [dragging, setDragging] = useState(false);
   const [link, setLink] = useState("");
+  const [video, setVideo] = useState("");
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const ids = useId();
@@ -39,6 +41,17 @@ export function UploadPanel({ state, showPanel }: { state: UploadState; showPane
   async function submitLink(event: FormEvent) {
     event.preventDefault();
     if (await addLink(link)) setLink("");
+  }
+
+  async function submitVideo(event: FormEvent) {
+    event.preventDefault();
+    if (await addYoutube(video)) setVideo("");
+  }
+
+  function choose_tab(next: Tab) {
+    setTab(next);
+    // A lecture video is a lecture unless the student says otherwise
+    if (next === "youtube" && kind === "notes") setKind("lecture");
   }
 
   async function submitText(event: FormEvent) {
@@ -76,7 +89,7 @@ export function UploadPanel({ state, showPanel }: { state: UploadState; showPane
                 id={`${ids}-tab-${id}`}
                 aria-selected={tab === id}
                 aria-controls={`${ids}-panel`}
-                onClick={() => setTab(id)}
+                onClick={() => choose_tab(id)}
                 className={cn(
                   "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors duration-[120ms]",
                   tab === id ? "bg-paper text-ink shadow-sm" : "text-ink-2 hover:text-ink",
@@ -156,6 +169,29 @@ export function UploadPanel({ state, showPanel }: { state: UploadState; showPane
               </form>
             ) : null}
 
+            {tab === "youtube" ? (
+              <form onSubmit={submitVideo} className="flex max-w-xl flex-col gap-4" noValidate>
+                <Field id={`${ids}-video`} label="YouTube link" hint="A video with captions. The transcript is added to your library, and answers cite the time in the video">
+                  <Input
+                    id={`${ids}-video`}
+                    type="url"
+                    inputMode="url"
+                    autoComplete="off"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={video}
+                    onChange={(e) => setVideo(e.target.value)}
+                    disabled={uploading}
+                    aria-describedby={`${ids}-video-hint`}
+                  />
+                </Field>
+                <div>
+                  <Button type="submit" loading={uploading} disabled={video.trim() === ""}>
+                    {uploading ? "Reading the transcript" : "Add video"}
+                  </Button>
+                </div>
+              </form>
+            ) : null}
+
             {tab === "text" ? (
               <form onSubmit={submitText} className="flex max-w-2xl flex-col gap-4" noValidate>
                 <Field id={`${ids}-title`} label="Title">
@@ -188,6 +224,18 @@ export function UploadPanel({ state, showPanel }: { state: UploadState; showPane
           <p role="alert" className="text-danger">
             {error}
           </p>
+        ) : null}
+        {errorCode === "no_transcript" ? (
+          <button
+            type="button"
+            className="mt-1 font-medium text-accent-link underline-offset-4 hover:underline"
+            onClick={() => {
+              setError(null);
+              choose_tab("text");
+            }}
+          >
+            Paste the transcript instead
+          </button>
         ) : null}
       </div>
     </div>

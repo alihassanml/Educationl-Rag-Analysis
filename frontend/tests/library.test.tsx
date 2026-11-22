@@ -5,7 +5,7 @@ import { LibraryView } from "@/components/library/library-view";
 import { documentsApi } from "@/lib/api";
 import type { StudyDocument } from "@/types/api";
 
-vi.mock("@/lib/api", () => ({ documentsApi: { list: vi.fn(), remove: vi.fn(), upload: vi.fn(), addLink: vi.fn(), addText: vi.fn(), update: vi.fn() } }));
+vi.mock("@/lib/api", () => ({ documentsApi: { list: vi.fn(), remove: vi.fn(), upload: vi.fn(), addLink: vi.fn(), addText: vi.fn(), addYoutube: vi.fn(), update: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 // jsdom has no <dialog> modal support
 beforeEach(() => {
@@ -225,6 +225,41 @@ describe("document kinds", () => {
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "What is this?" }), "textbook");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(documentsApi.update).toHaveBeenCalledWith("d1", { kind: "textbook" }));
+  });
+});
+
+describe("YouTube lectures", () => {
+  it("adds a video as a lecture", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [], total: 0 });
+    vi.mocked(documentsApi.addYoutube).mockResolvedValue(doc({ source_type: "youtube", kind: "lecture" }));
+    render(<LibraryView />);
+    await userEvent.click(await screen.findByRole("tab", { name: "YouTube lecture" }));
+    expect(screen.getByRole("combobox", { name: "What is this?" })).toHaveValue("lecture");
+    await userEvent.type(screen.getByLabelText("YouTube link"), "https://youtu.be/dQw4w9WgXcQ");
+    await userEvent.click(screen.getByRole("button", { name: "Add video" }));
+    await waitFor(() => expect(documentsApi.addYoutube).toHaveBeenCalledWith("https://youtu.be/dQw4w9WgXcQ", undefined, { kind: "lecture" }));
+  });
+
+  it("rejects a link that is not YouTube before asking the server", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [], total: 0 });
+    render(<LibraryView />);
+    await userEvent.click(await screen.findByRole("tab", { name: "YouTube lecture" }));
+    await userEvent.type(screen.getByLabelText("YouTube link"), "https://example.com/video");
+    await userEvent.click(screen.getByRole("button", { name: "Add video" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Enter a YouTube link");
+    expect(documentsApi.addYoutube).not.toHaveBeenCalled();
+  });
+
+  it("offers to paste the transcript when the video has no captions", async () => {
+    const { ApiError } = await import("@/lib/api-client");
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [], total: 0 });
+    vi.mocked(documentsApi.addYoutube).mockRejectedValue(new ApiError("No transcript could be read for this video. Paste the transcript as text instead.", 422, "no_transcript"));
+    render(<LibraryView />);
+    await userEvent.click(await screen.findByRole("tab", { name: "YouTube lecture" }));
+    await userEvent.type(screen.getByLabelText("YouTube link"), "https://youtu.be/dQw4w9WgXcQ");
+    await userEvent.click(screen.getByRole("button", { name: "Add video" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Paste the transcript instead" }));
+    expect(screen.getByRole("tab", { name: "Paste text", selected: true })).toBeInTheDocument();
   });
 });
 

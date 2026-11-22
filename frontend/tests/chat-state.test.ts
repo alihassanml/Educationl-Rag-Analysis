@@ -10,7 +10,7 @@ describe("live answer state", () => {
     expect(live.stage).toBe("rewriting");
     live = applyEvent(live, { event: "status", data: { stage: "searching" } });
     live = applyEvent(live, { event: "sources", data: [source] });
-    expect(live.sources).toEqual([{ marker: 1, chunkId: "c1", documentId: "d1", title: "Notes", page: 2, section: null, snippet: "Recursion is", deleted: false }]);
+    expect(live.sources).toEqual([{ marker: 1, chunkId: "c1", documentId: "d1", title: "Notes", page: 2, section: null, startSeconds: null, url: null, snippet: "Recursion is", deleted: false }]);
     expect(live.text).toBe("");
     live = applyEvent(live, { event: "status", data: { stage: "writing" } });
     live = applyEvent(live, { event: "token", data: { text: "A method " } });
@@ -46,5 +46,12 @@ describe("live answer state", () => {
   it("keeps what was written when the student stops", () => {
     const live = markStopped(applyEvent(initialLive(), { event: "token", data: { text: "Half an answ" } }));
     expect(live).toMatchObject({ status: "stopped", text: "Half an answ", stage: null });
+  });
+});
+
+describe("lecture sources", () => {
+  it("keeps the time and the link that opens the video there", () => {
+    const live = applyEvent(initialLive(), { event: "sources", data: [{ marker: 1, chunk_id: "c1", document_id: "d1", document_title: "Lecture", page_number: null, start_seconds: 754, source_url: "https://youtu.be/abc?t=754", snippet: "x" }] });
+    expect(live.sources[0]).toMatchObject({ startSeconds: 754, url: "https://youtu.be/abc?t=754", page: null });
   });
 });

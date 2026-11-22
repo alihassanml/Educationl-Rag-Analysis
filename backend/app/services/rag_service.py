@@ -48,6 +48,8 @@ def _citations(chunks: list[RetrievedChunk], used: object) -> list[Citation]:
             document_title=c.document_title,
             page_number=c.page_number,
             section_title=c.section_title,
+            start_seconds=c.start_seconds,
+            source_url=c.source_url,
             chunk_id=c.chunk_id,
         )
         for c in selected

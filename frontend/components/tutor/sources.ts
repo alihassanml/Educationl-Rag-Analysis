@@ -1,4 +1,5 @@
 import type { Source } from "@/lib/chat-state";
+import { formatTimestamp } from "@/lib/formatters";
 import type { ChatCitation } from "@/types/api";
 
 /** Saved citations to display sources. Markers are the ones the backend stored, never renumbered. */
@@ -10,13 +11,16 @@ export function toSources(citations: ChatCitation[]): Source[] {
     title: c.document_title,
     page: c.page_number,
     section: c.section_title ?? null,
+    startSeconds: c.start_seconds ?? null,
+    url: c.source_url ?? null,
     snippet: c.snippet,
     deleted: c.source_deleted,
   }));
 }
 
 /** "Chapter 3: Recursion · Page 45". Without a chapter this is just "Page 45", as before. */
-export function pageText(page: number | null, section?: string | null): string {
-  const where = page === null ? "Page not available" : `Page ${page}`;
+export function pageText(page: number | null, section?: string | null, startSeconds?: number | null): string {
+  // A lecture is cited by the time in the video, not a page
+  const where = startSeconds !== undefined && startSeconds !== null ? formatTimestamp(startSeconds) : page === null ? "Page not available" : `Page ${page}`;
   return section ? `${section} · ${where}` : where;
 }

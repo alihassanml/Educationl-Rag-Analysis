@@ -44,6 +44,19 @@ export function validateLink(input: string): string | null {
   return parseWebAddress(input) ? null : "Enter a web address, like https://example.com/notes.pdf";
 }
 
+const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"]);
+
+/** True for a YouTube address (the server checks the video id itself). */
+export function isYoutubeLink(input: string): boolean {
+  const address = parseWebAddress(input);
+  if (!address) return false;
+  return YOUTUBE_HOSTS.has(new URL(address).hostname.toLowerCase());
+}
+
+export function validateYoutube(input: string): string | null {
+  return isYoutubeLink(input) ? null : "Enter a YouTube link, like https://www.youtube.com/watch?v=...";
+}
+
 export function validateText(title: string, text: string): string | null {
   if (!title.trim()) return "Give this text a title";
   if (text.trim().length < MIN_TEXT_CHARS) return `Add a little more text (at least ${MIN_TEXT_CHARS} characters)`;

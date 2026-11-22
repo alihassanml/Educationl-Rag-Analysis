@@ -167,6 +167,8 @@ def _source_event(chunks: list[RetrievedChunk]) -> list[dict[str, Any]]:
             "document_title": c.document_title,
             "page_number": c.page_number,
             "section_title": c.section_title,
+            "start_seconds": c.start_seconds,
+            "source_url": c.source_url,
             "snippet": make_snippet(c.content),
         }
         for marker, c in enumerate(chunks, start=1)
@@ -212,6 +214,8 @@ def _save_answer(
                     document_title=c.document_title,
                     page_number=c.page_number,
                     section_title=c.section_title,
+                    start_seconds=c.start_seconds,
+                    source_url=c.source_url,
                     marker=marker,
                     snippet=make_snippet(c.content),
                 )

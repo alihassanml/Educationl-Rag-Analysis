@@ -17,6 +17,7 @@ class TextChunk:
     page_number: int | None
     content: str
     section_title: str | None = None  # the chapter (PDF outline) or heading the passage sits under
+    start_seconds: int | None = None  # a lecture passage: where it starts in the video
 
 
 @dataclass
@@ -24,6 +25,7 @@ class _Section:
     page_number: int | None
     heading: str  # the heading in force; carried over from the previous page when a section runs on
     words: list[str]
+    start_seconds: int | None = None
 
 
 def _sections(pages: list[PageText]) -> list[_Section]:
@@ -32,7 +34,7 @@ def _sections(pages: list[PageText]) -> list[_Section]:
     sections: list[_Section] = []
     heading = ""
     for page in pages:
-        current = _Section(page.page_number, heading, [])
+        current = _Section(page.page_number, heading, [], page.start_seconds)
         after_heading = False
         for line in page.text.splitlines():
             line = line.strip()
@@ -45,7 +47,7 @@ def _sections(pages: list[PageText]) -> list[_Section]:
                 if current.words:
                     sections.append(current)
                 heading = text
-                current = _Section(page.page_number, heading, [])
+                current = _Section(page.page_number, heading, [], page.start_seconds)
                 after_heading = True
             else:
                 after_heading = False
@@ -60,6 +62,7 @@ def _sections(pages: list[PageText]) -> list[_Section]:
         if (
             previous is not None
             and previous.page_number == section.page_number
+            and previous.start_seconds == section.start_seconds
             and len(previous.words) < _MIN_SECTION_WORDS
         ):
             previous.words.extend([*section.heading.split(), *section.words])
@@ -138,6 +141,12 @@ def chunk_pages(
             content = f"{section.heading}\n{body}" if section.heading else body
             title = chapter_at(outline or [], section.page_number) or section.heading or None
             chunks.append(
-                TextChunk(len(chunks), section.page_number, content, title[:255] if title else None)
+                TextChunk(
+                    len(chunks),
+                    section.page_number,
+                    content,
+                    title[:255] if title else None,
+                    section.start_seconds,
+                )
             )
     return chunks

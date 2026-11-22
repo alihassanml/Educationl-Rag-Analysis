@@ -171,7 +171,7 @@ def _sample_context(
         db.execute(stmt)
     )
     picked = random.sample(rows, min(count, len(rows)))
-    return [
+    built = [
         retrieval_service.RetrievedChunk(
             chunk_id=c.id,
             document_id=c.document_id,
@@ -180,9 +180,11 @@ def _sample_context(
             content=c.content,
             similarity=1.0,
             section_title=c.section_title,
+            start_seconds=c.start_seconds,
         )
         for c, title in picked
     ]
+    return retrieval_service.attach_source_urls(db, built)
 
 
 def _topic_level(db: Session, user_id: uuid.UUID, topic: Topic | None) -> str:
@@ -266,6 +268,8 @@ def build_questions(
                         "document_title": chunks[n - 1].document_title,
                         "page_number": chunks[n - 1].page_number,
                         "section_title": chunks[n - 1].section_title,
+                        "start_seconds": chunks[n - 1].start_seconds,
+                        "source_url": chunks[n - 1].source_url,
                     }
                     for n in sorted(set(q.source_passages))
                 ],
@@ -454,6 +458,8 @@ def _build_result(
                         document_title=key[0],
                         page_number=key[1],
                         section_title=s.get("section_title"),  # older quizzes have none
+                        start_seconds=s.get("start_seconds"),
+                        source_url=s.get("source_url"),
                     )
                 )
         results.append(

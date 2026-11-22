@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.errors import AppError, NotFoundError
 from app.models.document import (
+    KIND_LECTURE,
     KIND_NOTES,
     KIND_PAST_PAPER,
     STATUS_FAILED,
@@ -17,7 +18,13 @@ from app.models.document import (
     Document,
     DocumentChunk,
 )
-from app.services import chunking_service, pdf_service, source_service, topic_service
+from app.services import (
+    chunking_service,
+    pdf_service,
+    source_service,
+    topic_service,
+    youtube_service,
+)
 from app.services.embedding_service import Embedder
 from app.services.groq_service import GroqService
 
@@ -25,6 +32,7 @@ logger = logging.getLogger("app.documents")
 
 SOURCE_TEXT_MIME = "text/plain"
 SOURCE_WEBSITE_MIME = "text/html"
+SOURCE_YOUTUBE_MIME = "video/youtube"
 _PDF_MAGIC = b"%PDF-"
 _READ_BLOCK = 1024 * 1024
 _NO_TEXT_MESSAGE = (
@@ -209,6 +217,67 @@ def create_from_website(
     return create_from_text(db, embedder, user_id, title=chosen, text=text, source_url=url, llm=llm)
 
 
+def create_from_youtube(
+    db: Session,
+    embedder: Embedder,
+    user_id: uuid.UUID,
+    *,
+    url: str,
+    title: str | None,
+    llm: GroqService | None = None,
+    meta: DocumentMeta | None = None,
+) -> Document:
+    """Add a YouTube lecture from its captions. The transcript is kept as a .txt file (one caption
+    per line with its second), so the document is stored, re-indexed and deleted like any other."""
+    video_id = youtube_service.parse_video_id(url)
+    if video_id is None:
+        raise AppError(
+            422,
+            "invalid_youtube_url",
+            "Enter a YouTube link such as youtube.com/watch?v=..., youtu.be/... or "
+            "youtube.com/shorts/...",
+        )
+    snippets = youtube_service.fetch_transcript(video_id)
+    text = youtube_service.to_stored(snippets)
+    spoken = " ".join(s.text for s in snippets)
+    if len(spoken) < source_service.MIN_TEXT_CHARS:
+        raise AppError(422, "no_transcript", youtube_service.NO_TRANSCRIPT_MESSAGE)
+    if len(text) > source_service.MAX_TEXT_CHARS * 2:
+        raise AppError(413, "text_too_long", "This video's transcript is too long to add")
+
+    directory = _storage_dir(user_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{uuid.uuid4().hex}.txt"
+    data = text.encode("utf-8")
+    path.write_bytes(data)
+    chosen = (title or "").strip() or youtube_service.video_title(video_id)
+    label = _safe_title(f"YouTube lecture {video_id}", chosen)
+    link = youtube_service.canonical_url(video_id)
+    document = Document(
+        user_id=user_id,
+        title=label,
+        original_filename=link,
+        storage_path=str(path),
+        mime_type=SOURCE_YOUTUBE_MIME,
+        source_url=link,
+        file_size=len(data),
+        status=STATUS_PROCESSING,
+    )
+    (meta or DocumentMeta(kind=KIND_LECTURE)).apply(document)
+    db.add(document)
+    db.commit()
+    _process(
+        db,
+        embedder,
+        document,
+        path,
+        pages=youtube_service.windows(snippets),
+        no_text_message="Not enough readable text was found to index.",
+        llm=llm,
+    )
+    return document
+
+
 def reindex(
     db: Session, embedder: Embedder, document: Document, llm: GroqService | None = None
 ) -> None:
@@ -218,7 +287,18 @@ def reindex(
     db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document.id))
     document.status = STATUS_PROCESSING
     db.commit()
-    if document.mime_type in (SOURCE_TEXT_MIME, SOURCE_WEBSITE_MIME):
+    if document.mime_type == SOURCE_YOUTUBE_MIME:
+        snippets = youtube_service.from_stored(path.read_text(encoding="utf-8"))
+        _process(
+            db,
+            embedder,
+            document,
+            path,
+            pages=youtube_service.windows(snippets),
+            no_text_message="Not enough readable text was found to index.",
+            llm=llm,
+        )
+    elif document.mime_type in (SOURCE_TEXT_MIME, SOURCE_WEBSITE_MIME):
         text = path.read_text(encoding="utf-8")
         _process(
             db,
@@ -273,6 +353,7 @@ def _process(
                 content=chunk.content,
                 page_number=chunk.page_number,
                 section_title=chunk.section_title,
+                start_seconds=chunk.start_seconds,
                 embedding=vector,
             )
             for chunk, vector in zip(chunks, vectors, strict=True)

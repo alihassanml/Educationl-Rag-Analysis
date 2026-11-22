@@ -66,6 +66,8 @@ def _citation_out(citation: ChatCitation) -> CitationOut:
         document_title=citation.document_title,
         page_number=citation.page_number,
         section_title=citation.section_title,
+        start_seconds=citation.start_seconds,
+        source_url=citation.source_url,
         snippet=citation.snippet,
         source_deleted=citation.document_id is None,
     )

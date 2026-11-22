@@ -41,3 +41,29 @@ describe("chapter-aware citations", () => {
     expect(sourceLabel({ document_title: "Notes", page_number: 4 })).toBe("Notes, page 4");
   });
 });
+
+describe("lecture citations", () => {
+  it("formats video times", async () => {
+    const { formatTimestamp } = await import("@/lib/formatters");
+    expect(formatTimestamp(754)).toBe("12:34");
+    expect(formatTimestamp(5)).toBe("0:05");
+    expect(formatTimestamp(3725)).toBe("1:02:05");
+  });
+
+  it("cites a lecture by time instead of page", async () => {
+    const { pageText } = await import("@/components/tutor/sources");
+    expect(pageText(null, null, 754)).toBe("12:34");
+    expect(pageText(null, "Week 3", 61)).toBe("Week 3 · 1:01");
+    const { sourceLabel } = await import("@/lib/formatters");
+    expect(sourceLabel({ document_title: "Recursion lecture", page_number: null, start_seconds: 754 })).toBe("Recursion lecture, 12:34");
+  });
+
+  it("accepts YouTube links only", async () => {
+    const { validateYoutube } = await import("@/lib/validators");
+    expect(validateYoutube("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBeNull();
+    expect(validateYoutube("youtu.be/dQw4w9WgXcQ")).toBeNull();
+    expect(validateYoutube("https://vimeo.com/123456")).not.toBeNull();
+    expect(validateYoutube("https://example.com/notes.pdf")).not.toBeNull();
+    expect(validateYoutube("")).not.toBeNull();
+  });
+});

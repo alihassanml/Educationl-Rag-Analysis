@@ -12,6 +12,7 @@ from app.schemas.documents import (
     DocumentUpdate,
     TextDocumentIn,
     WebsiteDocumentIn,
+    YouTubeDocumentIn,
 )
 from app.services import document_service
 from app.services.document_service import DocumentMeta
@@ -89,6 +90,25 @@ def add_website_document(
     llm: Annotated[GroqService, Depends(get_groq_service)],
 ) -> Document:
     return document_service.create_from_website(
+        db,
+        embedder,
+        user.id,
+        url=body.url.strip(),
+        title=body.title,
+        llm=llm,
+        meta=DocumentMeta(body.kind, body.exam_year, body.exam_session),
+    )
+
+
+@router.post("/youtube", response_model=DocumentOut, status_code=status.HTTP_201_CREATED)
+def add_youtube_document(
+    body: YouTubeDocumentIn,
+    user: CurrentUser,
+    db: DbSession,
+    embedder: Annotated[Embedder, Depends(get_embedder)],
+    llm: Annotated[GroqService, Depends(get_groq_service)],
+) -> Document:
+    return document_service.create_from_youtube(
         db,
         embedder,
         user.id,

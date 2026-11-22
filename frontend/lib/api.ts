@@ -58,6 +58,9 @@ export const documentsApi = {
   /** A web page, or a link to a PDF. The server reads it and indexes it like an upload. */
   addLink: (url: string, title?: string, meta?: DocumentMeta) =>
     apiRequest<StudyDocument>("/documents/website", { method: "POST", json: { url, title: title || null, ...meta } }),
+  /** A YouTube lecture, read from its captions. Fails with code "no_transcript" when there are none. */
+  addYoutube: (url: string, title?: string, meta?: DocumentMeta) =>
+    apiRequest<StudyDocument>("/documents/youtube", { method: "POST", json: { url, title: title || null, ...meta } }),
   addText: (title: string, text: string, meta?: DocumentMeta) =>
     apiRequest<StudyDocument>("/documents/text", { method: "POST", json: { title, text, ...meta } }),
   remove: (id: string) => apiRequest<void>(`/documents/${id}`, { method: "DELETE" }),

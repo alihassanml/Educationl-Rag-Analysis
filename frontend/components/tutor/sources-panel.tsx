@@ -1,5 +1,6 @@
 import { SourceCard } from "@/components/ui/citation";
 import type { Source } from "@/lib/chat-state";
+import { formatTimestamp } from "@/lib/formatters";
 import { pageText } from "./sources";
 
 /** Sources of the selected answer, each with the passage that was found. A source whose document was
@@ -15,11 +16,17 @@ export function SourcesList({ sources, activeMarker }: { sources: Source[]; acti
           <SourceCard
             marker={source.marker}
             title={source.title}
-            page={source.deleted ? `${pageText(source.page, source.section)} · Source deleted` : pageText(source.page, source.section)}
+            page={source.deleted ? `${pageText(source.page, source.section, source.startSeconds)} · Source deleted` : pageText(source.page, source.section, source.startSeconds)}
             snippet={source.snippet || undefined}
             active={source.marker === activeMarker}
             flat
-          />
+          >
+            {source.url && !source.deleted ? (
+              <a href={source.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-small font-medium text-accent-link underline-offset-4 hover:underline">
+                Open the video at {formatTimestamp(source.startSeconds ?? 0)}
+              </a>
+            ) : null}
+          </SourceCard>
         </li>
       ))}
     </ul>

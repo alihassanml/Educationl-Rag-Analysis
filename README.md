@@ -1,20 +1,26 @@
 # EduRAG
 
-A RAG-based adaptive learning and exam preparation system (final year project). Students upload their own PDF notes, ask questions answered with page citations, take quizzes, and see which topics need revision.
+A RAG-based adaptive learning and exam-preparation system (final year project). Students upload their own material; every answer, quiz and explanation comes from it, cites it (chapter and page, or video time), and says "not found" when the material does not cover the question.
 
-Scope, architecture and milestones: `docs/IMPLEMENTATION_GUIDE.md` (Guide v2; the owner decisions at the top of `CLAUDE.md` take precedence). `Implementation Guide.md` is the earlier v1 guide. Design decisions: `docs/architecture.md`. API: `docs/api-contract.md`. Evaluation and results: `docs/evaluation-plan.md`.
+## Features
 
-## What works
+- **Knowledge base:** PDF, link (page or online PDF), pasted text and YouTube lectures, one private library per student, labelled as notes, textbook, past paper, teacher material or lecture.
+- **Tutor:** streamed, cited answers, saved chats, follow-ups, feedback, "Quiz me" inside the chat, Teacher-Clone style answers.
+- **Adaptive engine:** diagnostic test (Student Profile Builder), topic extraction, automatic difficulty, weak-topic detector, Course Map with re-routing, mood-aware lighter steps.
+- **Exam preparation:** Exam Predictor from past papers, Viva Bot (spoken or typed oral exam with a cited rubric report), study reminders and slip tests.
+- **Social:** Student and Teacher accounts, classes with join codes and shared material, teacher dashboard, Peer Match duels (opt-in, display names only).
+- **Security:** AES-256-GCM encrypted uploads, Argon2, httpOnly JWT cookie, rate limits, security headers (`docs/security.md`).
+- **Evaluation Lab** (admin): hit rate, MRR, nDCG and abstention for dense and hybrid retrieval.
 
-Sign up and sign in, PDF library (upload, status, delete), cited answers from your own material with a clear "not found" response, saved tutor chats with follow-up questions, streamed answers, Stop and feedback (see Study tutor chat below), topic quizzes, scoring, per-topic progress with transparent rules, recommendations, and a dashboard. An administrator can also open the Evaluation Lab, which measures retrieval (hit rate at K, MRR, nDCG, abstention) on a labelled question set and compares dense with hybrid retrieval. It measures retrieval only: answer faithfulness and quiz quality are not measured by the Lab. Not built: diagnostic quiz, past-paper analysis, viva mode, reminders, mood adaptation, peer matching, OCR, accounts beyond sign up and sign in.
+Documentation is in `docs/`: `SRS.md`, `ERD.md`, `architecture.md`, `design-decisions.md`, `security.md`, `deployment.md`, `evaluation-plan.md`, `test-report.md`, `user-guide.md`.
 
 ## Requirements
 
-- Node 22+ and npm
-- Python 3.11+
-- PostgreSQL 16+ with the pgvector extension (`brew install pgvector` on macOS)
-- Redis (`brew install redis && brew services start redis`), used by the background worker for Evaluation Lab runs
+- Node 22+ and npm, Python 3.11+
+- PostgreSQL 16+ with pgvector (`brew install pgvector` on macOS)
+- Redis (`brew install redis && brew services start redis`): the indexing worker, reminders and rate limits
 - A Groq API key
+- Or just Docker: `docker compose up --build` (see `docs/deployment.md`)
 
 ## Quick start
 
@@ -23,16 +29,7 @@ Sign up and sign in, PDF library (upload, status, delete), cited answers from yo
 start.bat         # Windows
 ```
 
-The first run creates the Python environment, installs dependencies, creates `backend/.env` (with a random `SECRET_KEY`), applies database migrations and starts both servers and, when Redis is running, the background worker: frontend on http://localhost:3000, API on http://localhost:8000 (docs at `/docs`). Then edit `backend/.env`:
-
-```
-DATABASE_URL=postgresql+psycopg://YOU@localhost:5432/edurag   # your Postgres user
-GROQ_API_KEY=...                                               # from console.groq.com
-GROQ_MODEL=openai/gpt-oss-120b                                 # see below
-GROQ_REASONING_EFFORT=low
-```
-
-List the models your key can use with `cd backend && .venv/bin/python -m app.scripts.list_groq_models`. The first document upload downloads the embedding model (about 130 MB) once.
+The first run creates the Python environment, installs dependencies, creates `backend/.env` (with a random `SECRET_KEY`), applies migrations and starts the API (http://localhost:8000, docs at `/docs`), the worker (when Redis is running) and the frontend (http://localhost:3000). Then edit `backend/.env`: `DATABASE_URL`, `GROQ_API_KEY`, `GROQ_MODEL`. List usable models with `.venv/bin/python -m app.scripts.list_groq_models`. The first upload downloads the embedding model (about 130 MB).
 
 ## Manual setup
 
@@ -43,22 +40,34 @@ cp .env.example .env              # then edit it
 createdb edurag
 .venv/bin/alembic upgrade head
 .venv/bin/uvicorn app.main:app --reload
-
-.venv/bin/arq app.workers.settings.WorkerSettings   # second terminal; needs Redis, only for the Evaluation Lab
+.venv/bin/arq app.workers.settings.WorkerSettings   # second terminal; needs Redis
 
 cd ../frontend
-npm install && cp .env.example .env.local && npm run dev
+npm install && npm run dev
 ```
+
+The browser calls `/api/v1` on the frontend's own address; Next.js forwards it to the API (`BACKEND_URL`, default `http://localhost:8000`).
+
+## Scripts (`backend/`, run as `.venv/bin/python -m app.scripts.<name>`)
+
+| Script | Purpose |
+| --- | --- |
+| `make_admin you@example.com` | Make an account an administrator |
+| `encrypt_existing_files [--dry-run]` | Encrypt uploads stored before encryption was switched on |
+| `reindex_documents [--email ...]` | Rebuild passages after a change to reading or chunking |
+| `backfill_topics` | Extract topics for documents uploaded before topics existed |
+| `generate_erd` | Print the Mermaid ER diagram from the models |
+| `list_groq_models` | List the models your Groq key can use |
 
 ## Checks
 
 ```bash
-cd backend  && .venv/bin/pytest && .venv/bin/ruff check .
-cd frontend && npm test && npm run typecheck && npm run lint
-cd frontend && npm run e2e        # Playwright; builds the app and starts its own test servers on ports 3001 and 8001
+cd backend  && .venv/bin/ruff check app && .venv/bin/pytest
+cd frontend && npm run lint && npm run typecheck && npm test && npm run build
+cd frontend && npm run e2e        # Playwright; starts its own servers (E2E_API_PORT / E2E_WEB_PORT)
 ```
 
-End-to-end tests use a separate database (`createdb edurag_e2e` and run migrations with `DATABASE_URL` pointing at it; run `alembic upgrade head` there again after any schema change, otherwise sign up fails with a missing-column error) and a scripted LLM, so they need no Groq key. One-time: `npx playwright install chromium`.
+End-to-end tests need a Postgres database `edurag_e2e` (`createdb edurag_e2e`; run `alembic upgrade head` there after every schema change) and a scripted LLM, so no Groq key. One-time: `npx playwright install chromium`. CI (`.github/workflows/ci.yml`) runs the backend and frontend checks on every push.
 
 ## Study tutor chat
 
@@ -91,8 +100,10 @@ Administrator only. From `backend/`, with a registered account:
 .venv/bin/python -m eval.seed_lab --email you@example.com --run dense,hybrid   # or run from the terminal
 ```
 
-Then open **Evaluation** in the sidebar, start a run (Dense or Hybrid) and open it for the chart, the abstention confusion matrix and every question's retrieved passages. Runs execute in the background worker; if Redis or the worker is not running, starting a run fails with a clear message (Redis down) or the run stays "Queued" (worker not running). Re-running `seed_lab` keeps existing runs unless the question file changed. Metric definitions and the recorded dense-versus-hybrid result are in `docs/evaluation-plan.md`.
+Then open **Evaluation** in the sidebar, start a run (Dense or Hybrid) and open it for the chart, the abstention confusion matrix and every question's retrieved passages. Runs execute in the background worker; if Redis or the worker is not running, starting a run fails with a clear message (Redis down) or the run stays "Queued" (worker not running). Re-running `seed_lab` keeps existing runs unless the question file changed. Metric definitions are in `docs/evaluation-plan.md`.
 
 ## Configuration and data
 
-Backend settings live in `backend/.env` (see `.env.example`, all keys documented in `app/core/config.py`, including `REDIS_URL` and `RETRIEVAL_MODE`). The frontend only receives public values prefixed `NEXT_PUBLIC_`. `GROQ_API_KEY` stays in the backend and is never committed. Uploaded PDFs are stored under `backend/uploads/<user id>/` with server-generated names and are removed when the document is deleted; back up the database before a demo if the data matters.
+Backend settings live in `backend/.env` (see `.env.example`; every key is documented in `app/core/config.py`). Important ones: `DATABASE_URL`, `REDIS_URL`, `SECRET_KEY`, `FILE_ENCRYPTION_KEY` (required in production), `GROQ_API_KEY`, `CORS_ORIGINS`, `COOKIE_SECURE`, `RATE_LIMIT_*`. The frontend only receives public values prefixed `NEXT_PUBLIC_`. `GROQ_API_KEY` stays in the backend.
+
+Uploaded files are stored under `backend/uploads/<user id>/` with server-generated names, AES-256-GCM encrypted when `FILE_ENCRYPTION_KEY` is set, and removed when the document is deleted. Back up the database, the uploads and the encryption key (see `docs/deployment.md`).

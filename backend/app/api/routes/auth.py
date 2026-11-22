@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Depends, Response, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.core.config import get_settings
+from app.core.rate_limit import login_limit, register_limit
 from app.core.security import create_access_token
 from app.models.user import User
 from app.schemas.auth import Credentials, PreferencesIn, RegisterIn, UserOut
@@ -23,14 +24,19 @@ def _set_session_cookie(response: Response, user: User) -> None:
     )
 
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UserOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(register_limit)],
+)
 def register(body: RegisterIn, response: Response, db: DbSession) -> User:
     user = auth_service.register(db, body.email, body.password, body.display_name, body.role)
     _set_session_cookie(response, user)
     return user
 
 
-@router.post("/login", response_model=UserOut)
+@router.post("/login", response_model=UserOut, dependencies=[Depends(login_limit)])
 def login(body: Credentials, response: Response, db: DbSession) -> User:
     user = auth_service.authenticate(db, body.email, body.password)
     _set_session_cookie(response, user)

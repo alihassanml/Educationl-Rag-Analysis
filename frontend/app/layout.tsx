@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { Hanken_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
-const hankenGrotesk = Hanken_Grotesk({
+// Self-hosted (variable weight, Latin), so a build never needs to reach Google Fonts
+const hankenGrotesk = localFont({
+  src: "./fonts/hanken-grotesk-latin-wght-normal.woff2",
   variable: "--font-hanken-grotesk",
-  subsets: ["latin"],
+  weight: "100 900",
   display: "swap",
 });
 

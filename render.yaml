@@ -1,0 +1,38 @@
+# Render Blueprint: backend + worker + Redis. Postgres with pgvector: Render Postgres supports the
+# vector extension (CREATE EXTENSION vector), or use Neon / Supabase and paste its URL below.
+# The frontend goes on Vercel (see docs/deployment.md).
+services:
+  - type: web
+    name: edurag-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/v1/health
+    envVars: &env
+      - {key: APP_ENV, value: production}
+      - {key: DATABASE_URL, sync: false}   # postgresql+psycopg://user:pass@host/db
+      - {key: REDIS_URL, fromService: {type: redis, name: edurag-redis, property: connectionString}}
+      - {key: SECRET_KEY, generateValue: true}
+      - {key: FILE_ENCRYPTION_KEY, sync: false}   # base64, 32 bytes; keep a copy: lost key = lost files
+      - {key: GROQ_API_KEY, sync: false}
+      - {key: GROQ_MODEL, value: openai/gpt-oss-120b}
+      - {key: CORS_ORIGINS, sync: false}   # https://your-app.vercel.app
+      - {key: COOKIE_SECURE, value: "true"}
+      - {key: UPLOAD_DIR, value: /data/uploads}
+      # A Render disk belongs to one service, so the API indexes uploads itself; the worker only
+      # runs the hourly study-reminder job (it never reads uploaded files).
+      - {key: PROCESS_DOCUMENTS_INLINE, value: "true"}
+    disk: {name: uploads, mountPath: /data/uploads, sizeGB: 5}
+
+  - type: worker
+    name: edurag-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: arq app.workers.settings.WorkerSettings
+    envVars: *env
+
+  - type: redis
+    name: edurag-redis
+    ipAllowList: []   # internal connections only
+    plan: free

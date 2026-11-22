@@ -1,4 +1,5 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+// Same-origin by default: next.config.ts forwards /api/v1 to the backend (BACKEND_URL)
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
 
 export type FieldError = { field: string; message: string };
 

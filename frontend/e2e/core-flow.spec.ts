@@ -35,6 +35,7 @@ test("registration validates input and keeps what was typed", async () => {
 });
 
 test("a new student registers and sees the getting started steps", async () => {
+  await page.getByLabel("Display name").fill("Sam");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
@@ -186,7 +187,7 @@ test("deleting a document asks first and removes it", async () => {
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByRole("dialog", { name: /Delete recursion-notes/ }).or(page.getByRole("dialog"))).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
-  await expect(page.getByRole("cell", { name: "PDF recursion-notes", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "PDF recursion-notes My notes", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Actions for recursion-notes" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();

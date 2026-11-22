@@ -29,6 +29,10 @@ export default defineConfig({
         SECRET_KEY: "e2e-secret-key",
         CORS_ORIGINS: `http://localhost:${WEB_PORT}`,
         UPLOAD_DIR: path.join(os.tmpdir(), "edurag-e2e-uploads"),
+        // Index uploads inside the request, so the tests need no Redis or worker
+        PROCESS_DOCUMENTS_INLINE: "true",
+        RATE_LIMIT_ENABLED: "false",
+        FILE_ENCRYPTION_KEY: "ZTJlLWtleS0zMi1ieXRlcy1ub3QtZm9yLXByb2QtISE=",
       },
     },
     {

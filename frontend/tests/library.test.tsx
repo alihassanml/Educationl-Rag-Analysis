@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LibraryView } from "@/components/library/library-view";
 import { documentsApi } from "@/lib/api";
 import type { StudyDocument } from "@/types/api";
@@ -263,3 +263,44 @@ describe("YouTube lectures", () => {
   });
 });
 
+
+describe("background indexing", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("checks again until a processing document is ready, then stops", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.mocked(documentsApi.list)
+      .mockResolvedValueOnce({ items: [doc({ status: "processing", page_count: null })], total: 1 })
+      .mockResolvedValue({ items: [doc({ status: "ready" })], total: 1 });
+    render(<LibraryView />);
+    expect(await screen.findByText(/Indexing your material in the background/)).toBeInTheDocument();
+    expect(documentsApi.list).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(2600);
+    await waitFor(() => expect(documentsApi.list).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByText(/Indexing your material in the background/)).not.toBeInTheDocument());
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(documentsApi.list).toHaveBeenCalledTimes(2); // nothing left to wait for
+  });
+
+  it("shows a document that fails in the background as failed", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.mocked(documentsApi.list)
+      .mockResolvedValueOnce({ items: [doc({ status: "processing" })], total: 1 })
+      .mockResolvedValue({ items: [doc({ status: "failed", error_message: "No readable text was found." })], total: 1 });
+    render(<LibraryView />);
+    await screen.findByText(/Indexing your material in the background/);
+    await vi.advanceTimersByTimeAsync(2600);
+    expect((await screen.findAllByText(/No readable text was found/)).length).toBeGreaterThan(0);
+  });
+
+  it("does not poll when everything is already ready", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [doc()], total: 1 });
+    render(<LibraryView />);
+    await screen.findAllByText("OS Notes");
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(documentsApi.list).toHaveBeenCalledTimes(1);
+  });
+});

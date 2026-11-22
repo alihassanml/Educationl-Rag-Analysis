@@ -27,6 +27,7 @@ from app.services import (
 )
 from app.services.embedding_service import Embedder
 from app.services.groq_service import GroqService
+from app.workers.queue import get_job_queue
 
 logger = logging.getLogger("app.documents")
 
@@ -125,7 +126,7 @@ def create_and_process(
     (meta or DocumentMeta()).apply(document)
     db.add(document)
     db.commit()
-    _process(db, embedder, document, path, llm=llm)
+    dispatch(db, embedder, document, llm)
     return document
 
 
@@ -172,15 +173,7 @@ def create_from_text(
     (meta or DocumentMeta()).apply(document)
     db.add(document)
     db.commit()
-    _process(
-        db,
-        embedder,
-        document,
-        path,
-        pages=[pdf_service.PageText(page_number=None, text=text)],
-        no_text_message="Not enough readable text was found to index.",
-        llm=llm,
-    )
+    dispatch(db, embedder, document, llm)
     return document
 
 
@@ -266,16 +259,51 @@ def create_from_youtube(
     (meta or DocumentMeta(kind=KIND_LECTURE)).apply(document)
     db.add(document)
     db.commit()
-    _process(
-        db,
-        embedder,
-        document,
-        path,
-        pages=youtube_service.windows(snippets),
-        no_text_message="Not enough readable text was found to index.",
-        llm=llm,
-    )
+    dispatch(db, embedder, document, llm)
     return document
+
+
+def dispatch(
+    db: Session, embedder: Embedder, document: Document, llm: GroqService | None = None
+) -> None:
+    """Index a document that was just saved as "processing": right now when
+    PROCESS_DOCUMENTS_INLINE is on (tests, small setups), otherwise by the ARQ worker, so a large
+    PDF never holds a web request open. If the queue cannot be reached the document and its file
+    are removed again and the student is asked to retry, so nothing is left "processing"."""
+    if get_settings().process_documents_inline:
+        process_stored(db, embedder, document, llm)
+        return
+    try:
+        get_job_queue().enqueue("process_document_job", str(document.id))
+    except AppError:
+        path = Path(document.storage_path)
+        db.delete(document)
+        db.commit()
+        path.unlink(missing_ok=True)
+        raise
+
+
+def process_stored(
+    db: Session, embedder: Embedder, document: Document, llm: GroqService | None = None
+) -> None:
+    """Index a document from its stored file. What the file holds depends on where it came from: a
+    PDF is read page by page, text and web pages are one block, a YouTube transcript is cut into
+    timed passages. This is what the worker runs, and what re-indexing runs too."""
+    path = Path(document.storage_path)
+    no_text = "Not enough readable text was found to index."
+    try:
+        if document.mime_type == SOURCE_YOUTUBE_MIME:
+            snippets = youtube_service.from_stored(path.read_text(encoding="utf-8"))
+            pages = youtube_service.windows(snippets)
+        elif document.mime_type in (SOURCE_TEXT_MIME, SOURCE_WEBSITE_MIME):
+            pages = [pdf_service.PageText(page_number=None, text=path.read_text(encoding="utf-8"))]
+        else:
+            _process(db, embedder, document, path, llm=llm)
+            return
+    except OSError:
+        _fail(db, document, "The stored file could not be read. Please add the material again.")
+        return
+    _process(db, embedder, document, path, pages=pages, no_text_message=no_text, llm=llm)
 
 
 def reindex(
@@ -283,34 +311,10 @@ def reindex(
 ) -> None:
     """Rebuild a document's passages from its stored file, after a change to how text is read or
     chunked. Saved chats keep their citation snapshots (title, page, snippet)."""
-    path = Path(document.storage_path)
     db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document.id))
     document.status = STATUS_PROCESSING
     db.commit()
-    if document.mime_type == SOURCE_YOUTUBE_MIME:
-        snippets = youtube_service.from_stored(path.read_text(encoding="utf-8"))
-        _process(
-            db,
-            embedder,
-            document,
-            path,
-            pages=youtube_service.windows(snippets),
-            no_text_message="Not enough readable text was found to index.",
-            llm=llm,
-        )
-    elif document.mime_type in (SOURCE_TEXT_MIME, SOURCE_WEBSITE_MIME):
-        text = path.read_text(encoding="utf-8")
-        _process(
-            db,
-            embedder,
-            document,
-            path,
-            pages=[pdf_service.PageText(page_number=None, text=text)],
-            no_text_message="Not enough readable text was found to index.",
-            llm=llm,
-        )
-    else:
-        _process(db, embedder, document, path, llm=llm)
+    process_stored(db, embedder, document, llm)
 
 
 def _fail(db: Session, document: Document, message: str) -> None:

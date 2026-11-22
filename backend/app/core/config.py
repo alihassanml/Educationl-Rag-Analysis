@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     cookie_secure: bool = False
     cookie_name: str = "access_token"
 
+    # Index uploads inside the request instead of in the ARQ worker. Off in production, so a large
+    # PDF never holds a request open; on in tests and in a small setup with no Redis or worker.
+    process_documents_inline: bool = False
+
     # Uploads
     upload_dir: Path = Path("uploads")
     max_upload_mb: int = 20

@@ -9,7 +9,8 @@ import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { EmptyState, ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import { ApiError } from "@/lib/api-client";
-import { documentsApi, tutorApi } from "@/lib/api";
+import { tutorApi } from "@/lib/api";
+import { useDocuments } from "@/lib/use-documents";
 import { applyEvent, initialLive, markStopped, type LiveAnswer, type Source } from "@/lib/chat-state";
 import { cn } from "@/lib/cn";
 import { useApi } from "@/lib/use-api";
@@ -113,7 +114,7 @@ function turnsFromThread(detail: ThreadDetail | null): Turn[] {
 }
 
 export function TutorView({ threadId }: { threadId?: string }) {
-  const docs = useApi(documentsApi.list);
+  const docs = useDocuments();
   const toast = useToast();
   // Material can be added without leaving the chat: paste a link, or attach, paste or drop a PDF
   const [adding, setAdding] = useState<string | null>(null);

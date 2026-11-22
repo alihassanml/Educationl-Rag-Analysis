@@ -7,8 +7,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import { SearchInput } from "@/components/ui/search-input";
-import { documentsApi } from "@/lib/api";
-import { useApi } from "@/lib/use-api";
+import { useDocuments } from "@/lib/use-documents";
 import { KINDS } from "@/lib/document-kinds";
 import type { DocumentKind, DocumentSource, StudyDocument } from "@/types/api";
 import { DocumentList, SOURCE } from "./document-list";
@@ -71,7 +70,7 @@ function Toolbar({ docs, query, setQuery, type, setType, kind, setKind, shown }:
 }
 
 export function LibraryView() {
-  const { data, error, loading, reload } = useApi(documentsApi.list);
+  const { data, error, loading, reload, waiting } = useDocuments();
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
   const [type, setType] = useState<TypeFilter>("all");
@@ -104,6 +103,11 @@ export function LibraryView() {
         <UploadPanel state={upload} showPanel={showPanel} />
         {loading ? <LoadingBlock label="Loading your documents" /> : null}
         {error ? <ErrorBlock message={error.message} onRetry={reload} /> : null}
+        {waiting ? (
+          <p role="status" className="text-small text-ink-2">
+            Indexing your material in the background. This page updates by itself when it is ready
+          </p>
+        ) : null}
         {docs.length > 0 ? (
           <>
             <Toolbar docs={docs} query={query} setQuery={setQuery} type={type} setType={setType} kind={kind} setKind={setKind} shown={shown.length} />

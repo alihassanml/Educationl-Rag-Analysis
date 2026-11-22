@@ -7,7 +7,7 @@ from arq.connections import RedisSettings
 
 from app.core.config import get_settings
 from app.services.embedding_service import get_embedder
-from app.workers.tasks import run_eval_job
+from app.workers.tasks import process_document_job, run_eval_job
 
 
 async def startup(ctx: dict[str, Any]) -> None:
@@ -17,8 +17,8 @@ async def startup(ctx: dict[str, Any]) -> None:
 
 
 class WorkerSettings:
-    functions = [run_eval_job]
+    functions = [run_eval_job, process_document_job]
     on_startup = startup
     redis_settings = RedisSettings.from_dsn(get_settings().redis_url)
-    job_timeout = 1800  # seconds; a full evaluation run is far shorter
+    job_timeout = 1800  # seconds; far longer than indexing a large PDF or an evaluation run
     max_tries = 1  # a failed run is marked failed and started again by hand, not retried silently

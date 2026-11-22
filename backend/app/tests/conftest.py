@@ -22,6 +22,7 @@ os.environ["SECRET_KEY"] = "test-secret-key-not-for-production"
 os.environ["UPLOAD_DIR"] = tempfile.mkdtemp(prefix="edurag-test-uploads-")
 os.environ["RETRIEVAL_MIN_SIMILARITY"] = "0.2"  # fake bag-of-words vectors score lower than bge
 os.environ["MAX_UPLOAD_MB"] = "1"
+os.environ["PROCESS_DOCUMENTS_INLINE"] = "true"  # tests index inside the request
 # Topic naming by the LLM is opt-in per test, so an upload never uses up queued FakeGroq replies
 os.environ["TOPICS_LLM_FALLBACK"] = "false"
 

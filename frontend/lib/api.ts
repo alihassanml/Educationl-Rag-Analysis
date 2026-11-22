@@ -17,6 +17,7 @@ import type {
   GenerateQuizInput,
   LearningPath,
   ProgressSummary,
+  Recap,
   QuizDetail,
   QuizList,
   StartEvalRunInput,
@@ -35,6 +36,7 @@ export const authApi = {
     apiRequest<User>("/auth/login", { method: "POST", json: { email, password } }),
   logout: () => apiRequest<void>("/auth/logout", { method: "POST" }),
   me: (signal?: AbortSignal) => apiRequest<User>("/auth/me", { signal }),
+  setLighterSteps: (enabled: boolean) => apiRequest<User>("/auth/me/preferences", { method: "PATCH", json: { lighter_steps_enabled: enabled } }),
 };
 
 export const documentsApi = {
@@ -99,6 +101,11 @@ export const quizzesApi = {
   result: (id: string, signal?: AbortSignal) => apiRequest<AttemptResult>(`/quizzes/${id}/attempt`, { signal }),
   /** Study notes PDF of a finished quiz */
   notesPdf: (id: string) => apiDownload(`/quizzes/${id}/notes.pdf`),
+};
+
+export const lightModeApi = {
+  recap: (episodeId: string) => apiRequest<Recap>(`/light-mode/${episodeId}/recap`, { method: "POST" }),
+  confidenceQuiz: (episodeId: string) => apiRequest<QuizDetail>(`/light-mode/${episodeId}/confidence-quiz`, { method: "POST" }),
 };
 
 export const pathApi = {

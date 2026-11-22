@@ -16,6 +16,7 @@ from app.schemas.learning_path import (
     PathSource,
     PathStep,
 )
+from app.services import mood_service
 from app.services import recommendation_service as rules
 
 EVENT_LIMIT = 10
@@ -114,6 +115,7 @@ def build(db: Session, user_id: uuid.UUID) -> LearningPath:
         )
     ordered = order_path(candidates)
     current = next((c.topic_id for c in ordered if c.status != rules.DOING_WELL), None)
+    light = mood_service.active_topic_ids(db, user_id)
 
     steps = []
     for position, c in enumerate(ordered, start=1):
@@ -129,8 +131,19 @@ def build(db: Session, user_id: uuid.UUID) -> LearningPath:
                 accuracy_percent=c.accuracy,
                 questions_attempted=p.attempt_count if p else 0,
                 sources=sources[c.topic_id],
-                next_action=next_action(c.status, p is not None, level),
+                next_action=(
+                    NextAction(
+                        kind="light",
+                        message=(
+                            f"Let's take a lighter step on {topics[c.topic_id].name}: "
+                            "a quick recap, then a short confidence quiz."
+                        ),
+                    )
+                    if c.topic_id in light
+                    else next_action(c.status, p is not None, level)
+                ),
                 is_current=c.topic_id == current,
+                light_episode_id=light.get(c.topic_id),
             )
         )
 

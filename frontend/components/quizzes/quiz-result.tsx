@@ -12,6 +12,24 @@ import { cn } from "@/lib/cn";
 import { sourceLabel } from "@/lib/formatters";
 import type { AttemptResult } from "@/types/api";
 
+/** Light mode, in supportive and neutral words: a lighter step has started or just finished. */
+function LightModeNote({ result }: { result: AttemptResult }) {
+  const note = result.light_mode;
+  if (!note) return null;
+  return (
+    <div className="mt-4 flex flex-col gap-3 border-t border-stone pt-4">
+      <p className="text-ink">{note.message}</p>
+      {note.state === "active" ? (
+        <div>
+          <ButtonLink size="sm" href={`/light-mode/${note.episode_id}`}>
+            {result.kind === "confidence" ? "Open the recap" : "Start with a quick recap"}
+          </ButtonLink>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** What the diagnostic found: where each topic starts, and which are strong or weak. */
 function DiagnosticFindings({ result }: { result: AttemptResult }) {
   const d = result.diagnostic;
@@ -56,6 +74,7 @@ export function QuizResult({ result }: { result: AttemptResult }) {
           </p>
           <p className="mt-1 text-ink-2">{result.percent}%</p>
           <LevelChangeNote result={result} />
+          <LightModeNote result={result} />
           {!diagnostic && result.recommendation ? (
             <div className="mt-4 border-t border-stone pt-4">
               <div className="flex items-center gap-3">
@@ -66,7 +85,7 @@ export function QuizResult({ result }: { result: AttemptResult }) {
             </div>
           ) : null}
           <div className="mt-5 flex flex-wrap gap-3">
-            {diagnostic ? (
+            {diagnostic || result.kind === "confidence" ? (
               <ButtonLink href="/course-map">Open your Course Map</ButtonLink>
             ) : needsReview ? (
               <ButtonLink href={`/tutor?q=${encodeURIComponent(`Explain ${result.topic} in simple words`)}`}>Review this topic</ButtonLink>

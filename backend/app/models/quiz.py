@@ -74,6 +74,34 @@ class PathEvent(Base):
     topic: Mapped[Topic] = relationship()
 
 
+class LightEpisode(Base):
+    """A lighter step on one topic: a quick recap and an easy confidence quiz. Kept after it ends,
+    with its start, end and reason, so the study history can be analysed."""
+
+    __tablename__ = "light_episodes"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    topic_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("topics.id", ondelete="CASCADE"))
+    # wrong_streak | low_scores | needs_support
+    reason: Mapped[str] = mapped_column(String(20))
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), server_default=func.now()
+    )
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    outcome: Mapped[str | None] = mapped_column(String(20), nullable=True)  # passed
+    # The recap, written once from the topic's own passages: {sentences, example, memory_tip,
+    # sources}. Kept so reopening it costs nothing and reads the same.
+    recap: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    confidence_quiz_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("quizzes.id", ondelete="SET NULL"), nullable=True
+    )
+
+    topic: Mapped[Topic] = relationship()
+
+
 class Quiz(Base):
     __tablename__ = "quizzes"
 
@@ -134,8 +162,9 @@ class QuizAttempt(Base):
     quiz_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("quizzes.id", ondelete="CASCADE"))
     score: Mapped[int] = mapped_column(Integer)
     total_questions: Mapped[int] = mapped_column(Integer)
+    # Set by the application so quizzes finished in one transaction still have an order
     completed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), server_default=func.now()
     )
 
     quiz: Mapped[Quiz] = relationship()

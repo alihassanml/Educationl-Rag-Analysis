@@ -14,10 +14,15 @@ class Credentials(BaseModel):
         return value.lower()
 
 
+class PreferencesIn(BaseModel):
+    lighter_steps_enabled: bool
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     email: str
     is_admin: bool
+    lighter_steps_enabled: bool = True
     created_at: datetime

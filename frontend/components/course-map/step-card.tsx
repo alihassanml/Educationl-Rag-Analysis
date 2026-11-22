@@ -48,7 +48,12 @@ export function StepCard({ step, last }: { step: PathStep; last: boolean }) {
         <p className="mt-3 text-sm text-ink">{step.next_action.message}</p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <ButtonLink size="sm" href={`/tutor?q=${encodeURIComponent(`Explain ${step.name}`)}`}>
+          {step.light_episode_id ? (
+            <ButtonLink size="sm" href={`/light-mode/${step.light_episode_id}`}>
+              Lighter step
+            </ButtonLink>
+          ) : null}
+          <ButtonLink size="sm" variant={step.light_episode_id ? "secondary" : "primary"} href={`/tutor?q=${encodeURIComponent(`Explain ${step.name}`)}`}>
             Study
           </ButtonLink>
           <ButtonLink size="sm" variant="secondary" href={`/tutor?mode=quiz&q=${encoded}`}>

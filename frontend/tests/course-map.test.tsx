@@ -99,6 +99,14 @@ describe("CourseMapView", () => {
     expect(screen.getByRole("button", { name: /try again|retry/i })).toBeInTheDocument();
   });
 
+  it("offers the lighter step first on a topic that has one running", async () => {
+    vi.mocked(pathApi.get).mockResolvedValue(path({ steps: [step({ light_episode_id: "e9", next_action: { kind: "light", message: "Let's take a lighter step on Recursion: a quick recap, then a short confidence quiz." } })] }));
+    render(<CourseMapView />);
+    const first = (await screen.findAllByRole("listitem"))[0];
+    expect(within(first).getByRole("link", { name: "Lighter step" })).toHaveAttribute("href", "/light-mode/e9");
+    expect(within(first).getByText(/Let's take a lighter step on Recursion/)).toBeInTheDocument();
+  });
+
   it("offers to retake the diagnostic", async () => {
     vi.mocked(pathApi.get).mockResolvedValue(path());
     render(<CourseMapView />);

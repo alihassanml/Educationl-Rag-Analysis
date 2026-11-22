@@ -17,7 +17,7 @@ class PathSource(BaseModel):
 class NextAction(BaseModel):
     # start: no answers yet | practice: more answers needed or in between | revise: below the
     # revision threshold | review_later: doing well
-    kind: Literal["start", "practice", "revise", "review_later"]
+    kind: Literal["start", "practice", "revise", "review_later", "light"]
     message: str
 
 
@@ -32,6 +32,8 @@ class PathStep(BaseModel):
     sources: list[PathSource]
     next_action: NextAction
     is_current: bool
+    # A running lighter step on this topic (a recap and a confidence quiz), if there is one
+    light_episode_id: uuid.UUID | None = None
 
 
 class PathEventOut(BaseModel):

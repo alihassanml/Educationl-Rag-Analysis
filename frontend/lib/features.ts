@@ -119,7 +119,18 @@ export const FEATURES: Feature[] = [
   },
   { id: "ingestion", status: "planned", label: "More file types", roadmap: "Upload DOCX files and YouTube lectures, not only PDFs" },
   { id: "teacher-style", status: "planned", label: "Teacher-style mode", roadmap: "Answers in the wording and structure your teacher uses" },
-  { id: "mood-pacing", status: "planned", label: "Mood-aware pacing", roadmap: "Lighter study steps when your recent answers show strain" },
+  {
+    id: "mood-pacing",
+    status: "live",
+    label: "Mood-aware pacing",
+    // No nav entry: a lighter step opens from a quiz result or the Course Map
+    landing: {
+      overline: "Lighter steps",
+      title: "A gentler step when a topic is hard",
+      body: "After three wrong answers in a row, or two low quiz scores in a row, you get a short recap of the topic and a three-question confidence quiz before going on. Everything is written from your own material, with its source.",
+      bullets: ["A recap with an example and a memory tip, cited", "Pass the confidence quiz and you return to your normal level", "Switch it off any time in Settings"],
+    },
+  },
   { id: "exam-predictor", status: "planned", label: "Exam predictor", roadmap: "Topic likelihood from past papers, shown with its evidence" },
   { id: "viva", status: "planned", label: "Viva bot", roadmap: "Oral exam practice with follow-up questions and rubric scoring" },
   { id: "peer-match", status: "planned", label: "Peer match", roadmap: "Opt-in quiz duels with students who share weak topics" },

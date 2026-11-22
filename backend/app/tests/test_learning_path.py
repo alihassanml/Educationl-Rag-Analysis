@@ -145,7 +145,9 @@ def test_a_bad_result_moves_the_topic_up_and_says_why(student, db, fake_groq) ->
     assert [s["name"] for s in path["steps"]] == ["Recursion", "Arrays", "Sorting"]
     assert path["steps"][0]["status"] == "needs_revision" and path["steps"][0]["is_current"]
     assert path["steps"][0]["level"] == "beginner"
-    assert path["steps"][0]["next_action"]["kind"] == "revise"
+    # Three wrong answers in a row also start a lighter step on the topic
+    assert path["steps"][0]["next_action"]["kind"] == "light"
+    assert path["steps"][0]["light_episode_id"]
     assert path["latest_event"]["reason"] == "Recursion moved up because you scored 2/5."
     assert path["latest_event"]["topic"] == "Recursion"
     assert (path["latest_event"]["old_status"], path["latest_event"]["new_status"]) == (

@@ -75,6 +75,13 @@ class Settings(BaseSettings):
     # Failed quizzes in a row at beginner level before the topic is marked as needing support
     support_after_failed_attempts: int = 2
 
+    # Mood-aware pacing ("light mode"): any one of these starts a lighter step on the topic
+    mood_wrong_streak: int = 3  # wrong answers in a row across the most recent answers
+    mood_low_score_percent: int = 40  # a quiz below this percent counts as a low score
+    mood_low_score_attempts: int = 2  # low scores in a row
+    confidence_quiz_questions: int = 3
+    confidence_pass_correct: int = 2  # correct answers that pass the confidence quiz
+
     # Diagnostic test: at most this many questions in total, 1 or 2 per topic
     diagnostic_max_questions: int = 15
 

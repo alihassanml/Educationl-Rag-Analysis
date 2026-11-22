@@ -4,7 +4,7 @@ from app.api.deps import CurrentUser, DbSession
 from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.models.user import User
-from app.schemas.auth import Credentials, UserOut
+from app.schemas.auth import Credentials, PreferencesIn, UserOut
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -44,4 +44,11 @@ def logout(response: Response) -> None:
 
 @router.get("/me", response_model=UserOut)
 def me(user: CurrentUser) -> User:
+    return user
+
+
+@router.patch("/me/preferences", response_model=UserOut)
+def update_preferences(body: PreferencesIn, user: CurrentUser, db: DbSession) -> User:
+    user.lighter_steps_enabled = body.lighter_steps_enabled
+    db.commit()
     return user

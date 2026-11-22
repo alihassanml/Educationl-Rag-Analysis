@@ -19,6 +19,19 @@ export function SettingsView() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const diagnostic = useApi(diagnosticApi.status);
+  const [lighter, setLighter] = useState(user.lighter_steps_enabled ?? true);
+  const [lighterError, setLighterError] = useState<string | null>(null);
+
+  async function toggleLighter(next: boolean) {
+    setLighter(next);
+    setLighterError(null);
+    try {
+      await authApi.setLighterSteps(next);
+    } catch {
+      setLighter(!next);
+      setLighterError("Could not save this setting. Please try again.");
+    }
+  }
 
   async function signOut() {
     setPending(true);
@@ -44,6 +57,20 @@ export function SettingsView() {
             </div>
           </Panel>
         ) : null}
+        <Panel title="Study pace">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input type="checkbox" className="mt-1 accent-clay-strong" checked={lighter} onChange={(e) => void toggleLighter(e.target.checked)} />
+            <span>
+              <span className="block text-sm font-medium text-ink">Lighter steps when I&apos;m struggling</span>
+              <span className="block text-small text-ink-2">After three wrong answers in a row, two low quiz scores in a row, or repeated difficulty at beginner level, you get a short recap and an easy quiz before moving on.</span>
+            </span>
+          </label>
+          {lighterError ? (
+            <p role="alert" className="mt-2 text-small text-danger">
+              {lighterError}
+            </p>
+          ) : null}
+        </Panel>
         <Panel title="Account">
           <dl className="divide-y divide-stone text-sm">
             <div className="flex flex-col gap-1 py-3 first:pt-0 sm:flex-row sm:gap-6">

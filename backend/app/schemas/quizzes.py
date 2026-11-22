@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.light_mode import LightModeNotice
+
 Difficulty = Literal["beginner", "intermediate", "advanced"]
 
 
@@ -125,3 +127,4 @@ class AttemptResult(BaseModel):
     difficulty_reason: str | None = None
     topic_id: uuid.UUID | None = None
     diagnostic: DiagnosticSummary | None = None
+    light_mode: LightModeNotice | None = None

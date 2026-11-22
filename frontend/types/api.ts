@@ -1,4 +1,4 @@
-export type User = { id: string; email: string; is_admin: boolean; created_at: string };
+export type User = { id: string; email: string; is_admin: boolean; lighter_steps_enabled?: boolean; created_at: string };
 
 export type DocumentStatus = "uploaded" | "processing" | "ready" | "failed";
 
@@ -78,6 +78,16 @@ export type QuestionResult = {
   sources: { document_title: string; page_number: number | null; section_title?: string | null }[];
 };
 
+export type LightModeNotice = { episode_id: string; topic_id: string; topic: string; state: "active" | "passed"; message: string };
+export type Recap = {
+  episode_id: string;
+  topic: string;
+  sentences: string[];
+  example: string;
+  memory_tip: string;
+  sources: { document_title: string; page_number: number | null; section_title?: string | null }[];
+};
+
 export type DiagnosticTopic = { topic_id: string; topic: string; correct: number; asked: number; level: Difficulty };
 export type DiagnosticSummary = { topics: DiagnosticTopic[]; strengths: string[]; weak_topics: string[] };
 
@@ -114,6 +124,8 @@ export type AttemptResult = {
   topic_id: string | null;
   /** Only for a diagnostic: the level each topic starts at */
   diagnostic?: DiagnosticSummary | null;
+  /** A lighter step started, or was just completed, on this quiz's topic */
+  light_mode?: LightModeNotice | null;
 };
 
 export type TopicStatus = "insufficient_data" | "needs_revision" | "practicing" | "doing_well";
@@ -335,7 +347,7 @@ export type FeedbackItem = {
 // --- Course Map (learning path)
 
 export type PathSource = { document_id: string; document_title: string; first_page: number | null; last_page: number | null };
-export type NextActionKind = "start" | "practice" | "revise" | "review_later";
+export type NextActionKind = "start" | "practice" | "revise" | "review_later" | "light";
 
 export type PathStep = {
   topic_id: string;
@@ -349,6 +361,8 @@ export type PathStep = {
   sources: PathSource[];
   next_action: { kind: NextActionKind; message: string };
   is_current: boolean;
+  /** A running lighter step on this topic */
+  light_episode_id?: string | null;
 };
 
 export type PathEvent = { id: string; topic_id: string; topic: string; old_status: TopicStatus; new_status: TopicStatus; reason: string; created_at: string };

@@ -35,6 +35,10 @@ describe("feature registry", () => {
     expect(diagnostic.landing?.bullets.length).toBeGreaterThan(0);
   });
 
+  it("lists mood-aware pacing as live", () => {
+    expect(FEATURES.find((f) => f.id === "mood-pacing")?.status).toBe("live");
+  });
+
   it("lists chat history, follow-up questions and streamed answers as live, not on the roadmap", () => {
     const live = liveFeatures().map((f) => f.id);
     expect(live).toEqual(expect.arrayContaining(["chat-history", "follow-ups", "streaming"]));

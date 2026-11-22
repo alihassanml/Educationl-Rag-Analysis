@@ -179,6 +179,18 @@ def diagnostic_summary(
     )
 
 
+def clear_support(db: Session, user_id: uuid.UUID, topic_id: uuid.UUID) -> None:
+    """The student is back on track with a topic: forget its run of failed quizzes."""
+    progress = db.scalar(
+        select(TopicProgress).where(
+            TopicProgress.user_id == user_id, TopicProgress.topic_id == topic_id
+        )
+    )
+    if progress is not None:
+        progress.failed_streak = 0
+        progress.needs_support = False
+
+
 def struggling_with(db: Session, user_id: uuid.UUID, chunks: list[RetrievedChunk]) -> bool:
     """Do these passages belong to a topic the student needs to revise?"""
     topic_ids = topic_service.chunk_topic_ids(db, user_id, chunks)

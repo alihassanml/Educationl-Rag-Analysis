@@ -31,6 +31,7 @@ from app.schemas.quizzes import (
     SourceRef,
 )
 from app.services import (
+    mood_service,
     progress_service,
     recommendation_service,
     retrieval_service,
@@ -45,6 +46,7 @@ logger = logging.getLogger("app.quizzes")
 
 KIND_PRACTICE = "practice"
 KIND_DIAGNOSTIC = "diagnostic"
+KIND_CONFIDENCE = "confidence"
 
 _CONTEXT_CHUNKS = 8
 # Words of a follow-up ("10 more", "another one") that name no subject
@@ -468,7 +470,7 @@ def _build_result(
         )
     status = recommendation = None
     level: dict[str, Any] = {}
-    if quiz.topic_id and quiz.topic:
+    if quiz.topic_id and quiz.topic and quiz.kind != KIND_CONFIDENCE:
         following = recommendation_service.next_level(
             quiz.difficulty, attempt.score, attempt.total_questions
         )
@@ -513,6 +515,7 @@ def _build_result(
         quiz_title=quiz.title,
         kind=quiz.kind,
         diagnostic=diagnostic,
+        light_mode=mood_service.notice(db, user_id, quiz, attempt),
         topic=quiz.topic.name if quiz.topic else None,
         score=attempt.score,
         total_questions=attempt.total_questions,
@@ -564,10 +567,19 @@ def submit_attempt(
         progress_service.apply_diagnostic(
             db, user_id, quiz, {g.question_id: g.is_correct for g in graded}
         )
-    elif quiz.topic_id:
+    elif quiz.kind == KIND_CONFIDENCE and quiz.topic_id:
+        # Counts as answers, but does not move the level: it is a step back, not a new rung
         progress_service.record_attempt(
+            db, user_id, quiz.topic_id, score, len(graded), quiz.difficulty, adjust_level=False
+        )
+        if mood_service.on_confidence_result(db, user_id, quiz, score, len(graded)):
+            progress_service.clear_support(db, user_id, quiz.topic_id)
+    elif quiz.topic_id:
+        outcome = progress_service.record_attempt(
             db, user_id, quiz.topic_id, score, len(graded), quiz.difficulty
         )
+        if quiz.kind == KIND_PRACTICE:
+            mood_service.maybe_start(db, user_id, quiz.topic_id, outcome.needs_support)
     try:
         db.commit()
     except IntegrityError as exc:  # a concurrent double submit hit the unique constraint

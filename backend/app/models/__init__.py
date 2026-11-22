@@ -11,6 +11,7 @@ from app.models.quiz import (
     QuestionResponse,
     Quiz,
     QuizAttempt,
+    TeacherStyleProfile,
     Topic,
     TopicProgress,
 )
@@ -36,6 +37,7 @@ __all__ = [
     "QuestionResponse",
     "Quiz",
     "QuizAttempt",
+    "TeacherStyleProfile",
     "Topic",
     "TopicProgress",
     "User",

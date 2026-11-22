@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.errors import AppError
 from app.models.chat import (
     ROLE_ASSISTANT,
     ROLE_USER,
@@ -20,7 +21,7 @@ from app.models.chat import (
     ChatThread,
     _now,
 )
-from app.services import chat_service, progress_service
+from app.services import chat_service, progress_service, teacher_style_service
 from app.services.embedding_service import Embedder
 from app.services.groq_service import GroqService, LLMUnavailableError
 from app.services.intent_service import (
@@ -112,6 +113,7 @@ class PreparedMessage:
     document_ids: list[uuid.UUID] | None
     history: list[tuple[str, str]] = field(default_factory=list)
     mode: str = "ask"
+    teacher_style: bool = False
 
 
 def _title(question: str) -> str:
@@ -126,9 +128,16 @@ def prepare_message(
     question: str,
     document_ids: list[uuid.UUID] | None,
     mode: str = "ask",
+    teacher_style: bool = False,
 ) -> PreparedMessage:
     """Check ownership and scope, then save the student's message before anything streams."""
     thread = chat_service.get_owned_thread(db, user_id, thread_id)
+    if teacher_style and not teacher_style_service.teacher_documents(db, user_id):
+        raise AppError(
+            409,
+            "no_teacher_material",
+            "Upload your teacher's slides or notes and mark them as Teacher material first",
+        )
     if document_ids:
         check_document_scope(db, user_id, document_ids)
     earlier = db.scalars(
@@ -145,7 +154,9 @@ def prepare_message(
         thread.title = _title(question)
     thread.updated_at = _now()
     db.commit()
-    return PreparedMessage(user_id, thread.id, message.id, question, document_ids, history, mode)
+    return PreparedMessage(
+        user_id, thread.id, message.id, question, document_ids, history, mode, teacher_style
+    )
 
 
 def make_snippet(content: str) -> str:
@@ -158,7 +169,9 @@ def make_snippet(content: str) -> str:
     return (cut[:space] if space > SNIPPET_CHARS // 2 else cut).rstrip() + "…"
 
 
-def _source_event(chunks: list[RetrievedChunk]) -> list[dict[str, Any]]:
+def _source_event(
+    chunks: list[RetrievedChunk], teacher_ids: set[uuid.UUID] | None = None
+) -> list[dict[str, Any]]:
     return [
         {
             "marker": marker,
@@ -169,6 +182,7 @@ def _source_event(chunks: list[RetrievedChunk]) -> list[dict[str, Any]]:
             "section_title": c.section_title,
             "start_seconds": c.start_seconds,
             "source_url": c.source_url,
+            "is_teacher": c.document_id in (teacher_ids or set()),
             "snippet": make_snippet(c.content),
         }
         for marker, c in enumerate(chunks, start=1)
@@ -190,6 +204,8 @@ def _save_answer(
     model: str,
     latency: dict[str, int],
     simplified: bool = False,
+    teacher_style: bool = False,
+    teacher_ids: set[uuid.UUID] | None = None,
 ) -> ChatMessage:
     message = ChatMessage(
         thread_id=prepared.thread_id,
@@ -198,6 +214,7 @@ def _save_answer(
         content=content,
         abstained=abstained,
         simplified=simplified,
+        teacher_style=teacher_style,
         status=status,
         model=model,
         latency_ms=latency,
@@ -216,6 +233,7 @@ def _save_answer(
                     section_title=c.section_title,
                     start_seconds=c.start_seconds,
                     source_url=c.source_url,
+                    is_teacher=c.document_id in (teacher_ids or set()),
                     marker=marker,
                     snippet=make_snippet(c.content),
                 )
@@ -242,6 +260,7 @@ def run_stream(
     as "stopped" and closes the provider stream."""
     latency = {"rewrite": 0, "retrieve": 0, "generate": 0}
     simplified = False
+    styled = False
     chunks: list[RetrievedChunk] = []
     text_parts: list[str] = []
     model = llm.model_name
@@ -307,7 +326,13 @@ def run_stream(
             covering = bool(chunks)
         else:
             query = search_query(rewrite.query, located)
-            chunks = retrieve(db, embedder, prepared.user_id, query, scope)
+            if prepared.teacher_style:
+                # The teacher's own material is searched first, then the rest fills the slots
+                chunks = teacher_style_service.retrieve_teacher_first(
+                    db, embedder, prepared.user_id, query, scope
+                )
+            else:
+                chunks = retrieve(db, embedder, prepared.user_id, query, scope)
             if not chunks and is_broad_request(
                 prepared.question, mode=prepared.mode, documents=titles
             ):
@@ -315,7 +340,12 @@ def run_stream(
                 chunks = retrieve_coverage(db, prepared.user_id, scope)
                 covering = bool(chunks)
         latency["retrieve"] = _ms(started)
-        yield "sources", _source_event(chunks)
+        teacher_ids = (
+            teacher_style_service.teacher_document_ids(db, prepared.user_id)
+            if prepared.teacher_style
+            else set()
+        )
+        yield "sources", _source_event(chunks, teacher_ids)
 
         def done(message: ChatMessage, abstained: bool, unknown: list[int]) -> StreamEvent:
             return "done", {
@@ -326,6 +356,7 @@ def run_stream(
                 "unknown_markers": unknown,
                 "latency_ms": latency,
                 "simplified": simplified,
+                "teacher_style": styled,
             }
 
         if not chunks:
@@ -345,6 +376,14 @@ def run_stream(
             instruction = reformat
         elif covering and not instruction:
             instruction = COVERAGE_INSTRUCTION
+        styled = False
+        if prepared.teacher_style:
+            # Built now if the teacher material changed since the profile was last made
+            profile = teacher_style_service.ensure_profile(db, llm, prepared.user_id)
+            instruction = (
+                f"{instruction} {teacher_style_service.style_instruction(profile)}".strip()
+            )
+            styled = True
         if prepared.mode in ("ask", "simple") and not reformat and not covering:
             simplified = progress_service.struggling_with(db, prepared.user_id, chunks)
             if simplified:
@@ -387,6 +426,7 @@ def run_stream(
         message = _save_answer(
             db, prepared, content=content, status=STATUS_COMPLETE, abstained=False,
             chunks=chunks, model=model, latency=latency, simplified=simplified,
+            teacher_style=styled, teacher_ids=teacher_ids,
         )  # fmt: skip
         yield done(message, False, unknown)
     except GeneratorExit:
@@ -395,6 +435,9 @@ def run_stream(
     except LLMUnavailableError as exc:
         _save_partial(db, prepared, "".join(text_parts), STATUS_FAILED, chunks, model, latency)
         yield "error", {"code": "provider_unavailable", "message": str(exc)}
+    except AppError as exc:  # an expected failure with a safe message, such as the style step
+        _save_partial(db, prepared, "".join(text_parts), STATUS_FAILED, chunks, model, latency)
+        yield "error", {"code": exc.code, "message": exc.message}
     except Exception:
         logger.exception("Chat message failed")
         _save_partial(db, prepared, "".join(text_parts), STATUS_FAILED, chunks, model, latency)

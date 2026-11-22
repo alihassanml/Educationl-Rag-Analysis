@@ -27,6 +27,7 @@ import type {
   StudyInsights,
   ThreadDetail,
   ThreadSummary,
+  TeacherStyleStatus,
   TopicProgressList,
   User,
 } from "@/types/api";
@@ -84,10 +85,11 @@ export const tutorApi = {
     onEvent: (event: SseEvent) => void,
     signal?: AbortSignal,
     mode: "ask" | "quiz" | "summary" | "simple" = "ask",
+    teacherStyle = false,
   ): Promise<void> {
     const response = await apiStream(
       `/tutor/threads/${threadId}/messages`,
-      { question, document_ids: scopeOf(documentIds), mode },
+      { question, document_ids: scopeOf(documentIds), mode, ...(teacherStyle ? { teacher_style: true } : {}) },
       signal,
     );
     for await (const event of readSse(response.body!)) onEvent(event);
@@ -115,6 +117,12 @@ export const quizzesApi = {
   result: (id: string, signal?: AbortSignal) => apiRequest<AttemptResult>(`/quizzes/${id}/attempt`, { signal }),
   /** Study notes PDF of a finished quiz */
   notesPdf: (id: string) => apiDownload(`/quizzes/${id}/notes.pdf`),
+};
+
+export const teacherStyleApi = {
+  status: (signal?: AbortSignal) => apiRequest<TeacherStyleStatus>("/teacher-style", { signal }),
+  /** Learns the teacher's style from the current teacher material, unless that is already done */
+  build: () => apiRequest<TeacherStyleStatus>("/teacher-style/build", { method: "POST" }),
 };
 
 export const examApi = {

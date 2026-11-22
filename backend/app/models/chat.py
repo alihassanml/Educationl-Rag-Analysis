@@ -74,6 +74,8 @@ class ChatMessage(Base):
     rewrite_fallback: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     abstained: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     # Written in simpler words because the passages belong to a topic the student must revise
+    # Answered in the student's teacher's style (Teacher-Clone Mode)
+    teacher_style: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     simplified: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     status: Mapped[str] = mapped_column(String(10), default=STATUS_COMPLETE)
     model: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -116,6 +118,7 @@ class ChatCitation(Base):
     section_title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     start_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     source_url: Mapped[str | None] = mapped_column(String(2200), nullable=True)
+    is_teacher: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     marker: Mapped[int] = mapped_column(Integer)
     snippet: Mapped[str] = mapped_column(Text, default="")
 

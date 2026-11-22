@@ -95,6 +95,9 @@ class Settings(BaseSettings):
     exam_paper_batch_chars: int = 14000  # paper text sent to the model per call
     exam_paper_max_batches: int = 6
 
+    # Teacher-Clone Mode: passages of the teacher's material read to learn their style
+    teacher_style_sample_chunks: int = 16
+
     # Mood-aware pacing ("light mode"): any one of these starts a lighter step on the topic
     mood_wrong_streak: int = 3  # wrong answers in a row across the most recent answers
     mood_low_score_percent: int = 40  # a quiz below this percent counts as a low score

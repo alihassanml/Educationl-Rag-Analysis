@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AnswerBlock, type AnswerView } from "@/components/tutor/answer-card";
 import { TutorView, suggestionsFor } from "@/components/tutor/tutor-view";
 import { ApiError } from "@/lib/api-client";
-import { documentsApi, quizzesApi, tutorApi } from "@/lib/api";
+import { documentsApi, quizzesApi, teacherStyleApi, tutorApi } from "@/lib/api";
 import type { SseEvent } from "@/lib/sse";
 import type { StudyDocument, ThreadDetail } from "@/types/api";
 
@@ -14,6 +14,7 @@ vi.mock("@/components/ui/toast", () => ({ useToast: () => ({ show: vi.fn() }) })
 vi.mock("@/lib/api", () => ({
   documentsApi: { list: vi.fn(), addLink: vi.fn(), upload: vi.fn() },
   quizzesApi: { generate: vi.fn(), submit: vi.fn(), notesPdf: vi.fn() },
+  teacherStyleApi: { status: vi.fn(), build: vi.fn() },
   tutorApi: {
     threads: vi.fn(),
     createThread: vi.fn(),
@@ -54,6 +55,9 @@ function controlledStream() {
   return { emit: (...events: SseEvent[]) => events.forEach((e) => onEvent(e)), finish: () => finish(), fail: (e: unknown) => fail(e), get signal() { return signal; } };
 }
 
+const noTeacher = { available: false, teacher_documents: [], ready: false, style: null };
+const withTeacher = { available: true, teacher_documents: ["Teacher slides"], ready: false, style: null };
+
 beforeEach(() => {
   vi.resetAllMocks();
   // jsdom has no <dialog> modal support
@@ -63,6 +67,7 @@ beforeEach(() => {
   vi.mocked(documentsApi.list).mockResolvedValue({ items: [doc()], total: 1 });
   vi.mocked(tutorApi.threads).mockResolvedValue([]);
   vi.mocked(tutorApi.createThread).mockResolvedValue(thread());
+  vi.mocked(teacherStyleApi.status).mockResolvedValue(noTeacher);
 });
 
 async function ask(text: string) {
@@ -72,7 +77,7 @@ async function ask(text: string) {
 }
 
 const view = (over: Partial<AnswerView> = {}): AnswerView => ({ text: "", status: "complete", stage: null, sources: [], abstained: false, ...over });
-const src = (marker: number) => ({ marker, chunkId: `c${marker}`, documentId: "d1", title: "Programming Notes", page: marker + 1, section: null, startSeconds: null, url: null, snippet: "Recursion is a method", deleted: false });
+const src = (marker: number) => ({ marker, chunkId: `c${marker}`, documentId: "d1", title: "Programming Notes", page: marker + 1, section: null, startSeconds: null, url: null, isTeacher: false, snippet: "Recursion is a method", deleted: false });
 
 describe("AnswerBlock", () => {
   it("shows citation pills only for markers that are among the sources", () => {
@@ -496,3 +501,60 @@ describe("TutorView: keyboard", () => {
     expect(box).toHaveValue(""); // the slash is not typed into the box
   });
 });
+
+describe("Teacher style", () => {
+  it("is switched off, with the reason, until teacher material is added", async () => {
+    render(<TutorView />);
+    const toggle = await screen.findByRole("button", { name: "Teacher style" });
+    expect(toggle).toBeDisabled();
+    expect(screen.getByText(/mark them as Teacher material/)).toBeInTheDocument();
+  });
+
+  it("asks for the answer in the teacher's style and learns the style when switched on", async () => {
+    vi.mocked(teacherStyleApi.status).mockResolvedValue(withTeacher);
+    vi.mocked(teacherStyleApi.build).mockResolvedValue({ ...withTeacher, ready: true });
+    const stream = controlledStream();
+    render(<TutorView />);
+    const toggle = await screen.findByRole("button", { name: "Teacher style" });
+    await waitFor(() => expect(toggle).toBeEnabled());
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(teacherStyleApi.build).toHaveBeenCalledTimes(1);
+    await ask("What is recursion?");
+    await waitFor(() => expect(tutorApi.streamMessage).toHaveBeenCalled());
+    expect(vi.mocked(tutorApi.streamMessage).mock.calls[0][6]).toBe(true);
+    stream.finish();
+  });
+
+  it("does not ask for the teacher's style unless the toggle is on", async () => {
+    vi.mocked(teacherStyleApi.status).mockResolvedValue(withTeacher);
+    controlledStream();
+    render(<TutorView />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Teacher style" })).toBeEnabled());
+    await ask("What is recursion?");
+    await waitFor(() => expect(tutorApi.streamMessage).toHaveBeenCalled());
+    expect(vi.mocked(tutorApi.streamMessage).mock.calls[0][6]).toBe(false);
+  });
+
+  it("shows the badge and lists the teacher sources", () => {
+    const sources = [
+      { marker: 1, chunkId: "c1", documentId: "d1", title: "Teacher slides", page: 2, section: null, startSeconds: null, url: null, isTeacher: true, snippet: "x", deleted: false },
+      { marker: 2, chunkId: "c2", documentId: "d2", title: "My notes", page: 5, section: null, startSeconds: null, url: null, isTeacher: false, snippet: "y", deleted: false },
+    ];
+    render(<AnswerBlock answer={view({ text: "A pointer stores an address [1].", sources, teacherStyle: true })} />);
+    expect(screen.getByText("In your teacher's style")).toBeInTheDocument();
+    expect(screen.getByText("Teacher sources: Teacher slides, page 2")).toBeInTheDocument();
+  });
+
+  it("says so when no teacher material matched", () => {
+    const sources = [{ marker: 1, chunkId: "c2", documentId: "d2", title: "My notes", page: 5, section: null, startSeconds: null, url: null, isTeacher: false, snippet: "y", deleted: false }];
+    render(<AnswerBlock answer={view({ text: "Text [1].", sources, teacherStyle: true })} />);
+    expect(screen.getByText(/No teacher material matched this question/)).toBeInTheDocument();
+  });
+
+  it("shows no badge on an ordinary answer", () => {
+    render(<AnswerBlock answer={view({ text: "Plain answer." })} />);
+    expect(screen.queryByText("In your teacher's style")).not.toBeInTheDocument();
+  });
+});
+

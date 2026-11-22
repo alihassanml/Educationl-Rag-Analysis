@@ -12,6 +12,7 @@ from app.api.routes import (
     light_mode,
     progress,
     quizzes,
+    teacher_style,
     tutor,
 )
 
@@ -23,6 +24,7 @@ api_router.include_router(tutor.router)
 api_router.include_router(quizzes.router)
 api_router.include_router(diagnostic.router)
 api_router.include_router(exam_predictor.router)
+api_router.include_router(teacher_style.router)
 api_router.include_router(learning_path.router)
 api_router.include_router(light_mode.router)
 api_router.include_router(progress.router)

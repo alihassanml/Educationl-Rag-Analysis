@@ -103,7 +103,7 @@ def send_message(
     llm: Annotated[GroqService, Depends(get_groq_service)],
 ) -> StreamingResponse:
     prepared = chat_stream_service.prepare_message(
-        db, user.id, thread_id, body.question, body.document_ids, body.mode
+        db, user.id, thread_id, body.question, body.document_ids, body.mode, body.teacher_style
     )
     return StreamingResponse(
         sse_stream(chat_stream_service.run_stream(db, embedder, llm, prepared)),

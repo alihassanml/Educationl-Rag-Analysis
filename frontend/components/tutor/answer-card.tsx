@@ -27,6 +27,8 @@ export type AnswerView = {
   abstained: boolean;
   /** Written in simpler words because the topic needs revision */
   simplified?: boolean;
+  /** Answered in the style of the student's teacher material */
+  teacherStyle?: boolean;
   error?: string;
   feedback?: FeedbackRating | null;
 };
@@ -163,6 +165,25 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
             ) : null
           }
         />
+      ) : null}
+
+      {answer.teacherStyle && answer.status === "complete" ? (
+        <div className="mt-3 flex flex-col gap-1">
+          <div>
+            <Chip tone="clay">In your teacher&apos;s style</Chip>
+          </div>
+          {answer.sources.some((s) => s.isTeacher) ? (
+            <p className="text-small text-ink-2">
+              Teacher sources:{" "}
+              {answer.sources
+                .filter((s) => s.isTeacher)
+                .map((s) => `${s.title}, ${pageText(s.page, s.section, s.startSeconds).toLowerCase()}`)
+                .join("; ")}
+            </p>
+          ) : (
+            <p className="text-small text-ink-2">No teacher material matched this question, so the answer uses your other sources.</p>
+          )}
+        </div>
       ) : null}
 
       {answer.simplified && answer.status === "complete" ? (

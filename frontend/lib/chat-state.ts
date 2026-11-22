@@ -12,6 +12,8 @@ export type Source = {
   /** A lecture passage: seconds into the video, and the link that opens it there */
   startSeconds: number | null;
   url: string | null;
+  /** From the student's teacher material */
+  isTeacher: boolean;
   snippet: string;
   deleted: boolean;
 };
@@ -25,6 +27,7 @@ export type LiveAnswer = {
   status: "streaming" | "complete" | "stopped" | "failed";
   abstained: boolean;
   simplified: boolean;
+  teacherStyle: boolean;
   messageId?: string;
   standaloneQuery?: string;
   rewriteUsed: boolean;
@@ -39,6 +42,7 @@ export const initialLive = (): LiveAnswer => ({
   status: "streaming",
   abstained: false,
   simplified: false,
+  teacherStyle: false,
   rewriteUsed: false,
   unknownMarkers: [],
 });
@@ -59,6 +63,7 @@ function toSource(raw: unknown): Source | null {
     section: typeof raw.section_title === "string" && raw.section_title ? raw.section_title : null,
     startSeconds: typeof raw.start_seconds === "number" ? raw.start_seconds : null,
     url: typeof raw.source_url === "string" && raw.source_url ? raw.source_url : null,
+    isTeacher: raw.is_teacher === true,
     snippet: typeof raw.snippet === "string" ? raw.snippet : "",
     deleted: false,
   };
@@ -83,6 +88,7 @@ export function applyEvent(state: LiveAnswer, { event, data }: SseEvent): LiveAn
             status: "complete",
             abstained: data.abstained === true,
             simplified: data.simplified === true,
+            teacherStyle: data.teacher_style === true,
             messageId: typeof data.message_id === "string" ? data.message_id : undefined,
             standaloneQuery: typeof data.standalone_query === "string" ? data.standalone_query : undefined,
             rewriteUsed: data.rewrite_used === true,

@@ -13,6 +13,7 @@ export function toSources(citations: ChatCitation[]): Source[] {
     section: c.section_title ?? null,
     startSeconds: c.start_seconds ?? null,
     url: c.source_url ?? null,
+    isTeacher: c.is_teacher === true,
     snippet: c.snippet,
     deleted: c.source_deleted,
   }));

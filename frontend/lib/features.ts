@@ -142,7 +142,18 @@ export const FEATURES: Feature[] = [
       bullets: ["Lecture answers link to the right second of the video", "A video with no captions can be added by pasting its transcript", "Everything stays private to your account"],
     },
   },
-  { id: "teacher-style", status: "planned", label: "Teacher-style mode", roadmap: "Answers in the wording and structure your teacher uses" },
+  {
+    id: "teacher-style",
+    status: "live",
+    label: "Teacher-style mode",
+    // No nav entry: it is a toggle in the tutor's composer
+    landing: {
+      overline: "Teacher style",
+      title: "Answers in your teacher's own words",
+      body: "Mark your teacher's slides or notes as Teacher material, switch on Teacher style in the tutor, and answers use their terms, phrasing and structure. They are still written only from your material, with the teacher's passages searched first and cited.",
+      bullets: ["Uses the terms and definitions from your teacher's material", "Teacher passages are searched first", "Shows which sources are your teacher's"],
+    },
+  },
   {
     id: "mood-pacing",
     status: "live",

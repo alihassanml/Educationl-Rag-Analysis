@@ -9,7 +9,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { EmptyState, ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import { ApiError } from "@/lib/api-client";
-import { tutorApi } from "@/lib/api";
+import { teacherStyleApi, tutorApi } from "@/lib/api";
 import { useDocuments } from "@/lib/use-documents";
 import { applyEvent, initialLive, markStopped, type LiveAnswer, type Source } from "@/lib/chat-state";
 import { cn } from "@/lib/cn";
@@ -71,6 +71,7 @@ function viewOf(live: LiveAnswer, feedback: FeedbackRating | null = null): Answe
     sources: live.abstained ? [] : live.sources,
     abstained: live.abstained,
     simplified: live.simplified,
+    teacherStyle: live.teacherStyle,
     error: live.error,
     feedback,
   };
@@ -101,6 +102,7 @@ function turnsFromThread(detail: ThreadDetail | null): Turn[] {
       sources: message.abstained ? [] : toSources(message.citations),
       abstained: message.abstained,
       simplified: message.simplified === true,
+      teacherStyle: message.teacher_style === true,
       error: message.status === "failed" ? "This answer could not be completed. Try again." : undefined,
       feedback: message.feedback,
     };
@@ -115,6 +117,8 @@ function turnsFromThread(detail: ThreadDetail | null): Turn[] {
 
 export function TutorView({ threadId }: { threadId?: string }) {
   const docs = useDocuments();
+  const teacher = useApi(teacherStyleApi.status);
+  const [teacherStyle, setTeacherStyle] = useState(false);
   const toast = useToast();
   // Material can be added without leaving the chat: paste a link, or attach, paste or drop a PDF
   const [adding, setAdding] = useState<string | null>(null);
@@ -245,6 +249,7 @@ export function TutorView({ threadId }: { threadId?: string }) {
         },
         controller.signal,
         sendMode,
+        teacherStyle && teacher.data?.available === true,
       );
       if (live.status === "streaming") {
         live = { ...live, stage: null, status: "failed", error: "The connection ended before the answer was finished. Try again." };
@@ -520,6 +525,13 @@ export function TutorView({ threadId }: { threadId?: string }) {
                 addError={sources.error}
                 mode={mode}
                 onModeChange={setMode}
+                teacherStyle={teacherStyle && teacher.data?.available === true}
+                teacherAvailable={teacher.data?.available === true}
+                onTeacherStyleChange={(on) => {
+                  setTeacherStyle(on);
+                  // Learn the style now, so the first answer is not slower than the rest
+                  if (on && teacher.data && !teacher.data.ready) void teacherStyleApi.build().then(teacher.reload, () => undefined);
+                }}
               />
             </div>
           </div>

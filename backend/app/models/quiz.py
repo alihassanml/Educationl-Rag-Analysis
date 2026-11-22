@@ -140,6 +140,30 @@ class ExamTopicScore(Base):
     )
 
 
+class TeacherStyleProfile(Base):
+    """What the student's teacher material shows about how the teacher explains things: terms with
+    their definitions, typical phrases and how an explanation is built. Every item quotes or points
+    to a passage of the teacher's material. Rebuilt only when that material changes."""
+
+    __tablename__ = "teacher_style_profiles"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    # Which teacher documents (and which versions of them) the profile was built from
+    signature: Mapped[str] = mapped_column(String(64))
+    glossary: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, server_default=text("'[]'::jsonb")
+    )
+    phrases: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))
+    structure: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, server_default=text("'[]'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), server_default=func.now()
+    )
+
+
 class Quiz(Base):
     __tablename__ = "quizzes"
 

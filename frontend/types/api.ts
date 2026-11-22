@@ -322,6 +322,8 @@ export type ChatCitation = {
   section_title?: string | null;
   start_seconds?: number | null;
   source_url?: string | null;
+  /** The passage comes from the student's teacher material */
+  is_teacher?: boolean;
   snippet: string;
   source_deleted: boolean;
 };
@@ -338,6 +340,8 @@ export type ChatMessageDto = {
   abstained: boolean;
   /** Written in simpler words because the topic needs revision */
   simplified?: boolean;
+  /** Answered in the style of the student's teacher material */
+  teacher_style?: boolean;
   status: "complete" | "stopped" | "failed";
   created_at: string;
   citations: ChatCitation[];
@@ -430,4 +434,19 @@ export type ExamPrediction = {
   unmatched: EvidenceQuestion[];
   rule: string;
   disclaimer: string;
+};
+
+// --- Teacher style
+
+export type TeacherStyleSource = { document_title: string; page_number: number | null };
+export type TeacherStyleStatus = {
+  available: boolean;
+  teacher_documents: string[];
+  ready: boolean;
+  style: {
+    glossary: { term: string; definition: string; source: TeacherStyleSource }[];
+    phrases: { text: string; source: TeacherStyleSource }[];
+    structure: { pattern: string; source: TeacherStyleSource }[];
+    built_at: string;
+  } | null;
 };

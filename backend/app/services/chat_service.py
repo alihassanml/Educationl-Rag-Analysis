@@ -68,6 +68,7 @@ def _citation_out(citation: ChatCitation) -> CitationOut:
         section_title=citation.section_title,
         start_seconds=citation.start_seconds,
         source_url=citation.source_url,
+        is_teacher=citation.is_teacher,
         snippet=citation.snippet,
         source_deleted=citation.document_id is None,
     )
@@ -83,6 +84,7 @@ def message_out(message: ChatMessage, user_id: uuid.UUID) -> MessageOut:
         rewrite_used=message.rewrite_used,
         abstained=message.abstained,
         simplified=message.simplified,
+        teacher_style=message.teacher_style,
         status=message.status,  # type: ignore[arg-type]
         created_at=message.created_at,
         citations=[_citation_out(c) for c in message.citations],

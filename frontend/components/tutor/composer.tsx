@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, FileText, Link2, Paperclip, Square } from "lucide-react";
+import { ArrowUp, FileText, GraduationCap, Link2, Paperclip, Square } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/cn";
@@ -28,12 +28,16 @@ type Props = {
   /** A source is being read; shown as a status line. */
   adding?: string | null;
   addError?: string | null;
+  /** Teacher-Clone Mode: answer in the style of the teacher material. `available` is false until some is added. */
+  teacherStyle?: boolean;
+  teacherAvailable?: boolean;
+  onTeacherStyleChange?: (on: boolean) => void;
 };
 
 const MIN_QUESTION_LENGTH = 2;
 
 /** Sticky composer: auto-growing textarea (1 to 6 lines). Enter sends, Shift+Enter adds a line. */
-export function Composer({ value, onChange, onSubmit, streaming, onStop, documents, scope, onScopeChange, inputRef, mode, onModeChange, onAttachPdf, adding, addError }: Props) {
+export function Composer({ value, onChange, onSubmit, streaming, onStop, documents, scope, onScopeChange, inputRef, mode, onModeChange, onAttachPdf, adding, addError, teacherStyle = false, teacherAvailable = false, onTeacherStyleChange }: Props) {
   const [scopeOpen, setScopeOpen] = useState(false);
   const scopeRoot = useRef<HTMLDivElement>(null);
   useDismiss(scopeRoot, scopeOpen, () => setScopeOpen(false));
@@ -173,6 +177,22 @@ export function Composer({ value, onChange, onSubmit, streaming, onStop, documen
               </button>
             ))}
           </div>
+        {onTeacherStyleChange ? (
+          <button
+            type="button"
+            aria-pressed={teacherStyle}
+            aria-describedby="teacher-style-hint"
+            disabled={streaming || !teacherAvailable}
+            onClick={() => onTeacherStyleChange(!teacherStyle)}
+            className={cn(
+              "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-small font-medium transition-colors duration-[120ms] disabled:cursor-not-allowed disabled:opacity-50",
+              teacherStyle ? "bg-clay-strong text-on-accent" : "border border-stone bg-paper text-ink hover:bg-stone-100",
+            )}
+          >
+            <GraduationCap size={14} strokeWidth={1.75} aria-hidden="true" />
+            Teacher style
+          </button>
+        ) : null}
         <div ref={scopeRoot} className="relative ml-auto">
           <button
             type="button"
@@ -195,6 +215,15 @@ export function Composer({ value, onChange, onSubmit, streaming, onStop, documen
           ) : null}
         </div>
         </div>
+        {onTeacherStyleChange && !teacherAvailable ? (
+          <p id="teacher-style-hint" className="mt-2 px-1 text-small text-ink-2">
+            Upload your teacher&apos;s slides or notes and mark them as Teacher material to answer in their style
+          </p>
+        ) : (
+          <span id="teacher-style-hint" className="sr-only">
+            {teacherStyle ? "Answers use your teacher's wording and structure" : "Answer in your teacher's style"}
+          </span>
+        )}
       </form>
     </div>
   );

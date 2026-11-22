@@ -39,6 +39,7 @@ class CitationOut(BaseModel):
     section_title: str | None = None
     start_seconds: int | None = None
     source_url: str | None = None
+    is_teacher: bool = False
     snippet: str
     source_deleted: bool
 
@@ -51,6 +52,7 @@ class MessageOut(BaseModel):
     rewrite_used: bool
     abstained: bool
     simplified: bool = False
+    teacher_style: bool = False
     status: Literal["complete", "stopped", "failed"]
     created_at: datetime
     citations: list[CitationOut]
@@ -70,6 +72,8 @@ class MessageCreate(BaseModel):
     # How the answer is written. The student's own words are saved as typed; the mode only
     # changes the instruction the answer call receives.
     mode: ChatMode = "ask"
+    # Answer in the style of the student's teacher material (needs some marked as Teacher material)
+    teacher_style: bool = False
 
 
 class FeedbackIn(BaseModel):

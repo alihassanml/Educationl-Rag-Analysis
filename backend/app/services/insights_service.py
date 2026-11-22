@@ -23,7 +23,7 @@ from app.models.document import STATUS_READY, Document, DocumentChunk
 from app.models.quiz import QuizAttempt
 from app.schemas.progress import DayActivity, DocumentUsage, HotPage, StudyInsights
 
-ACTIVITY_DAYS = 84  # twelve full weeks for the heatmap
+ACTIVITY_DAYS = 182  # 26 weeks for the heatmap
 HOT_PAGES = 5
 
 

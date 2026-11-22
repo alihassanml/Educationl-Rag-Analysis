@@ -1,10 +1,12 @@
 import { PageContainer } from "@/components/layout/page-container";
 import { ButtonLink } from "@/components/ui/button";
+import { HeroBackground } from "./hero-background";
 import { Reveal } from "./reveal";
 
 export function Hero() {
   return (
-    <section className="bg-paper">
+    <section className="relative isolate overflow-hidden bg-paper">
+      <HeroBackground />
       <PageContainer padded={false} className="flex flex-col items-center pb-24 pt-20 text-center lg:pb-32 lg:pt-32">
         <Reveal className="rounded-full border border-stone bg-paper px-4 py-1.5 text-sm text-ink-2">Built only from your own PDFs</Reveal>
         <Reveal as="h1" delay={80} className="mt-8 text-balance text-[clamp(2.25rem,5vw,4rem)] font-medium leading-[1.02] tracking-[-0.035em] text-ink">

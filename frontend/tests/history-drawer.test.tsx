@@ -23,7 +23,10 @@ vi.mock("@/lib/api", () => ({
 }));
 
 const thread = (id: string, title: string): ThreadSummary => ({ id, title, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-const openHistory = async () => userEvent.click(screen.getAllByRole("button", { name: "Chat history" })[0]);
+const rail = () => screen.getAllByRole("navigation", { name: "Main" })[0];
+const railHistory = () => within(rail()).getByRole("button", { name: "Chat history" });
+// The top bar's History button, which opens the full-page history on small screens
+const openHistory = async () => userEvent.click(screen.getAllByRole("button", { name: "Chat history" }).at(-1)!);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -76,13 +79,80 @@ describe("icon rail", () => {
   it("opens the account menu with the email, Settings and Sign out", async () => {
     render(<AppShell>content</AppShell>);
     await userEvent.click(screen.getByRole("button", { name: "Account" }));
-    expect(screen.getByText("student@example.com")).toBeInTheDocument();
+    expect(within(screen.getByRole("menu", { name: "Account" })).getByText("student@example.com")).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("href", "/settings");
     expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();
   });
 });
 
-describe("history page", () => {
+describe("expanding sidebar", () => {
+  const aside = () => rail().closest("aside")!;
+
+  it("widens in place from the History button instead of opening a page over the content", async () => {
+    render(<AppShell>content</AppShell>);
+    expect(aside().className).toContain("w-[76px]");
+    expect(aside().className).toContain("transition-[width]"); // grows smoothly; the page beside it narrows with it
+    expect(railHistory()).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("region", { name: "Recent chats" })).not.toBeInTheDocument();
+
+    await userEvent.click(railHistory());
+    expect(aside().className).toContain("w-[280px]");
+    expect(railHistory()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("dialog", { name: "Chat history" })).not.toBeInTheDocument();
+    for (const name of ["New chat", "Dashboard", "My library", "Progress", "Chat history"]) expect(within(rail()).getByText(name)).toBeVisible();
+
+    const recents = await screen.findByRole("region", { name: "Recent chats" });
+    expect(await within(recents).findByRole("link", { name: /Recursion basics/ })).toHaveAttribute("href", "/tutor/t1");
+
+    await userEvent.click(railHistory()); // the same button folds it back
+    expect(aside().className).toContain("w-[76px]");
+    expect(screen.queryByRole("region", { name: "Recent chats" })).not.toBeInTheDocument();
+  });
+
+  it("opens from Search with the search box focused, and filters the recent chats", async () => {
+    render(<AppShell>content</AppShell>);
+    await userEvent.click(within(rail()).getByRole("button", { name: "Search chats" }));
+    const box = within(rail()).getByRole("searchbox", { name: "Search chats" });
+    await waitFor(() => expect(box).toHaveFocus());
+    const recents = await screen.findByRole("region", { name: "Recent chats" });
+    await within(recents).findByRole("link", { name: /Recursion basics/ });
+    await userEvent.type(box, "photo");
+    expect(within(recents).queryByText("Recursion basics")).not.toBeInTheDocument();
+    expect(within(recents).getByText("Photosynthesis")).toBeInTheDocument();
+    await userEvent.click(within(rail()).getByRole("button", { name: "Clear search" }));
+    expect(within(recents).getByText("Recursion basics")).toBeInTheDocument();
+  });
+
+  it("reads the chats again each time it opens", async () => {
+    render(<AppShell>content</AppShell>);
+    await userEvent.click(railHistory());
+    await screen.findByRole("link", { name: /Recursion basics/ });
+    await userEvent.click(railHistory());
+    await userEvent.click(railHistory());
+    await waitFor(() => expect(tutorApi.threads).toHaveBeenCalledTimes(2));
+  });
+
+  it("renames and deletes chats from the sidebar", async () => {
+    vi.mocked(tutorApi.renameThread).mockResolvedValue(thread("t1", "Recursion revision"));
+    vi.mocked(tutorApi.deleteThread).mockResolvedValue(undefined);
+    render(<AppShell>content</AppShell>);
+    await userEvent.click(railHistory());
+    const recents = await screen.findByRole("region", { name: "Recent chats" });
+    await userEvent.click(await within(recents).findByRole("button", { name: "Options for Recursion basics" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Rename" }));
+    const input = screen.getByRole("textbox", { name: "Chat title" });
+    await userEvent.clear(input);
+    await userEvent.type(input, "Recursion revision{Enter}");
+    await waitFor(() => expect(tutorApi.renameThread).toHaveBeenCalledWith("t1", "Recursion revision"));
+
+    await userEvent.click(await within(recents).findByRole("button", { name: "Options for Photosynthesis" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Delete chat" }));
+    await waitFor(() => expect(tutorApi.deleteThread).toHaveBeenCalledWith("t2"));
+  });
+});
+
+describe("history page (small screens)", () => {
   const dialog = () => screen.findByRole("dialog", { name: "Chat history" });
 
   it("opens from the History button as a full page with one search bar and a flat list", async () => {
@@ -91,7 +161,7 @@ describe("history page", () => {
     await openHistory();
     const page = await dialog();
     expect(page.className).toContain("drawer-in"); // slides in from the left
-    expect(page.className).toContain("inset-y-0"); // the whole height, not a small panel
+    expect(page.className).toContain("inset-x-0"); // the whole screen below the top bar, not a small panel
     expect(within(page).getByRole("heading", { name: "Chats" })).toBeInTheDocument();
     expect(within(page).getByRole("searchbox", { name: "Search chats" })).toHaveFocus();
     expect(await within(page).findByRole("link", { name: /Recursion basics/ })).toHaveAttribute("href", "/tutor/t1");
@@ -103,7 +173,7 @@ describe("history page", () => {
 
   it("does not open just from hovering: a click opens it", async () => {
     render(<AppShell>content</AppShell>);
-    const button = screen.getAllByRole("button", { name: "Chat history" })[0];
+    const button = screen.getAllByRole("button", { name: "Chat history" }).at(-1)!;
     await userEvent.hover(button);
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(screen.queryByRole("dialog", { name: "Chat history" })).not.toBeInTheDocument();
@@ -155,12 +225,6 @@ describe("history page", () => {
     await openHistory();
     await userEvent.click(await screen.findByRole("link", { name: /Recursion basics/ }));
     expect(screen.queryByRole("dialog", { name: "Chat history" })).not.toBeInTheDocument();
-  });
-
-  it("opens from the Search button too", async () => {
-    render(<AppShell>content</AppShell>);
-    await userEvent.click(screen.getByRole("button", { name: "Search chats" }));
-    expect(await screen.findByRole("searchbox", { name: "Search chats" })).toHaveFocus();
   });
 
   it("slides out with an animation instead of vanishing", async () => {

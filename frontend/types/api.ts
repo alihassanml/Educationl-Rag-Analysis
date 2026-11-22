@@ -155,7 +155,7 @@ export type StudyInsights = {
   longest_streak: number;
   /** The student's local date (YYYY-MM-DD), the last day of `activity` */
   today: string;
-  /** Twelve weeks, oldest first */
+  /** 26 weeks, oldest first */
   activity: DayActivity[];
   documents: DocumentUsage[];
   hot_pages: HotPage[];

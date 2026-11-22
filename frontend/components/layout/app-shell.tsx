@@ -21,13 +21,15 @@ export function Brand() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false); // the full-page history on small screens
+  const [expanded, setExpanded] = useState(false); // the sidebar from lg
 
   return (
     <div className="min-h-screen bg-linear-to-b from-clay-300 to-clay-soft lg:flex">
-      <aside className="hidden w-[76px] shrink-0 lg:block">
+      {/* Widens in place to show names and recent chats; the page beside it narrows with it, nothing slides over it */}
+      <aside className={cn("hidden shrink-0 transition-[width] duration-300 ease-standard lg:block", expanded ? "w-[280px]" : "w-[76px]")}>
         <div className="sticky top-0 z-50 h-screen">
-          <Rail historyOpen={historyOpen} onToggleHistory={() => setHistoryOpen((open) => !open)} onSearch={() => setHistoryOpen(true)} />
+          <Rail expanded={expanded} onToggle={() => setExpanded((open) => !open)} onExpand={() => setExpanded(true)} />
         </div>
       </aside>
 

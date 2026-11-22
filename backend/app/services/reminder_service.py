@@ -133,6 +133,10 @@ def send_due_reminders_job(db: Session, now: datetime | None = None) -> int:
     one_day_ago = current_time - timedelta(days=1)
 
     for user in users:
+        # Not before the student's preferred hour (UTC). The job runs hourly, so the reminder goes
+        # out in the first run at or after that hour, and the 24h check below keeps it to one a day.
+        if current_time.hour < user.reminder_hour_utc:
+            continue
         # Check if already sent in last 24h
         recent_notif = db.scalar(
             select(Notification).where(

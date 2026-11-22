@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clock, Swords, X } from "lucide-react";
+import { Check, Clock, Flag, Swords, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useUser } from "@/components/auth/session-provider";
@@ -8,6 +8,7 @@ import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import { Panel } from "@/components/ui/panel";
@@ -18,6 +19,8 @@ import { useApi } from "@/lib/use-api";
 import type { Difficulty, PeerMatchCandidate } from "@/types/api";
 
 export function PeerMatchView() {
+  const [blockTarget, setBlockTarget] = useState<PeerMatchCandidate | null>(null);
+  const [blocking, setBlocking] = useState(false);
   const user = useUser();
   const [optedIn, setOptedIn] = useState(user.peer_match_opt_in ?? false);
   const matches = useApi(peerMatchApi.matches);
@@ -63,6 +66,21 @@ export function PeerMatchView() {
       setActionMessage(err instanceof Error ? err.message : "Failed to send challenge");
     } finally {
       setChallenging(false);
+    }
+  }
+
+  async function handleBlock() {
+    if (!blockTarget) return;
+    setBlocking(true);
+    try {
+      await peerMatchApi.block(blockTarget.user_id, "reported");
+      setActionMessage(`${blockTarget.display_name} was reported and blocked. You will not be matched again.`);
+      setBlockTarget(null);
+      reloadAll();
+    } catch (err: unknown) {
+      setActionMessage(err instanceof Error ? err.message : "Could not block this student");
+    } finally {
+      setBlocking(false);
     }
   }
 
@@ -184,6 +202,9 @@ export function PeerMatchView() {
                         >
                           <Swords size={14} className="mr-1.5" aria-hidden="true" />
                           Challenge
+                        </Button>
+                        <Button size="sm" variant="ghost" aria-label={`Report and block ${peer.display_name}`} onClick={() => setBlockTarget(peer)}>
+                          <Flag size={14} aria-hidden="true" />
                         </Button>
                       </div>
                     ))}
@@ -358,6 +379,15 @@ export function PeerMatchView() {
           </Dialog>
         ) : null}
       </div>
+      <ConfirmDialog
+        open={blockTarget !== null}
+        title={`Report and block ${blockTarget?.display_name ?? ""}?`}
+        description="They will no longer be matched with you, and neither of you can send the other challenges."
+        confirmLabel="Report and block"
+        pending={blocking}
+        onConfirm={() => void handleBlock()}
+        onCancel={() => setBlockTarget(null)}
+      />
     </PageContainer>
   );
 }

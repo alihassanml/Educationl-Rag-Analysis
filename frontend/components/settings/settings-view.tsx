@@ -59,6 +59,22 @@ export function SettingsView() {
     }
   }
 
+  // Stored in UTC, shown in the student's own time zone
+  const offsetHours = Math.round(new Date().getTimezoneOffset() / 60);
+  const [hourLocal, setHourLocal] = useState(((user.reminder_hour_utc ?? 9) - offsetHours + 24) % 24);
+
+  async function changeReminderHour(local: number) {
+    const previous = hourLocal;
+    setHourLocal(local);
+    setRemindersError(null);
+    try {
+      await authApi.setPreferences({ reminder_hour_utc: (local + offsetHours + 24) % 24 });
+    } catch {
+      setHourLocal(previous);
+      setRemindersError("Could not save this setting. Please try again.");
+    }
+  }
+
   async function signOut() {
     setPending(true);
     try {
@@ -119,6 +135,25 @@ export function SettingsView() {
               <span className="block text-small text-ink-2">Get gentle daily reminders when topics are due for review so you can maintain consistency with quick 2-minute slip tests.</span>
             </span>
           </label>
+          {reminders ? (
+            <div className="mt-4 flex items-center gap-3 pl-7 text-sm">
+              <label htmlFor="reminder-hour" className="text-ink-2">
+                Remind me around
+              </label>
+              <select
+                id="reminder-hour"
+                value={hourLocal}
+                onChange={(e) => void changeReminderHour(Number(e.target.value))}
+                className="h-9 rounded-control border border-stone-strong bg-paper px-2 text-ink"
+              >
+                {Array.from({ length: 24 }, (_, h) => (
+                  <option key={h} value={h}>
+                    {String(h).padStart(2, "0")}:00
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           {remindersError ? (
             <p role="alert" className="mt-2 text-small text-danger">
               {remindersError}

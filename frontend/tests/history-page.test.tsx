@@ -21,6 +21,7 @@ vi.mock("@/components/auth/session-provider", () => ({
 vi.mock("@/lib/api", () => ({
   authApi: { logout: vi.fn() },
   tutorApi: { threads: vi.fn(), renameThread: vi.fn(), deleteThread: vi.fn() },
+  notificationsApi: { list: vi.fn().mockResolvedValue({ notifications: [], unread_count: 0 }), markRead: vi.fn(), markAllRead: vi.fn() },
 }));
 
 const thread = (id: string, title: string): ThreadSummary => ({ id, title, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
@@ -60,25 +61,13 @@ describe("icon rail", () => {
     expect(screen.getAllByRole("link", { name: "Chat history" }).at(-1)).toHaveAttribute("href", "/history");
   });
 
-  it("widens in place while the cursor is over it, and folds back when it leaves", () => {
+  it("is always open, with the names beside the icons and no hover state", () => {
     render(<AppShell>content</AppShell>);
     const aside = rail().closest("aside")!;
-    expect(aside.className).toContain("w-[76px]");
-    expect(aside.className).toContain("transition-[width]"); // grows smoothly; the page beside it narrows with it
-    expect(within(rail()).getByText("Dashboard").className).toContain("invisible");
-
-    fireEvent.mouseEnter(aside);
     expect(aside.className).toContain("w-[240px]");
     for (const name of ["New chat", "Dashboard", "My library", "Progress", "Chat history"]) expect(within(rail()).getByText(name).className).toContain("visible opacity-100");
 
     fireEvent.mouseLeave(aside);
-    expect(aside.className).toContain("w-[76px]");
-  });
-
-  it("widens for keyboard focus too", async () => {
-    render(<AppShell>content</AppShell>);
-    const aside = rail().closest("aside")!;
-    await userEvent.tab();
     expect(aside.className).toContain("w-[240px]");
   });
 

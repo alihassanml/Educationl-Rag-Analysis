@@ -23,7 +23,7 @@ import { formatDate } from "@/lib/formatters";
 import { useApi } from "@/lib/use-api";
 import type { VivaSessionDetail } from "@/types/api";
 
-const TIME_LIMIT_SECONDS = 90;
+const DEFAULT_TIME_LIMIT_SECONDS = 90;
 
 export function VivaView() {
   const [topic, setTopic] = useState("");
@@ -38,7 +38,7 @@ export function VivaView() {
 
   // Turn answer state
   const [answerText, setAnswerText] = useState("");
-  const [timeLeft, setTimeLeft] = useState(TIME_LIMIT_SECONDS);
+  const [timeLeft, setTimeLeft] = useState(DEFAULT_TIME_LIMIT_SECONDS);
   const [tabSwitches, setTabSwitches] = useState(0);
 
   // Audio recording state
@@ -50,14 +50,20 @@ export function VivaView() {
   // Timer countdown for active turns
   useEffect(() => {
     if (!activeSession || activeSession.status !== "in_progress") return;
+    const limit = activeSession.time_limit_seconds ?? DEFAULT_TIME_LIMIT_SECONDS;
     const startTime = Date.now();
-    const timer = setInterval(() => {
+    const tick = () => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      const remaining = Math.max(0, TIME_LIMIT_SECONDS - elapsed);
+      const remaining = Math.max(0, limit - elapsed);
       setTimeLeft(remaining);
       if (remaining === 0) clearInterval(timer);
-    }, 1000);
-    return () => clearInterval(timer);
+    };
+    const timer = setInterval(tick, 1000);
+    const first = setTimeout(tick, 0); // show the full limit at the start of each question
+    return () => {
+      clearInterval(timer);
+      clearTimeout(first);
+    };
   }, [activeSession]);
 
   // Anti-cheating: visibilitychange tab-switch detection
@@ -467,6 +473,24 @@ export function VivaView() {
                 </Button>
               </div>
             </div>
+
+            {/* Weak points: the questions that scored under half marks */}
+            {activeSession.completed_turns.some((t) => t.grade_score < 3) ? (
+              <Panel title="Weak points to revise">
+                <ul className="list-disc space-y-1.5 pl-5 text-sm text-ink">
+                  {activeSession.completed_turns
+                    .filter((t) => t.grade_score < 3)
+                    .map((t) => (
+                      <li key={t.turn_index}>
+                        {t.question_text}
+                        {t.sources?.[0] ? (
+                          <span className="text-ink-3"> ({t.sources[0].document_title}, p. {t.sources[0].page_number ?? 1})</span>
+                        ) : null}
+                      </li>
+                    ))}
+                </ul>
+              </Panel>
+            ) : null}
 
             {/* Question Breakdown and Rubric Report */}
             <Panel title="Rubric evaluation & feedback">

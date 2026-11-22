@@ -577,6 +577,8 @@ export type VivaSessionDetail = {
   tab_switch_count: number;
   current_turn_index: number;
   total_turns: number;
+  /** Seconds allowed per answer, from the server config */
+  time_limit_seconds?: number;
   current_turn?: VivaTurnPublic | null;
   total_score?: number | null;
   max_score?: number | null;

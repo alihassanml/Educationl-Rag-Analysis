@@ -11,7 +11,7 @@ const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace: vi.fn() }), useParams: () => ({ episodeId: "e1" }) }));
 vi.mock("@/lib/api", () => ({
   lightModeApi: { recap: vi.fn(), confidenceQuiz: vi.fn() },
-  authApi: { setLighterSteps: vi.fn(), logout: vi.fn() },
+  authApi: { setPreferences: vi.fn(), logout: vi.fn() },
   diagnosticApi: { status: vi.fn(), start: vi.fn() },
   quizzesApi: { notesPdf: vi.fn(), generate: vi.fn() },
 }));
@@ -84,17 +84,17 @@ describe("light mode on a quiz result", () => {
 
 describe("Settings toggle", () => {
   it("is on by default and saves a change", async () => {
-    vi.mocked(authApi.setLighterSteps).mockResolvedValue({} as never);
+    vi.mocked(authApi.setPreferences).mockResolvedValue({} as never);
     render(<SettingsView />);
     const box = screen.getByRole("checkbox", { name: /Lighter steps when I'm struggling/ });
     expect(box).toBeChecked();
     await userEvent.click(box);
-    expect(authApi.setLighterSteps).toHaveBeenCalledWith(false);
+    expect(authApi.setPreferences).toHaveBeenCalledWith({ lighter_steps_enabled: false });
     expect(box).not.toBeChecked();
   });
 
   it("puts the toggle back and says so when saving fails", async () => {
-    vi.mocked(authApi.setLighterSteps).mockRejectedValue(new Error("offline"));
+    vi.mocked(authApi.setPreferences).mockRejectedValue(new Error("offline"));
     render(<SettingsView />);
     const box = screen.getByRole("checkbox", { name: /Lighter steps when I'm struggling/ });
     await userEvent.click(box);

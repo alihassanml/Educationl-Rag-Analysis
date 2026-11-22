@@ -48,6 +48,8 @@ class VivaSessionDetail(BaseModel):
     tab_switch_count: int
     current_turn_index: int
     total_turns: int = 5
+    # Seconds allowed per answer (config); the page counts down from it
+    time_limit_seconds: int = 90
     current_turn: VivaTurnPublic | None = None
     total_score: int | None = None
     max_score: int | None = None

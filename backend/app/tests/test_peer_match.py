@@ -1,8 +1,10 @@
 import uuid
 
+from sqlalchemy import select
+
 from app.models.classroom import ClassMember, Classroom
 from app.models.peer_match import STATUS_ACCEPTED, STATUS_COMPLETED, STATUS_PENDING
-from app.models.quiz import Topic, TopicProgress
+from app.models.quiz import Quiz, Topic, TopicProgress
 from app.tests.conftest import FakeGroq, make_pdf, register
 
 SLIDES = (
@@ -26,6 +28,14 @@ def _seed_weak_topic(db, user_id, topic_name: str = "Recursion"):
     db.add(progress)
     db.commit()
     return topic
+
+
+def _correct_picks(db, user_id: str) -> list[int]:
+    """Options are shuffled when a quiz is saved, so read the right answers from the database."""
+    quiz = db.scalar(
+        select(Quiz).where(Quiz.user_id == uuid.UUID(user_id), Quiz.kind == "peer_duel")
+    )
+    return [q.correct_index for q in sorted(quiz.questions, key=lambda q: q.position)]
 
 
 def test_peer_match_only_shows_opted_in_students_with_matching_weak_topics(client_factory, db):
@@ -166,7 +176,7 @@ def test_peer_challenge_duel_flow_and_scoring(client_factory, db):
         # 3. Challenger submits quiz attempt (score 3/3, took 45s)
         sub1 = c1.post(
             f"/api/v1/peer-match/challenges/{challenge_id}/submit",
-            json={"answers": [0, 0, 0, 0, 0], "time_seconds": 45},
+            json={"answers": _correct_picks(db, u1["id"]), "time_seconds": 45},
         )
         assert sub1.status_code == 200
         assert sub1.json()["my_completed"] is True
@@ -176,7 +186,7 @@ def test_peer_challenge_duel_flow_and_scoring(client_factory, db):
         # 4. Opponent submits quiz attempt (score 3/3, took 60s)
         sub2 = c2.post(
             f"/api/v1/peer-match/challenges/{challenge_id}/submit",
-            json={"answers": [0, 0, 0, 0, 0], "time_seconds": 60},
+            json={"answers": _correct_picks(db, u2["id"]), "time_seconds": 60},
         )
         assert sub2.status_code == 200
         data2 = sub2.json()
@@ -213,3 +223,32 @@ def test_blocking_prevents_matching_and_challenging(client_factory, db):
         json={"opponent_id": u2["id"], "topic_name": "Recursion"},
     )
     assert chal.status_code == 400
+
+
+def test_a_duel_cannot_be_submitted_after_its_time_limit(client_factory, db):
+    from datetime import UTC, datetime, timedelta
+
+    from app.models.peer_match import STATUS_EXPIRED, PeerChallenge
+
+    c1, c2 = client_factory(), client_factory()
+    u1 = register(c1, "late1@example.com", display_name="Late One")
+    u2 = register(c2, "late2@example.com", display_name="Late Two")
+    challenge = PeerChallenge(
+        challenger_id=uuid.UUID(u1["id"]),
+        opponent_id=uuid.UUID(u2["id"]),
+        topic_name="Recursion",
+        difficulty="beginner",
+        status=STATUS_ACCEPTED,
+        expires_at=datetime.now(UTC) - timedelta(minutes=5),
+    )
+    db.add(challenge)
+    db.commit()
+
+    res = c1.post(
+        f"/api/v1/peer-match/challenges/{challenge.id}/submit",
+        json={"answers": [0, 0, 0], "time_seconds": 30},
+    )
+    assert res.status_code == 400
+    assert res.json()["error"]["code"] == "duel_expired"
+    db.refresh(challenge)
+    assert challenge.status == STATUS_EXPIRED

@@ -242,6 +242,7 @@ def get_session_detail(db: Session, user_id: uuid.UUID, session_id: uuid.UUID) -
         tab_switch_count=session.tab_switch_count,
         current_turn_index=current_turn_idx,
         total_turns=len(turns),
+        time_limit_seconds=get_settings().viva_time_limit_seconds,
         current_turn=current_turn_public,
         total_score=session.total_score if session.status == STATUS_COMPLETED else None,
         max_score=session.max_score if session.status == STATUS_COMPLETED else None,

@@ -1,10 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
-import { diagnosticApi, pathApi, progressApi, tutorApi } from "@/lib/api";
+import { diagnosticApi, pathApi, progressApi, remindersApi, tutorApi } from "@/lib/api";
 import type { ProgressSummary, StudyInsights, TopicProgress } from "@/types/api";
 
-vi.mock("@/lib/api", () => ({ progressApi: { summary: vi.fn(), insights: vi.fn() }, tutorApi: { threads: vi.fn() }, diagnosticApi: { status: vi.fn(), start: vi.fn() }, pathApi: { get: vi.fn() } }));
+vi.mock("@/lib/api", () => ({ progressApi: { summary: vi.fn(), insights: vi.fn() }, tutorApi: { threads: vi.fn() }, diagnosticApi: { status: vi.fn(), start: vi.fn() }, pathApi: { get: vi.fn() }, remindersApi: { dueTopics: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/components/progress/score-chart", () => ({ ScoreChart: () => <div>chart</div>, MIN_POINTS_FOR_CHART: 3 }));
 
@@ -29,6 +29,7 @@ beforeEach(() => {
   vi.mocked(progressApi.insights).mockRejectedValue(new Error("offline"));
   vi.mocked(diagnosticApi.status).mockRejectedValue(new Error("offline"));
   vi.mocked(pathApi.get).mockRejectedValue(new Error("offline"));
+  vi.mocked(remindersApi.dueTopics).mockResolvedValue([]);
 });
 
 /** Twelve weeks ending on 2026-11-22 (a Sunday), active on the last three days */

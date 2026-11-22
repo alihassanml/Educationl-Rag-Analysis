@@ -30,6 +30,7 @@ from app.services.groq_service import GroqService
 
 logger = logging.getLogger("app.peer_match")
 KIND_PEER_DUEL = quiz_service.KIND_PEER_DUEL
+DUEL_GRACE_SECONDS = 30
 
 
 def find_matches(db: Session, user: User) -> list[PeerMatchCandidate]:
@@ -130,8 +131,12 @@ def find_matches(db: Session, user: User) -> list[PeerMatchCandidate]:
 
 def _expire_stale_challenges(db: Session, challenges: list[PeerChallenge]) -> None:
     now = datetime.now(UTC)
+    grace = timedelta(seconds=DUEL_GRACE_SECONDS)
     for c in challenges:
         if c.status == STATUS_PENDING and c.expires_at < now:
+            c.status = STATUS_EXPIRED
+        # An accepted duel runs until the time limit set on accept (plus a little for slow networks)
+        elif c.status == STATUS_ACCEPTED and c.expires_at + grace < now:
             c.status = STATUS_EXPIRED
     db.flush()
 
@@ -404,6 +409,10 @@ def submit_challenge_attempt(
     if user.id not in (challenge.challenger_id, challenge.opponent_id):
         raise ForbiddenError("You are not a participant in this duel")
 
+    _expire_stale_challenges(db, [challenge])
+    if challenge.status == STATUS_EXPIRED:
+        db.commit()
+        raise BadRequestError("Time is up: this duel has expired", "duel_expired")
     if challenge.status != STATUS_ACCEPTED:
         raise BadRequestError(f"Duel is not active (status: {challenge.status})")
 

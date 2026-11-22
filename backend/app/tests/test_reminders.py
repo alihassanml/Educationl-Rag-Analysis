@@ -1,8 +1,10 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import select
+
 from app.main import app
-from app.models.quiz import Topic, TopicProgress
+from app.models.quiz import Question, Topic, TopicProgress
 from app.services import reminder_service
 from app.services.groq_service import get_groq_service
 from app.tests.conftest import FakeGroq, make_pdf, register
@@ -11,6 +13,13 @@ NOTES = (
     "Algorithms and complexity: Binary search runs in O(log n) time. "
     "Linear search runs in O(n) time. QuickSort averages O(n log n)."
 )
+
+
+def _correct_picks(db, quiz_id):  # options are shuffled when saved, so read the right ones
+    questions = db.scalars(
+        select(Question).where(Question.quiz_id == uuid.UUID(quiz_id)).order_by(Question.position)
+    ).all()
+    return [q.correct_index for q in questions]
 
 
 def test_spaced_repetition_interval_calculation():
@@ -100,7 +109,10 @@ def test_due_topics_listing_and_slip_test_lifecycle(client_factory, db):
             f"/api/v1/quizzes/{quiz_id}/attempts",
             json={
                 "answers": [
-                    {"question_id": q["id"], "selected_index": 0} for q in slip_data["questions"]
+                    {"question_id": q["id"], "selected_index": pick}
+                    for q, pick in zip(
+                        slip_data["questions"], _correct_picks(db, quiz_id), strict=True
+                    )
                 ]
             },
         )
@@ -136,8 +148,8 @@ def test_notifications_and_daily_reminder_limits(client_factory, db):
     db.add(progress)
     db.commit()
 
-    # Run reminder job
-    now = datetime.now(UTC)
+    # Run reminder job (midday UTC, after the default 09:00 reminder hour)
+    now = datetime.now(UTC).replace(hour=12, minute=0)
     sent_count = reminder_service.send_due_reminders_job(db, now=now)
     assert sent_count == 1
 
@@ -160,3 +172,30 @@ def test_notifications_and_daily_reminder_limits(client_factory, db):
     # Mark all read
     all_read = client.post("/api/v1/notifications/read-all")
     assert all_read.status_code == 200
+
+
+def test_reminder_waits_for_the_preferred_hour(client_factory, db):
+    client = client_factory()
+    user = register(client, "hour@example.com", display_name="Hour Student")
+    client.patch("/api/v1/auth/me/preferences", json={"reminder_hour_utc": 15})
+
+    topic = Topic(user_id=uuid.UUID(user["id"]), name="Heaps")
+    db.add(topic)
+    db.flush()
+    db.add(
+        TopicProgress(
+            user_id=uuid.UUID(user["id"]),
+            topic_id=topic.id,
+            attempt_count=3,
+            correct_count=1,
+            current_difficulty="beginner",
+            last_practiced_at=datetime.now(UTC) - timedelta(days=3),
+        )
+    )
+    db.commit()
+
+    day = datetime.now(UTC).replace(minute=0)
+    assert reminder_service.send_due_reminders_job(db, now=day.replace(hour=14)) == 0
+    assert reminder_service.send_due_reminders_job(db, now=day.replace(hour=15)) == 1
+    # Still only one a day, however many hourly runs follow
+    assert reminder_service.send_due_reminders_job(db, now=day.replace(hour=16)) == 0

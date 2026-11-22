@@ -2,7 +2,7 @@
 import { chromium } from "@playwright/test";
 const out = process.argv[2];
 const day = (offset) => { const d = new Date(); d.setDate(d.getDate() - offset); return d.toISOString().slice(0, 10); };
-const activity = Array.from({ length: 84 }, (_, i) => ({ date: day(83 - i), questions: [83, 82, 80, 75, 70, 60, 61].includes(i) ? (i % 5) + 1 : 0, quizzes: i === 83 ? 1 : 0 }));
+const activity = Array.from({ length: 182 }, (_, i) => ({ date: day(181 - i), questions: [181, 180, 178, 173, 168, 160, 161, 150, 120, 121, 90, 60, 30].includes(i) ? (i % 5) + 1 : 0, quizzes: i === 181 ? 1 : 0 }));
 const now = new Date().toISOString();
 const topic = (n, name, acc, status) => ({ topic_id: "t" + n, topic_name: name, questions_attempted: 10, correct_answers: acc / 10, accuracy_percent: acc, status, last_practiced_at: now, recommendation: { action: "x", message: `You answered ${acc / 10}/10 correctly on ${name}, so start with a beginner quiz.` } });
 const act = (n, p) => ({ quiz_id: "q" + n, quiz_title: "Quiz " + n, topic: ["Recursion", "Sorting", "Graphs"][n % 3], score: Math.round(p / 20), total_questions: 5, percent: p, completed_at: now });

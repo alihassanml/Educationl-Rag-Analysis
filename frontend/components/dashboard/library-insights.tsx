@@ -80,6 +80,34 @@ function DocRow({ doc }: { doc: DocumentUsage }) {
   );
 }
 
+/** Whole-library coverage, and the document to open next. Sits at the bottom so the card fills its row. */
+function LibraryFooter({ documents, next }: { documents: DocumentUsage[]; next: DocumentUsage | null }) {
+  const pages = documents.reduce((sum, d) => sum + (d.page_count ?? 0), 0);
+  const cited = documents.reduce((sum, d) => sum + Math.min(d.pages_cited, d.page_count ?? 0), 0);
+  const percent = pages > 0 ? Math.round((cited / pages) * 100) : 0;
+  return (
+    <div className="mt-auto flex flex-col gap-3 border-t border-stone pt-4 sm:flex-row sm:items-center sm:gap-6">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3 text-sm">
+          <span className="font-medium text-ink">Library explored</span>
+          <span className="text-ink-2">
+            {cited} of {pages} pages
+          </span>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-stone-100" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={`${percent}% of your library explored`}>
+          <div className="h-full rounded-full bg-clay" style={{ width: `${percent}%` }} />
+        </div>
+      </div>
+      {next ? (
+        <Link href={`/tutor?mode=summary&doc=${next.id}`} className="flex min-w-0 items-center gap-1 text-sm font-medium text-accent-link hover:underline sm:max-w-[45%]">
+          <span className="truncate">Start {next.title}</span>
+          <ChevronRight size={14} strokeWidth={1.75} className="shrink-0" aria-hidden="true" />
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
 /** Ready documents, least explored first, with how much of each the tutor has drawn on. */
 export function LibraryCard({ documents }: { documents: DocumentUsage[] }) {
   const sorted = [...documents].sort((a, b) => (coveragePercent(a) ?? 0) - (coveragePercent(b) ?? 0) || a.times_cited - b.times_cited);
@@ -101,6 +129,7 @@ export function LibraryCard({ documents }: { documents: DocumentUsage[] }) {
           <DocRow key={doc.id} doc={doc} />
         ))}
       </ul>
+      <LibraryFooter documents={documents} next={sorted.find((d) => d.times_cited === 0) ?? null} />
     </DashCard>
   );
 }

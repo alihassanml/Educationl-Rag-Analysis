@@ -127,8 +127,9 @@ describe("DashboardView", () => {
       recent_activity: [{ quiz_id: "q1", quiz_title: "Recursion quiz", topic: "Recursion", score: 7, total_questions: 10, percent: 70, completed_at: "2026-11-18T10:00:00Z" }],
     });
     render(<DashboardView />);
-    expect(await screen.findByText("Average quiz score")).toBeInTheDocument();
-    expect(screen.getByText("70%")).toBeInTheDocument();
+    const snapshot = await screen.findByRole("region", { name: "Snapshot" });
+    expect(within(snapshot).getByText("Average quiz score")).toBeInTheDocument();
+    expect(within(snapshot).getByText("70%")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Needs revision" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Recent quizzes" })).toBeInTheDocument();
   });
@@ -148,28 +149,33 @@ describe("DashboardView", () => {
 
     const streak = await screen.findByRole("region", { name: "Study streak" });
     expect(within(streak).getByText("3", { selector: ".text-display" })).toBeInTheDocument();
-    expect(within(streak).getByText(/You studied today/)).toBeInTheDocument();
+    expect(within(streak).getByText("Done today")).toBeInTheDocument();
 
-    // Grounded answers: 5 of 6 answers had sources
-    expect(screen.getByText("83%")).toBeInTheDocument();
+    // Only real numbers: 5 of 6 answers had sources, and no quiz tile before the first quiz
+    const snapshot = screen.getByRole("region", { name: "Snapshot" });
+    expect(within(snapshot).getByText("83%")).toBeInTheDocument();
+    expect(within(snapshot).queryByText("Average quiz score")).not.toBeInTheDocument();
+    expect(screen.queryByText("No data yet")).not.toBeInTheDocument();
     expect(screen.getByRole("img", { name: /6 questions and 0 quizzes on 3 days/ })).toBeInTheDocument();
 
-    // Least explored document first, flagged, with actions scoped to it
-    expect(screen.getByText("Not explored yet")).toBeInTheDocument();
-    expect(screen.getByRole("meter", { name: "40% of pages explored" })).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Summarise" })[0]).toHaveAttribute("href", "/tutor?mode=summary&doc=d2");
-    expect(screen.getByText(/1 of your 2 documents hasn’t come up in a chat yet/)).toBeInTheDocument();
+    // Least explored document first, with small icon actions scoped to it
+    const library = screen.getByRole("region", { name: "Library" });
+    expect(within(library).getByText(/Not explored yet/)).toBeInTheDocument();
+    expect(within(library).getByRole("meter", { name: "40% of pages explored" })).toBeInTheDocument();
+    expect(within(library).getByRole("link", { name: "Summarise Networks" })).toHaveAttribute("href", "/tutor?mode=summary&doc=d2");
+    expect(within(library).getByRole("meter", { name: "20% of your library explored" })).toBeInTheDocument();
+    expect(within(library).getByRole("link", { name: /Start Networks/ })).toHaveAttribute("href", "/tutor?mode=summary&doc=d2");
 
     expect(screen.getByRole("link", { name: /Page 3 of Algorithms, cited 5 times/ })).toHaveAttribute("href", "/tutor?mode=quiz&doc=d1");
-    expect(screen.getByRole("link", { name: /Quiz me.*Find your weak topics/ })).toHaveAttribute("href", "/tutor?mode=quiz&doc=d1");
+    expect(screen.getByRole("link", { name: /Quiz me.*Find weak topics/ })).toHaveAttribute("href", "/tutor?mode=quiz&doc=d1");
   });
 
-  it("asks for today's question when the streak is alive but today is still empty", async () => {
+  it("asks for today's study when the streak is alive but today is still empty", async () => {
     const base = insightsFixture();
-    const activity = base.activity.map((d, i) => (i === 83 ? { ...d, questions: 0 } : d));
+    const activity = base.activity.map((d, i) => (i === base.activity.length - 1 ? { ...d, questions: 0 } : d));
     vi.mocked(progressApi.summary).mockResolvedValue({ ...empty, documents_total: 1, documents_ready: 1 });
     vi.mocked(progressApi.insights).mockResolvedValue({ ...base, activity, current_streak: 2 });
     render(<DashboardView />);
-    expect(await screen.findByText("Ask a question today to keep your streak alive")).toBeInTheDocument();
+    expect(await screen.findByText("Study today to keep it")).toBeInTheDocument();
   });
 });

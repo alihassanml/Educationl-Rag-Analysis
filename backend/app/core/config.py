@@ -108,6 +108,10 @@ class Settings(BaseSettings):
     # Diagnostic test: at most this many questions in total, 1 or 2 per topic
     diagnostic_max_questions: int = 15
 
+    # Teacher dashboard: a topic's class-wide accuracy is shown only when at least this many
+    # students have practised it, so a "class" figure is never just one or two students' scores
+    class_min_students_for_aggregates: int = 3
+
     # Adaptive learning thresholds (percent); see recommendation_service
     mastery_min_attempts: int = 3
     mastery_needs_revision_below: int = 60

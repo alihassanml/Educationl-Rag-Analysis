@@ -29,6 +29,12 @@ describe("feature registry", () => {
     }
   });
 
+  it("lists the diagnostic as live with its own landing copy", () => {
+    const diagnostic = FEATURES.find((f) => f.id === "diagnostic")!;
+    expect(diagnostic.status).toBe("live");
+    expect(diagnostic.landing?.bullets.length).toBeGreaterThan(0);
+  });
+
   it("lists chat history, follow-up questions and streamed answers as live, not on the roadmap", () => {
     const live = liveFeatures().map((f) => f.id);
     expect(live).toEqual(expect.arrayContaining(["chat-history", "follow-ups", "streaming"]));

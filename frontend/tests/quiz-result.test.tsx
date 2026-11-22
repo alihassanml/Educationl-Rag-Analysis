@@ -113,3 +113,33 @@ describe("next quiz after a result", () => {
     expect(push).not.toHaveBeenCalled();
   });
 });
+
+describe("diagnostic result", () => {
+  const diagnostic: AttemptResult = {
+    ...result, kind: "diagnostic", quiz_title: "Diagnostic test", topic: null, topic_status: null, recommendation: null,
+    previous_difficulty: null, next_difficulty: null, level_change: null, difficulty_reason: null, topic_id: null,
+    diagnostic: {
+      topics: [
+        { topic_id: "a", topic: "Arrays", correct: 2, asked: 2, level: "advanced" },
+        { topic_id: "b", topic: "Sorting", correct: 0, asked: 2, level: "beginner" },
+      ],
+      strengths: ["Arrays"], weak_topics: ["Sorting"],
+    },
+  };
+
+  it("shows the starting level of every topic with strengths and weak topics", () => {
+    render(<QuizResult result={diagnostic} />);
+    expect(screen.getByText("Where each topic starts")).toBeInTheDocument();
+    expect(screen.getAllByText("Arrays")).toHaveLength(2); // in the list and in the strengths
+    expect(screen.getByText("Advanced")).toBeInTheDocument();
+    expect(screen.getByText("Beginner")).toBeInTheDocument();
+    expect(screen.getByText("Strengths").nextSibling).toHaveTextContent("Arrays");
+    expect(screen.getByText("Weak topics").nextSibling).toHaveTextContent("Sorting");
+  });
+
+  it("links to the Course Map instead of offering a next quiz", () => {
+    render(<QuizResult result={diagnostic} />);
+    expect(screen.getByRole("link", { name: "Open your Course Map" })).toHaveAttribute("href", "/course-map");
+    expect(screen.queryByRole("button", { name: /quiz/i })).not.toBeInTheDocument();
+  });
+});

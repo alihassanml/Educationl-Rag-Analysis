@@ -92,7 +92,18 @@ export const FEATURES: Feature[] = [
   { id: "chat-history", status: "live", label: "Chat history" },
   { id: "follow-ups", status: "live", label: "Follow-up questions" },
   { id: "streaming", status: "live", label: "Streamed answers" },
-  { id: "diagnostic", status: "planned", label: "Diagnostic test", roadmap: "A short starting test that sets your first topic levels" },
+  {
+    id: "diagnostic",
+    status: "live",
+    label: "Diagnostic test",
+    // No nav entry: the dashboard card starts it, and Settings can retake it
+    landing: {
+      overline: "Diagnostic test",
+      title: "Start each topic at the right level",
+      body: "A short test with one or two questions on every topic found in your material. Your answers set where each topic starts, and show your strengths and weak topics before you begin.",
+      bullets: ["Questions come only from your own uploads", "Sets a starting level for every topic", "Can be retaken from Settings"],
+    },
+  },
   { id: "ingestion", status: "planned", label: "More file types", roadmap: "Upload DOCX files and YouTube lectures, not only PDFs" },
   { id: "teacher-style", status: "planned", label: "Teacher-style mode", roadmap: "Answers in the wording and structure your teacher uses" },
   { id: "mood-pacing", status: "planned", label: "Mood-aware pacing", roadmap: "Lighter study steps when your recent answers show strain" },

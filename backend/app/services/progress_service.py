@@ -14,7 +14,7 @@ from app.schemas.progress import (
     TopicProgressList,
     TopicProgressOut,
 )
-from app.schemas.quizzes import Recommendation
+from app.schemas.quizzes import DiagnosticSummary, DiagnosticTopic, Recommendation
 from app.services import recommendation_service as rules
 from app.services import topic_service
 from app.services.retrieval_service import RetrievedChunk
@@ -88,6 +88,76 @@ def record_attempt(
         old_status=old_status,
         new_status=rules.classify(progress.correct_count, progress.attempt_count),
         needs_support=progress.needs_support,
+    )
+
+
+def seed_from_diagnostic(
+    db: Session, user_id: uuid.UUID, topic_id: uuid.UUID, correct: int, asked: int
+) -> str:
+    """Set a topic's first level from its diagnostic answers, and count them as answers. A retaken
+    diagnostic resets the level: the student's latest result is the best evidence of where they are.
+    Returns the level."""
+    progress = db.scalar(
+        select(TopicProgress)
+        .where(TopicProgress.user_id == user_id, TopicProgress.topic_id == topic_id)
+        .with_for_update()
+    )
+    if progress is None:
+        progress = TopicProgress(
+            user_id=user_id, topic_id=topic_id, attempt_count=0, correct_count=0
+        )
+        db.add(progress)
+    level = rules.diagnostic_level(correct, asked)
+    progress.attempt_count += asked
+    progress.correct_count += correct
+    progress.current_difficulty = level
+    progress.failed_streak = 0
+    progress.needs_support = False
+    progress.last_practiced_at = func.now()
+    return level
+
+
+def diagnostic_counts(
+    quiz: Quiz, responses: dict[uuid.UUID, bool]
+) -> dict[uuid.UUID, tuple[int, int]]:
+    """(correct, asked) per topic of a diagnostic, in the order the topics were first asked."""
+    counts: dict[uuid.UUID, tuple[int, int]] = {}
+    for q in quiz.questions:
+        if q.topic_id is None or q.id not in responses:
+            continue
+        correct, asked = counts.get(q.topic_id, (0, 0))
+        counts[q.topic_id] = (correct + (1 if responses[q.id] else 0), asked + 1)
+    return counts
+
+
+def apply_diagnostic(
+    db: Session, user_id: uuid.UUID, quiz: Quiz, responses: dict[uuid.UUID, bool]
+) -> None:
+    """Seed every diagnosed topic's level from the diagnostic answers."""
+    for topic_id, (correct, asked) in diagnostic_counts(quiz, responses).items():
+        seed_from_diagnostic(db, user_id, topic_id, correct, asked)
+
+
+def diagnostic_summary(
+    db: Session, quiz: Quiz, responses: dict[uuid.UUID, bool]
+) -> DiagnosticSummary:
+    """Strengths and weak topics of a diagnostic, worked out from its saved answers alone."""
+    counts = diagnostic_counts(quiz, responses)
+    names = dict(db.execute(select(Topic.id, Topic.name).where(Topic.id.in_(list(counts)))).all())
+    topics = [
+        DiagnosticTopic(
+            topic_id=topic_id,
+            topic=names.get(topic_id, "Topic"),
+            correct=correct,
+            asked=asked,
+            level=rules.diagnostic_level(correct, asked),  # type: ignore[arg-type]
+        )
+        for topic_id, (correct, asked) in counts.items()
+    ]
+    return DiagnosticSummary(
+        topics=topics,
+        strengths=[t.topic for t in topics if t.correct == t.asked],
+        weak_topics=[t.topic for t in topics if t.correct * 2 < t.asked],
     )
 
 

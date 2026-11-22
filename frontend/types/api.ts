@@ -35,11 +35,15 @@ export type AskResponse = {
 
 export type Difficulty = "beginner" | "intermediate" | "advanced";
 
+export type QuizKind = "practice" | "diagnostic" | "confidence" | "slip_test";
+
 export type QuizSummary = {
   id: string;
   title: string;
+  kind?: QuizKind;
   topic: string | null;
-  difficulty: Difficulty;
+  /** "mixed" for a diagnostic */
+  difficulty: Difficulty | "mixed";
   question_count: number;
   source_documents: string[];
   created_at: string;
@@ -74,10 +78,26 @@ export type QuestionResult = {
   sources: { document_title: string; page_number: number | null; section_title?: string | null }[];
 };
 
+export type DiagnosticTopic = { topic_id: string; topic: string; correct: number; asked: number; level: Difficulty };
+export type DiagnosticSummary = { topics: DiagnosticTopic[]; strengths: string[]; weak_topics: string[] };
+
+export type DiagnosticStatus = {
+  ready_documents: number;
+  topic_count: number;
+  available: boolean;
+  taken: boolean;
+  taken_at: string | null;
+  latest_quiz_id: string | null;
+  pending_quiz_id: string | null;
+  /** Show the dashboard card: available and never taken */
+  suggested: boolean;
+};
+
 export type AttemptResult = {
   attempt_id: string;
   quiz_id: string;
   quiz_title: string;
+  kind?: QuizKind;
   topic: string | null;
   score: number;
   total_questions: number;
@@ -92,6 +112,8 @@ export type AttemptResult = {
   level_change: "up" | "down" | "same" | null;
   difficulty_reason: string | null;
   topic_id: string | null;
+  /** Only for a diagnostic: the level each topic starts at */
+  diagnostic?: DiagnosticSummary | null;
 };
 
 export type TopicStatus = "insufficient_data" | "needs_revision" | "practicing" | "doing_well";

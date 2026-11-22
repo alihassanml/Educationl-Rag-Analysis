@@ -1,11 +1,14 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
-import { progressApi, tutorApi } from "@/lib/api";
+import { diagnosticApi, progressApi, tutorApi } from "@/lib/api";
 import type { ProgressSummary, StudyInsights, TopicProgress } from "@/types/api";
 
-vi.mock("@/lib/api", () => ({ progressApi: { summary: vi.fn(), insights: vi.fn() }, tutorApi: { threads: vi.fn() } }));
+vi.mock("@/lib/api", () => ({ progressApi: { summary: vi.fn(), insights: vi.fn() }, tutorApi: { threads: vi.fn() }, diagnosticApi: { status: vi.fn(), start: vi.fn() } }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/components/progress/score-chart", () => ({ ScoreChart: () => <div>chart</div>, MIN_POINTS_FOR_CHART: 3 }));
+
+const push = vi.fn();
 
 const topic: TopicProgress = {
   topic_id: "t1", topic_name: "Recursion", questions_attempted: 5, correct_answers: 2, accuracy_percent: 40,
@@ -24,6 +27,7 @@ beforeEach(() => {
   vi.mocked(tutorApi.threads).mockResolvedValue([]);
   // Insights are optional: by default they fail, so the tests below cover the quiz-only fallback
   vi.mocked(progressApi.insights).mockRejectedValue(new Error("offline"));
+  vi.mocked(diagnosticApi.status).mockRejectedValue(new Error("offline"));
 });
 
 /** Twelve weeks ending on 2026-11-22 (a Sunday), active on the last three days */
@@ -181,5 +185,57 @@ describe("DashboardView", () => {
     vi.mocked(progressApi.insights).mockResolvedValue({ ...base, activity, current_streak: 2 });
     render(<DashboardView />);
     expect(await screen.findByText(/Study today to keep it/)).toBeInTheDocument();
+  });
+});
+
+describe("diagnostic card", () => {
+  const studying: ProgressSummary = { ...empty, documents_total: 1, documents_ready: 1, latest_document: { id: "d1", title: "Notes" } };
+  const status = { ready_documents: 1, topic_count: 4, available: true, taken: false, taken_at: null, latest_quiz_id: null, pending_quiz_id: null, suggested: true };
+
+  it("invites a student with material who has never taken the diagnostic", async () => {
+    vi.mocked(progressApi.summary).mockResolvedValue(studying);
+    vi.mocked(diagnosticApi.status).mockResolvedValue(status);
+    render(<DashboardView />);
+    expect(await screen.findByRole("button", { name: "Start your diagnostic" })).toBeInTheDocument();
+    expect(screen.getByText(/4 topics found in your material/)).toBeInTheDocument();
+  });
+
+  it("starts the diagnostic and opens it", async () => {
+    push.mockClear();
+    vi.mocked(progressApi.summary).mockResolvedValue(studying);
+    vi.mocked(diagnosticApi.status).mockResolvedValue(status);
+    vi.mocked(diagnosticApi.start).mockResolvedValue({ id: "qd1" } as never);
+    render(<DashboardView />);
+    const { default: userEvent } = await import("@testing-library/user-event");
+    await userEvent.click(await screen.findByRole("button", { name: "Start your diagnostic" }));
+    expect(push).toHaveBeenCalledWith("/quizzes/qd1");
+  });
+
+  it("offers to continue an unfinished diagnostic", async () => {
+    vi.mocked(progressApi.summary).mockResolvedValue(studying);
+    vi.mocked(diagnosticApi.status).mockResolvedValue({ ...status, pending_quiz_id: "qd1" });
+    render(<DashboardView />);
+    expect(await screen.findByRole("button", { name: "Continue your diagnostic" })).toBeInTheDocument();
+  });
+
+  it("stays away once the diagnostic has been taken, or when the status cannot be read", async () => {
+    vi.mocked(progressApi.summary).mockResolvedValue(studying);
+    vi.mocked(diagnosticApi.status).mockResolvedValue({ ...status, taken: true, suggested: false });
+    const { unmount } = render(<DashboardView />);
+    await screen.findByText("Recommended next step");
+    expect(screen.queryByRole("button", { name: /diagnostic/i })).not.toBeInTheDocument();
+    unmount();
+    vi.mocked(diagnosticApi.status).mockRejectedValue(new Error("offline"));
+    render(<DashboardView />);
+    await screen.findByText("Recommended next step");
+    expect(screen.queryByRole("button", { name: /diagnostic/i })).not.toBeInTheDocument();
+  });
+
+  it("shows no card to a student who has no material yet", async () => {
+    vi.mocked(progressApi.summary).mockResolvedValue(empty);
+    vi.mocked(diagnosticApi.status).mockResolvedValue({ ...status, available: false, suggested: false, ready_documents: 0, topic_count: 0 });
+    render(<DashboardView />);
+    await screen.findByText("Get started in three steps");
+    expect(screen.queryByText("Start your diagnostic")).not.toBeInTheDocument();
   });
 });

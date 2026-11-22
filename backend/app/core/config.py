@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     # Failed quizzes in a row at beginner level before the topic is marked as needing support
     support_after_failed_attempts: int = 2
 
+    # Diagnostic test: at most this many questions in total, 1 or 2 per topic
+    diagnostic_max_questions: int = 15
+
     # Adaptive learning thresholds (percent); see recommendation_service
     mastery_min_attempts: int = 3
     mastery_needs_revision_below: int = 60

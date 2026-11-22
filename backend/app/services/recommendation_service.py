@@ -138,5 +138,23 @@ def level_reason(topic: str, correct: int, total: int, previous: str, following:
     return f"You scored {score}, so your next quiz on {topic} stays {previous}."
 
 
+def diagnostic_level(correct: int, asked: int) -> str:
+    """The first level of a topic, from its diagnostic questions: none right is beginner, all
+    right is advanced, and anything in between that is at least half is intermediate."""
+    if asked <= 0 or correct <= 0:
+        return LEVELS[0]
+    if correct >= asked:
+        return LEVELS[2]
+    return LEVELS[1] if correct * 2 >= asked else LEVELS[0]
+
+
+def diagnostic_plan(topic_count: int, max_questions: int) -> list[int]:
+    """Questions per topic: one each, then a second for the earliest topics while the total stays
+    within `max_questions`. Topics beyond the limit are not asked about."""
+    asked = min(topic_count, max_questions)
+    extra = min(max_questions - asked, asked)
+    return [2 if i < extra else 1 for i in range(asked)]
+
+
 def percent(correct: int, attempted: int) -> int | None:
     return round(correct * 100 / attempted) if attempted else None

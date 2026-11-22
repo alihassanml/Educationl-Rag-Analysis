@@ -63,7 +63,9 @@ class Quiz(Base):
     topic_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("topics.id", ondelete="SET NULL"), nullable=True
     )
-    difficulty: Mapped[str] = mapped_column(String(20))
+    difficulty: Mapped[str] = mapped_column(String(20))  # "mixed" for a diagnostic
+    # practice | diagnostic (starting test) | confidence (light-mode quiz) | slip_test
+    kind: Mapped[str] = mapped_column(String(20), default="practice", server_default="practice")
     source_document_ids: Mapped[list[str]] = mapped_column(
         JSONB, server_default=text("'[]'::jsonb")
     )
@@ -83,6 +85,10 @@ class Question(Base):
         ForeignKey("quizzes.id", ondelete="CASCADE"), index=True
     )
     position: Mapped[int] = mapped_column(Integer)
+    # Set on questions of a quiz that spans topics (the diagnostic)
+    topic_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("topics.id", ondelete="SET NULL"), nullable=True
+    )
     question_text: Mapped[str] = mapped_column(Text)
     question_type: Mapped[str] = mapped_column(String(20), default="multiple_choice")
     options: Mapped[list[str]] = mapped_column(JSONB)

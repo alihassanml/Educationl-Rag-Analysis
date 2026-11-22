@@ -8,7 +8,9 @@ import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
-import { authApi } from "@/lib/api";
+import { StartDiagnosticButton } from "@/components/diagnostic/start-diagnostic-button";
+import { authApi, diagnosticApi } from "@/lib/api";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/formatters";
 
 /** Only what the backend returns for the account today: the email and when it was created. */
@@ -16,6 +18,7 @@ export function SettingsView() {
   const user = useUser();
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const diagnostic = useApi(diagnosticApi.status);
 
   async function signOut() {
     setPending(true);
@@ -29,7 +32,18 @@ export function SettingsView() {
   return (
     <PageContainer>
       <PageHeader title="Settings" description="Your account details" />
-      <div className="max-w-2xl">
+      <div className="flex max-w-2xl flex-col gap-6">
+        {diagnostic.data?.available ? (
+          <Panel title="Starting test">
+            <p className="text-sm text-ink">
+              The diagnostic sets the level each topic starts at.
+              {diagnostic.data.taken_at ? ` You last took it on ${formatDate(diagnostic.data.taken_at)}.` : " You have not taken it yet."} Retaking it resets your topic levels to the new result.
+            </p>
+            <div className="mt-4">
+              <StartDiagnosticButton label={diagnostic.data.taken ? "Retake the diagnostic" : "Start your diagnostic"} variant="secondary" />
+            </div>
+          </Panel>
+        ) : null}
         <Panel title="Account">
           <dl className="divide-y divide-stone text-sm">
             <div className="flex flex-col gap-1 py-3 first:pt-0 sm:flex-row sm:gap-6">

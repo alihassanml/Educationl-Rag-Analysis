@@ -2,16 +2,49 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { DownloadNotesButton } from "./download-notes-button";
-import { LevelChangeNote } from "./level-change";
+import { LEVEL_LABEL, LevelChangeNote } from "./level-change";
 import { NextQuizButton } from "./next-quiz-button";
 import { ButtonLink } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
 import { Panel } from "@/components/ui/panel";
 import { TopicStatusLabel } from "@/components/ui/status-label";
 import { cn } from "@/lib/cn";
 import { sourceLabel } from "@/lib/formatters";
 import type { AttemptResult } from "@/types/api";
 
+/** What the diagnostic found: where each topic starts, and which are strong or weak. */
+function DiagnosticFindings({ result }: { result: AttemptResult }) {
+  const d = result.diagnostic;
+  if (!d) return null;
+  return (
+    <Panel title="Where each topic starts">
+      <ul className="divide-y divide-stone">
+        {d.topics.map((t) => (
+          <li key={t.topic_id} className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+            <span className="min-w-0 truncate text-sm font-medium text-ink">{t.topic}</span>
+            <span className="flex shrink-0 items-center gap-3 text-small text-ink-2">
+              {t.correct} of {t.asked} correct
+              <Chip tone={t.level === "advanced" ? "success" : t.level === "beginner" ? "warning" : "neutral"}>{LEVEL_LABEL[t.level]}</Chip>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <dl className="mt-4 space-y-2 border-t border-stone pt-4 text-sm">
+        <div className="flex gap-2">
+          <dt className="w-28 shrink-0 text-ink-2">Strengths</dt>
+          <dd className="text-ink">{d.strengths.length > 0 ? d.strengths.join(", ") : "None yet. Every topic still has room to grow"}</dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="w-28 shrink-0 text-ink-2">Weak topics</dt>
+          <dd className="text-ink">{d.weak_topics.length > 0 ? d.weak_topics.join(", ") : "None. No topic scored below half"}</dd>
+        </div>
+      </dl>
+    </Panel>
+  );
+}
+
 export function QuizResult({ result }: { result: AttemptResult }) {
+  const diagnostic = result.kind === "diagnostic";
   const needsReview = result.topic_status === "needs_revision" && result.topic;
   return (
     <PageContainer>
@@ -23,7 +56,7 @@ export function QuizResult({ result }: { result: AttemptResult }) {
           </p>
           <p className="mt-1 text-ink-2">{result.percent}%</p>
           <LevelChangeNote result={result} />
-          {result.recommendation ? (
+          {!diagnostic && result.recommendation ? (
             <div className="mt-4 border-t border-stone pt-4">
               <div className="flex items-center gap-3">
                 <p className="text-sm font-medium text-ink">Suggested next step</p>
@@ -33,18 +66,22 @@ export function QuizResult({ result }: { result: AttemptResult }) {
             </div>
           ) : null}
           <div className="mt-5 flex flex-wrap gap-3">
-            {needsReview ? (
+            {diagnostic ? (
+              <ButtonLink href="/course-map">Open your Course Map</ButtonLink>
+            ) : needsReview ? (
               <ButtonLink href={`/tutor?q=${encodeURIComponent(`Explain ${result.topic} in simple words`)}`}>Review this topic</ButtonLink>
             ) : (
               <NextQuizButton result={result} />
             )}
-            {needsReview ? <NextQuizButton result={result} variant="secondary" /> : null}
+            {needsReview && !diagnostic ? <NextQuizButton result={result} variant="secondary" /> : null}
             <DownloadNotesButton quizId={result.quiz_id} />
             <ButtonLink variant="ghost" href="/progress">
               View progress
             </ButtonLink>
           </div>
         </Panel>
+
+        <DiagnosticFindings result={result} />
 
         {/* One flat list: the questions are not cards, and correct or incorrect is said in words, not in a badge */}
         <ol className="divide-y divide-stone border-y border-stone">

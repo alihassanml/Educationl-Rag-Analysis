@@ -3,6 +3,7 @@ import { readSse, type SseEvent } from "./sse";
 import type {
   AskResponse,
   AttemptResult,
+  DiagnosticStatus,
   DocumentList,
   EvalCompare,
   EvalDatasetList,
@@ -97,6 +98,12 @@ export const quizzesApi = {
   result: (id: string, signal?: AbortSignal) => apiRequest<AttemptResult>(`/quizzes/${id}/attempt`, { signal }),
   /** Study notes PDF of a finished quiz */
   notesPdf: (id: string) => apiDownload(`/quizzes/${id}/notes.pdf`),
+};
+
+export const diagnosticApi = {
+  status: (signal?: AbortSignal) => apiRequest<DiagnosticStatus>("/diagnostic/status", { signal }),
+  /** Starts the diagnostic, or returns the one that was started and not finished */
+  start: () => apiRequest<QuizDetail>("/diagnostic", { method: "POST" }),
 };
 
 export const progressApi = {

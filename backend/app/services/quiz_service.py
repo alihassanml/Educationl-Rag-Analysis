@@ -43,6 +43,9 @@ from app.services.intent_service import has_specific_topic
 
 logger = logging.getLogger("app.quizzes")
 
+KIND_PRACTICE = "practice"
+KIND_DIAGNOSTIC = "diagnostic"
+
 _CONTEXT_CHUNKS = 8
 # Words of a follow-up ("10 more", "another one") that name no subject
 _FOLLOW_UP = frozenset(
@@ -192,6 +195,83 @@ def _topic_level(db: Session, user_id: uuid.UUID, topic: Topic | None) -> str:
     return level or "beginner"
 
 
+def write_questions(
+    llm: GroqService,
+    chunks: list[retrieval_service.RetrievedChunk],
+    wanted: int,
+    what: str,
+    *,
+    topic: str | None = None,
+    avoid: str = "",
+    seen: set[str] | None = None,
+) -> tuple[list[GeneratedQuestion], str | None]:
+    """Ask the model for `wanted` questions (`what` says which kind, such as "beginner-level
+    questions") from these passages, retrying until enough pass validation. Returns the valid
+    questions and the topic name the model gave. Raises AppError only when the provider is down."""
+    settings = get_settings()
+    seen = set() if seen is None else seen
+    passages = "\n\n".join(f"[{i}]\n{c.content}" for i, c in enumerate(chunks, start=1))
+    questions: list[GeneratedQuestion] = []
+    model_topic: str | None = None
+    rejected_total = 0
+    for attempt in range(1, settings.quiz_max_generation_attempts + 1):
+        needed = wanted - len(questions)
+        user_message = (
+            f"<passages>\n{passages}\n</passages>\n\n"
+            f"Write {needed} {what}." + (f" Focus on the topic: {topic}." if topic else "") + avoid
+        )
+        try:
+            reply = llm.complete_json(SYSTEM_PROMPT, user_message, temperature=0.3, max_tokens=4000)
+        except LLMUnavailableError as exc:
+            raise AppError(503, "ai_unavailable", str(exc)) from exc
+        except LLMOutputError:
+            logger.warning("Quiz generation attempt %d returned unusable output", attempt)
+            continue
+        valid, rejected = validate_generated(reply.get("questions"), len(chunks), seen)
+        rejected_total += rejected
+        questions.extend(valid[:needed])
+        if isinstance(reply.get("topic"), str) and reply["topic"].strip():
+            model_topic = model_topic or reply["topic"]
+        if len(questions) >= wanted:
+            break
+    logger.info("Quiz generation: %d/%d valid, %d rejected", len(questions), wanted, rejected_total)
+    return questions, model_topic
+
+
+def build_questions(
+    chunks: list[retrieval_service.RetrievedChunk],
+    questions: list[GeneratedQuestion],
+    topic_id: uuid.UUID | None = None,
+    first_position: int = 1,
+) -> list[Question]:
+    """Saved form of validated questions: options shuffled, each with the sources it cites."""
+    built: list[Question] = []
+    for position, q in enumerate(questions, start=first_position):
+        order = list(range(_OPTION_COUNT))
+        random.shuffle(order)  # avoid any bias in where the model puts the right answer
+        built.append(
+            Question(
+                position=position,
+                topic_id=topic_id,
+                question_text=q.question,
+                options=[q.options[i] for i in order],
+                correct_index=order.index(q.correct_index),
+                explanation=q.explanation,
+                sources=[
+                    {
+                        "chunk_id": str(chunks[n - 1].chunk_id),
+                        "document_id": str(chunks[n - 1].document_id),
+                        "document_title": chunks[n - 1].document_title,
+                        "page_number": chunks[n - 1].page_number,
+                        "section_title": chunks[n - 1].section_title,
+                    }
+                    for n in sorted(set(q.source_passages))
+                ],
+            )
+        )
+    return built
+
+
 def generate_quiz(
     db: Session,
     embedder: Embedder,
@@ -199,7 +279,6 @@ def generate_quiz(
     user_id: uuid.UUID,
     request: GenerateQuizRequest,
 ) -> QuizDetail:
-    settings = get_settings()
     if request.document_ids:
         retrieval_service.check_document_scope(db, user_id, request.document_ids)
     # "more", "another one", "give me 10 more" name no subject: quiz on the whole selection
@@ -237,8 +316,6 @@ def generate_quiz(
                 "Upload a PDF and wait for it to finish processing before creating a quiz",
             )
 
-    passages = "\n\n".join(f"[{i}]\n{c.content}" for i, c in enumerate(chunks, start=1))
-    questions: list[GeneratedQuestion] = []
     seen: set[str] = {q.lower() for q in earlier}
     avoid = (
         "\n\nThe student has already answered these questions. Do not repeat or reword them; "
@@ -246,37 +323,14 @@ def generate_quiz(
         if earlier
         else ""
     )
-    model_topic: str | None = None
-    rejected_total = 0
-
-    for attempt in range(1, settings.quiz_max_generation_attempts + 1):
-        needed = request.num_questions - len(questions)
-        user_message = (
-            f"<passages>\n{passages}\n</passages>\n\n"
-            f"Write {needed} {difficulty}-level questions."
-            + (f" Focus on the topic: {topic}." if topic else "")
-            + avoid
-        )
-        try:
-            reply = llm.complete_json(SYSTEM_PROMPT, user_message, temperature=0.3, max_tokens=4000)
-        except LLMUnavailableError as exc:
-            raise AppError(503, "ai_unavailable", str(exc)) from exc
-        except LLMOutputError:
-            logger.warning("Quiz generation attempt %d returned unusable output", attempt)
-            continue
-        valid, rejected = validate_generated(reply.get("questions"), len(chunks), seen)
-        rejected_total += rejected
-        questions.extend(valid[:needed])
-        if isinstance(reply.get("topic"), str) and reply["topic"].strip():
-            model_topic = model_topic or reply["topic"]
-        if len(questions) >= request.num_questions:
-            break
-
-    logger.info(
-        "Quiz generation: %d/%d valid, %d rejected",
-        len(questions),
+    questions, model_topic = write_questions(
+        llm,
+        chunks,
         request.num_questions,
-        rejected_total,
+        f"{difficulty}-level questions",
+        topic=topic,
+        avoid=avoid,
+        seen=seen,
     )
     if len(questions) < min(request.num_questions, 3):
         raise AppError(
@@ -294,28 +348,7 @@ def generate_quiz(
         difficulty=difficulty,
         source_document_ids=doc_ids,
     )
-    for position, q in enumerate(questions, start=1):
-        order = list(range(_OPTION_COUNT))
-        random.shuffle(order)  # avoid any bias in where the model puts the right answer
-        quiz.questions.append(
-            Question(
-                position=position,
-                question_text=q.question,
-                options=[q.options[i] for i in order],
-                correct_index=order.index(q.correct_index),
-                explanation=q.explanation,
-                sources=[
-                    {
-                        "chunk_id": str(chunks[n - 1].chunk_id),
-                        "document_id": str(chunks[n - 1].document_id),
-                        "document_title": chunks[n - 1].document_title,
-                        "page_number": chunks[n - 1].page_number,
-                        "section_title": chunks[n - 1].section_title,
-                    }
-                    for n in sorted(set(q.source_passages))
-                ],
-            )
-        )
+    quiz.questions.extend(build_questions(chunks, questions))
     db.add(quiz)
     db.commit()
     return get_quiz_detail(db, user_id, quiz.id)
@@ -347,6 +380,7 @@ def _summary_fields(db: Session, quiz: Quiz, attempt: QuizAttempt | None) -> dic
     return {
         "id": quiz.id,
         "title": quiz.title,
+        "kind": quiz.kind,
         "topic": quiz.topic.name if quiz.topic else None,
         "difficulty": quiz.difficulty,
         "question_count": len(quiz.questions),
@@ -466,10 +500,19 @@ def _build_result(
                 quiz.topic.name, progress.correct_count, progress.attempt_count
             )
             recommendation = Recommendation(action=rec.action, message=rec.message)
+    diagnostic = (
+        progress_service.diagnostic_summary(
+            db, quiz, {r.question_id: r.is_correct for r in attempt.responses}
+        )
+        if quiz.kind == KIND_DIAGNOSTIC
+        else None
+    )
     return AttemptResult(
         attempt_id=attempt.id,
         quiz_id=quiz.id,
         quiz_title=quiz.title,
+        kind=quiz.kind,
+        diagnostic=diagnostic,
         topic=quiz.topic.name if quiz.topic else None,
         score=attempt.score,
         total_questions=attempt.total_questions,
@@ -517,7 +560,11 @@ def submit_attempt(
         for g in graded
     ]
     db.add(attempt)
-    if quiz.topic_id:
+    if quiz.kind == KIND_DIAGNOSTIC:
+        progress_service.apply_diagnostic(
+            db, user_id, quiz, {g.question_id: g.is_correct for g in graded}
+        )
+    elif quiz.topic_id:
         progress_service.record_attempt(
             db, user_id, quiz.topic_id, score, len(graded), quiz.difficulty
         )

@@ -39,6 +39,7 @@ class AttemptSummary(BaseModel):
 class QuizSummary(BaseModel):
     id: uuid.UUID
     title: str
+    kind: str = "practice"
     topic: str | None
     difficulty: str
     question_count: int
@@ -87,10 +88,27 @@ class Recommendation(BaseModel):
     message: str
 
 
+class DiagnosticTopic(BaseModel):
+    topic_id: uuid.UUID
+    topic: str
+    correct: int
+    asked: int
+    level: Difficulty
+
+
+class DiagnosticSummary(BaseModel):
+    """What a diagnostic found: the level each topic starts at, and the strong and weak ones."""
+
+    topics: list[DiagnosticTopic]
+    strengths: list[str]
+    weak_topics: list[str]
+
+
 class AttemptResult(BaseModel):
     attempt_id: uuid.UUID
     quiz_id: uuid.UUID
     quiz_title: str
+    kind: str = "practice"
     topic: str | None
     score: int
     total_questions: int
@@ -106,3 +124,4 @@ class AttemptResult(BaseModel):
     level_change: Literal["up", "down", "same"] | None = None
     difficulty_reason: str | None = None
     topic_id: uuid.UUID | None = None
+    diagnostic: DiagnosticSummary | None = None

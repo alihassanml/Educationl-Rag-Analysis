@@ -3,7 +3,9 @@
 import { FileText, FileUp, Globe, Type } from "lucide-react";
 import { useId, useState, type DragEvent, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Textarea } from "@/components/ui/field";
+import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { KINDS } from "@/lib/document-kinds";
+import type { DocumentKind } from "@/types/api";
 import { cn } from "@/lib/cn";
 import { MAX_TEXT_CHARS, MAX_UPLOAD_MB } from "@/lib/validators";
 import type { UploadState } from "./use-upload";
@@ -19,7 +21,7 @@ const TABS: { id: Tab; label: string; icon: typeof FileText }[] = [
 /** Three ways to add material. The file input and status line are always mounted, so a normal file
  *  picker works everywhere and drag and drop is only an enhancement. */
 export function UploadPanel({ state, showPanel }: { state: UploadState; showPanel: boolean }) {
-  const { inputRef, uploading, error, upload, addLink, addText, choose } = state;
+  const { inputRef, uploading, error, upload, addLink, addText, choose, kind, setKind, examYear, setExamYear, examSession, setExamSession } = state;
   const [tab, setTab] = useState<Tab>("pdf");
   const [dragging, setDragging] = useState(false);
   const [link, setLink] = useState("");
@@ -84,6 +86,28 @@ export function UploadPanel({ state, showPanel }: { state: UploadState; showPane
                 {label}
               </button>
             ))}
+          </div>
+
+          <div className="mb-5 flex max-w-xl flex-wrap items-end gap-4">
+            <Field id={`${ids}-kind`} label="What is this?" hint={KINDS.find((k) => k.value === kind)?.hint}>
+              <Select id={`${ids}-kind`} value={kind} onChange={(e) => setKind(e.target.value as DocumentKind)} disabled={uploading} aria-describedby={`${ids}-kind-hint`}>
+                {KINDS.map((k) => (
+                  <option key={k.value} value={k.value}>
+                    {k.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            {kind === "past_paper" ? (
+              <>
+                <Field id={`${ids}-year`} label="Exam year">
+                  <Input id={`${ids}-year`} inputMode="numeric" maxLength={4} className="w-24" value={examYear} onChange={(e) => setExamYear(e.target.value.replace(/\D/g, ""))} disabled={uploading} placeholder="2025" />
+                </Field>
+                <Field id={`${ids}-session`} label="Session">
+                  <Input id={`${ids}-session`} maxLength={50} className="w-36" value={examSession} onChange={(e) => setExamSession(e.target.value)} disabled={uploading} placeholder="Summer" />
+                </Field>
+              </>
+            ) : null}
           </div>
 
           <div role="tabpanel" id={`${ids}-panel`} aria-labelledby={`${ids}-tab-${tab}`}>

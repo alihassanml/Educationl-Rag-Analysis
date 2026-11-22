@@ -4,6 +4,7 @@ import type {
   AskResponse,
   AttemptResult,
   DiagnosticStatus,
+  DocumentMeta,
   DocumentList,
   EvalCompare,
   EvalDatasetList,
@@ -41,15 +42,24 @@ export const authApi = {
 
 export const documentsApi = {
   list: (signal?: AbortSignal) => apiRequest<DocumentList>("/documents?limit=100", { signal }),
-  upload: (file: File) => {
+  upload: (file: File, meta?: DocumentMeta) => {
     const formData = new FormData();
     formData.append("file", file);
+    if (meta) {
+      formData.append("kind", meta.kind);
+      if (meta.exam_year) formData.append("exam_year", String(meta.exam_year));
+      if (meta.exam_session) formData.append("exam_session", meta.exam_session);
+    }
     return apiRequest<StudyDocument>("/documents", { method: "POST", formData });
   },
+  /** Change a document's title or kind (a past paper can carry its year and session). */
+  update: (id: string, changes: Partial<DocumentMeta> & { title?: string }) =>
+    apiRequest<StudyDocument>(`/documents/${id}`, { method: "PATCH", json: changes }),
   /** A web page, or a link to a PDF. The server reads it and indexes it like an upload. */
-  addLink: (url: string, title?: string) =>
-    apiRequest<StudyDocument>("/documents/website", { method: "POST", json: { url, title: title || null } }),
-  addText: (title: string, text: string) => apiRequest<StudyDocument>("/documents/text", { method: "POST", json: { title, text } }),
+  addLink: (url: string, title?: string, meta?: DocumentMeta) =>
+    apiRequest<StudyDocument>("/documents/website", { method: "POST", json: { url, title: title || null, ...meta } }),
+  addText: (title: string, text: string, meta?: DocumentMeta) =>
+    apiRequest<StudyDocument>("/documents/text", { method: "POST", json: { title, text, ...meta } }),
   remove: (id: string) => apiRequest<void>(`/documents/${id}`, { method: "DELETE" }),
 };
 

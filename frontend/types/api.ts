@@ -2,7 +2,12 @@ export type User = { id: string; email: string; is_admin: boolean; lighter_steps
 
 export type DocumentStatus = "uploaded" | "processing" | "ready" | "failed";
 
-export type DocumentSource = "pdf" | "website" | "text";
+export type DocumentSource = "pdf" | "website" | "text" | "youtube";
+
+export type DocumentKind = "notes" | "textbook" | "past_paper" | "teacher_material" | "lecture";
+
+/** How the student labelled a document when adding it. Exam details are for past papers only. */
+export type DocumentMeta = { kind: DocumentKind; exam_year?: number | null; exam_session?: string | null };
 
 export type StudyDocument = {
   id: string;
@@ -13,6 +18,9 @@ export type StudyDocument = {
   error_message: string | null;
   page_count: number | null;
   created_at: string;
+  kind?: DocumentKind;
+  exam_year?: number | null;
+  exam_session?: string | null;
   /** Where the material came from. A PDF link is stored as a "pdf". */
   source_type: DocumentSource;
 };

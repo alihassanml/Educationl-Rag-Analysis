@@ -1,5 +1,6 @@
 import logging
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
 
 from sqlalchemy import delete, func, select
@@ -8,6 +9,8 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.errors import AppError, NotFoundError
 from app.models.document import (
+    KIND_NOTES,
+    KIND_PAST_PAPER,
     STATUS_FAILED,
     STATUS_PROCESSING,
     STATUS_READY,
@@ -27,6 +30,21 @@ _READ_BLOCK = 1024 * 1024
 _NO_TEXT_MESSAGE = (
     "No readable text was found. The PDF may be scanned images; upload a text-based PDF instead."
 )
+
+
+@dataclass(frozen=True)
+class DocumentMeta:
+    """How the student labelled a document when adding it."""
+
+    kind: str = KIND_NOTES
+    exam_year: int | None = None
+    exam_session: str | None = None
+
+    def apply(self, document: Document) -> None:
+        document.kind = self.kind
+        is_paper = self.kind == KIND_PAST_PAPER
+        document.exam_year = self.exam_year if is_paper else None
+        document.exam_session = (self.exam_session or None) if is_paper else None
 
 
 def _storage_dir(user_id: uuid.UUID) -> Path:
@@ -85,6 +103,7 @@ def create_and_process(
     path: Path,
     size: int,
     llm: GroqService | None = None,
+    meta: DocumentMeta | None = None,
 ) -> Document:
     document = Document(
         user_id=user_id,
@@ -95,6 +114,7 @@ def create_and_process(
         file_size=size,
         status=STATUS_PROCESSING,
     )
+    (meta or DocumentMeta()).apply(document)
     db.add(document)
     db.commit()
     _process(db, embedder, document, path, llm=llm)
@@ -110,6 +130,7 @@ def create_from_text(
     text: str,
     source_url: str | None = None,
     llm: GroqService | None = None,
+    meta: DocumentMeta | None = None,
 ) -> Document:
     """Index pasted text or the text of a web page. The text is kept as a .txt file so the
     document is stored and deleted exactly like an uploaded PDF."""
@@ -140,6 +161,7 @@ def create_from_text(
         file_size=len(data),
         status=STATUS_PROCESSING,
     )
+    (meta or DocumentMeta()).apply(document)
     db.add(document)
     db.commit()
     _process(
@@ -162,6 +184,7 @@ def create_from_website(
     url: str,
     title: str | None,
     llm: GroqService | None = None,
+    meta: DocumentMeta | None = None,
 ) -> Document:
     """Add a web address: a page is read as text, a link to a PDF is downloaded as a PDF."""
     fetched = source_service.fetch(url)
@@ -179,6 +202,7 @@ def create_from_website(
             path=path,
             size=len(fetched.body),
             llm=llm,
+            meta=meta,
         )
     page_title, text = source_service.extract_text(fetched)
     chosen = (title or "").strip() or page_title or source_service.title_from_url(url)
@@ -266,9 +290,11 @@ def _process(
 
 
 def list_documents(
-    db: Session, user_id: uuid.UUID, limit: int, offset: int
+    db: Session, user_id: uuid.UUID, limit: int, offset: int, kind: str | None = None
 ) -> tuple[list[Document], int]:
     query = select(Document).where(Document.user_id == user_id)
+    if kind:
+        query = query.where(Document.kind == kind)
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
     items = db.scalars(query.order_by(Document.created_at.desc()).limit(limit).offset(offset)).all()
     return list(items), total
@@ -291,3 +317,29 @@ def delete_document(db: Session, user_id: uuid.UUID, document_id: uuid.UUID) -> 
     topic_service.prune_unused_topics(db, user_id)  # a topic stays while progress or a quiz uses it
     db.commit()
     path.unlink(missing_ok=True)
+
+
+def update_document(
+    db: Session,
+    user_id: uuid.UUID,
+    document_id: uuid.UUID,
+    changes: dict[str, object],
+) -> Document:
+    """Rename a document or change its kind. Exam year and session belong to past papers only, so
+    they are cleared when the kind is anything else."""
+    document = get_owned_document(db, user_id, document_id)
+    if "title" in changes and changes["title"]:
+        document.title = str(changes["title"]).strip()[:255]
+    if "kind" in changes and changes["kind"]:
+        document.kind = str(changes["kind"])
+    if "exam_year" in changes:
+        document.exam_year = changes["exam_year"]  # type: ignore[assignment]
+    if "exam_session" in changes:
+        document.exam_session = (
+            (str(changes["exam_session"]).strip() or None) if changes["exam_session"] else None
+        )
+    if document.kind != KIND_PAST_PAPER:
+        document.exam_year = None
+        document.exam_session = None
+    db.commit()
+    return document

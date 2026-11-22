@@ -20,6 +20,12 @@ from app.db.base import Base
 
 EMBEDDING_DIMENSION = 384  # BAAI/bge-small-en-v1.5; changing the model needs a migration
 
+KIND_NOTES = "notes"
+KIND_TEXTBOOK = "textbook"
+KIND_PAST_PAPER = "past_paper"
+KIND_TEACHER = "teacher_material"
+KIND_LECTURE = "lecture"
+
 STATUS_UPLOADED = "uploaded"
 STATUS_PROCESSING = "processing"
 STATUS_READY = "ready"
@@ -41,6 +47,10 @@ class Document(Base):
     status: Mapped[str] = mapped_column(String(20), default=STATUS_UPLOADED)
     error_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
     page_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # notes | textbook | past_paper | teacher_material | lecture
+    kind: Mapped[str] = mapped_column(String(20), default="notes", server_default="notes")
+    exam_year: Mapped[int | None] = mapped_column(Integer, nullable=True)  # past papers only
+    exam_session: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

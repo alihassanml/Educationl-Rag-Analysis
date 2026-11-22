@@ -1,11 +1,11 @@
 "use client";
 
-import { AlignLeft, ChevronRight, FileText, Globe, ListChecks, type LucideIcon } from "lucide-react";
+import { AlignLeft, ChevronRight, FileText, Globe, ListChecks, Video, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import type { DocumentSource, DocumentUsage, HotPage } from "@/types/api";
 import { cardLinkClass, DashCard } from "./dash-card";
 
-const SOURCE_ICON: Record<DocumentSource, LucideIcon> = { pdf: FileText, website: Globe, text: AlignLeft };
+const SOURCE_ICON: Record<DocumentSource, LucideIcon> = { pdf: FileText, website: Globe, text: AlignLeft, youtube: Video };
 export const MAX_ROWS = 5;
 
 /** Share of a document's pages that answers have cited, or null when page numbers are unknown. */

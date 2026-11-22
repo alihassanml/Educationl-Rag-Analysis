@@ -5,7 +5,7 @@ import { LibraryView } from "@/components/library/library-view";
 import { documentsApi } from "@/lib/api";
 import type { StudyDocument } from "@/types/api";
 
-vi.mock("@/lib/api", () => ({ documentsApi: { list: vi.fn(), remove: vi.fn(), upload: vi.fn(), addLink: vi.fn(), addText: vi.fn() } }));
+vi.mock("@/lib/api", () => ({ documentsApi: { list: vi.fn(), remove: vi.fn(), upload: vi.fn(), addLink: vi.fn(), addText: vi.fn(), update: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 // jsdom has no <dialog> modal support
 beforeEach(() => {
@@ -176,3 +176,55 @@ describe("LibraryView", () => {
     await waitFor(() => expect(documentsApi.remove).toHaveBeenCalledWith("d1"));
   });
 });
+
+describe("document kinds", () => {
+  it("shows a chip for any kind except notes, with a past paper's year", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({
+      items: [doc({ id: "a", title: "A", kind: "notes" }), doc({ id: "b", title: "B", kind: "past_paper", exam_year: 2025 }), doc({ id: "c", title: "C", kind: "teacher_material" })],
+      total: 3,
+    });
+    render(<LibraryView />);
+    expect(await screen.findAllByText("Past paper 2025")).not.toHaveLength(0);
+    expect(screen.getAllByText("Teacher material").length).toBeGreaterThan(0);
+  });
+
+  it("filters by kind, and offers the filter only when kinds are mixed", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [doc({ id: "a", title: "Alpha notes" }), doc({ id: "b", title: "Beta paper", kind: "past_paper" })], total: 2 });
+    render(<LibraryView />);
+    await userEvent.selectOptions(await screen.findByRole("combobox", { name: "Kind" }), "past_paper");
+    expect(screen.getAllByText("Beta paper").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Alpha notes")).not.toBeInTheDocument();
+  });
+
+  it("hides the kind filter when every document has the same kind", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [doc({ id: "a" }), doc({ id: "b", title: "Other" })], total: 2 });
+    render(<LibraryView />);
+    await screen.findAllByText("OS Notes");
+    expect(screen.queryByRole("combobox", { name: "Kind" })).not.toBeInTheDocument();
+  });
+
+  it("sends the kind and exam year with a link", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [], total: 0 });
+    vi.mocked(documentsApi.addLink).mockResolvedValue(doc());
+    render(<LibraryView />);
+    await userEvent.selectOptions(await screen.findByRole("combobox", { name: "What is this?" }), "past_paper");
+    await userEvent.type(screen.getByLabelText("Exam year"), "2025");
+    await userEvent.type(screen.getByLabelText("Session"), "Summer");
+    await userEvent.click(screen.getByRole("tab", { name: "Link" }));
+    await userEvent.type(screen.getByLabelText("Web address"), "https://example.com/paper.pdf");
+    await userEvent.click(screen.getByRole("button", { name: "Add link" }));
+    await waitFor(() => expect(documentsApi.addLink).toHaveBeenCalledWith("https://example.com/paper.pdf", undefined, { kind: "past_paper", exam_year: 2025, exam_session: "Summer" }));
+  });
+
+  it("changes a document's kind from its menu", async () => {
+    vi.mocked(documentsApi.list).mockResolvedValue({ items: [doc()], total: 1 });
+    vi.mocked(documentsApi.update).mockResolvedValue(doc({ kind: "textbook" }));
+    render(<LibraryView />);
+    await userEvent.click((await screen.findAllByRole("button", { name: /Actions for OS Notes/ }))[0]);
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Change type" }));
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "What is this?" }), "textbook");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(documentsApi.update).toHaveBeenCalledWith("d1", { kind: "textbook" }));
+  });
+});
+

@@ -1,20 +1,94 @@
 "use client";
 
-import { AlignLeft, FileText, Globe, ListChecks, MessageCircleQuestion, Trash2, Type, type LucideIcon } from "lucide-react";
+import { AlignLeft, FileText, Globe, ListChecks, MessageCircleQuestion, Tag, Trash2, Type, Video, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { Field, Input, Select } from "@/components/ui/field";
 import { Menu, type MenuItem } from "@/components/ui/menu";
 import { DocumentStatusLabel } from "@/components/ui/status-label";
 import { tableBase, tableFrame, tableHead, td, th, tr } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api-client";
 import { documentsApi } from "@/lib/api";
+import { KINDS, kindLabel } from "@/lib/document-kinds";
 import { formatBytes, formatDate } from "@/lib/formatters";
 import { formatRelative } from "@/lib/relative-time";
-import type { DocumentSource, StudyDocument } from "@/types/api";
+import type { DocumentKind, DocumentSource, StudyDocument } from "@/types/api";
 
-type Props = { documents: StudyDocument[]; onDeleted: (id: string) => void };
+type Props = { documents: StudyDocument[]; onDeleted: (id: string) => void; onChanged?: () => void };
+
+/** "Notes" is the default and says nothing; every other kind is named, with a past paper's year. */
+function KindChip({ doc }: { doc: StudyDocument }) {
+  const kind = doc.kind ?? "notes";
+  const year = kind === "past_paper" && doc.exam_year ? ` ${doc.exam_year}` : "";
+  return <Chip tone={kind === "notes" ? "neutral" : "clay"}>{`${kindLabel(kind)}${year}`}</Chip>;
+}
+
+function KindDialog({ doc, onClose, onSaved }: { doc: StudyDocument | null; onClose: () => void; onSaved: () => void }) {
+  const [kind, setKind] = useState<DocumentKind>(doc?.kind ?? "notes");
+  const [year, setYear] = useState(doc?.exam_year ? String(doc.exam_year) : "");
+  const [session, setSession] = useState(doc?.exam_session ?? "");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    if (!doc) return;
+    setPending(true);
+    setError(null);
+    try {
+      const y = Number(year);
+      await documentsApi.update(doc.id, { kind, ...(kind === "past_paper" ? { exam_year: Number.isInteger(y) && y > 0 ? y : null, exam_session: session.trim() || null } : {}) });
+      onSaved();
+      onClose();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not save the change. Please try again.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <Dialog open={doc !== null} title="Change document type" onClose={onClose}>
+      {doc ? (
+        <div key={doc.id} className="flex flex-col gap-4 p-5">
+          <h2 className="text-base font-semibold text-ink">{doc.title}</h2>
+          <Field id="kind-select" label="What is this?">
+            <Select id="kind-select" value={kind} onChange={(e) => setKind(e.target.value as DocumentKind)}>
+              {KINDS.map((k) => (
+                <option key={k.value} value={k.value}>
+                  {k.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          {kind === "past_paper" ? (
+            <div className="flex gap-4">
+              <Field id="kind-year" label="Exam year">
+                <Input id="kind-year" inputMode="numeric" maxLength={4} className="w-24" value={year} onChange={(e) => setYear(e.target.value.replace(/\D/g, ""))} />
+              </Field>
+              <Field id="kind-session" label="Session">
+                <Input id="kind-session" maxLength={50} value={session} onChange={(e) => setSession(e.target.value)} />
+              </Field>
+            </div>
+          ) : null}
+          {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={onClose} disabled={pending}>
+              Cancel
+            </Button>
+            <Button onClick={() => void save()} loading={pending}>
+              Save
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </Dialog>
+  );
+}
 
 function pagesText(doc: StudyDocument): string {
   return doc.page_count ? `${doc.page_count} ${doc.page_count === 1 ? "page" : "pages"}` : "—";
@@ -32,6 +106,7 @@ export const SOURCE: Record<DocumentSource, { icon: LucideIcon; label: string; r
   pdf: { icon: FileText, label: "PDF", retry: "Upload a text-based PDF" },
   website: { icon: Globe, label: "Web page", retry: "Check the address or add it again" },
   text: { icon: Type, label: "Pasted text", retry: "Add the text again" },
+  youtube: { icon: Video, label: "YouTube", retry: "Check the link, or paste the transcript instead" },
 };
 
 function SourceIcon({ doc }: { doc: StudyDocument }) {
@@ -63,8 +138,9 @@ function FailureNote({ doc }: { doc: StudyDocument }) {
   );
 }
 
-export function DocumentList({ documents, onDeleted }: Props) {
+export function DocumentList({ documents, onDeleted, onChanged }: Props) {
   const toast = useToast();
+  const [relabel, setRelabel] = useState<StudyDocument | null>(null);
   const [target, setTarget] = useState<StudyDocument | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +171,7 @@ export function DocumentList({ documents, onDeleted }: Props) {
             { label: "Quiz me", icon: ListChecks, href: `/tutor?mode=quiz&doc=${doc.id}` },
           ]
         : []),
+      { label: "Change type", icon: Tag, onSelect: () => setRelabel(doc) },
       { label: "Delete", icon: Trash2, destructive: true, onSelect: () => setTarget(doc) },
     ];
   }
@@ -136,6 +213,7 @@ export function DocumentList({ documents, onDeleted }: Props) {
                   <div className="flex min-w-0 items-center gap-2.5">
                     <SourceIcon doc={doc} />
                     <Title doc={doc} className="truncate font-medium text-ink" />
+                    <KindChip doc={doc} />
                   </div>
                   <FailureNote doc={doc} />
                 </td>
@@ -168,6 +246,7 @@ export function DocumentList({ documents, onDeleted }: Props) {
               <Menu label={`Actions for ${doc.title}`} items={menuFor(doc)} />
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-small text-ink-2">
+              <KindChip doc={doc} />
               <DocumentStatusLabel status={doc.status} />
               <span>{pagesText(doc)}</span>
               <span>{formatBytes(doc.file_size)}</span>
@@ -177,6 +256,8 @@ export function DocumentList({ documents, onDeleted }: Props) {
           </li>
         ))}
       </ul>
+
+      <KindDialog key={relabel?.id ?? "none"} doc={relabel} onClose={() => setRelabel(null)} onSaved={() => onChanged?.()} />
 
       <ConfirmDialog
         open={target !== null}

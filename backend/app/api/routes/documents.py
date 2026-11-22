@@ -5,8 +5,16 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.models.document import Document
-from app.schemas.documents import DocumentList, DocumentOut, TextDocumentIn, WebsiteDocumentIn
+from app.schemas.documents import (
+    DocumentKind,
+    DocumentList,
+    DocumentOut,
+    DocumentUpdate,
+    TextDocumentIn,
+    WebsiteDocumentIn,
+)
 from app.services import document_service
+from app.services.document_service import DocumentMeta
 from app.services.embedding_service import Embedder, get_embedder
 from app.services.groq_service import GroqService, get_groq_service
 
@@ -19,8 +27,9 @@ def list_documents(
     db: DbSession,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
+    kind: DocumentKind | None = None,
 ) -> DocumentList:
-    items, total = document_service.list_documents(db, user.id, limit, offset)
+    items, total = document_service.list_documents(db, user.id, limit, offset, kind)
     return DocumentList(items=[DocumentOut.model_validate(d) for d in items], total=total)
 
 
@@ -32,6 +41,9 @@ def upload_document(
     llm: Annotated[GroqService, Depends(get_groq_service)],
     file: Annotated[UploadFile, File()],
     title: Annotated[str | None, Form(max_length=255)] = None,
+    kind: Annotated[DocumentKind, Form()] = "notes",
+    exam_year: Annotated[int | None, Form(ge=1900, le=2100)] = None,
+    exam_session: Annotated[str | None, Form(max_length=50)] = None,
 ) -> Document:
     path, size = document_service.validate_and_store(
         user.id, file.filename or "", file.content_type or "", file.file
@@ -45,6 +57,7 @@ def upload_document(
         path=path,
         size=size,
         llm=llm,
+        meta=DocumentMeta(kind, exam_year, exam_session),
     )
 
 
@@ -57,7 +70,13 @@ def add_text_document(
     llm: Annotated[GroqService, Depends(get_groq_service)],
 ) -> Document:
     return document_service.create_from_text(
-        db, embedder, user.id, title=body.title, text=body.text, llm=llm
+        db,
+        embedder,
+        user.id,
+        title=body.title,
+        text=body.text,
+        llm=llm,
+        meta=DocumentMeta(body.kind, body.exam_year, body.exam_session),
     )
 
 
@@ -70,13 +89,28 @@ def add_website_document(
     llm: Annotated[GroqService, Depends(get_groq_service)],
 ) -> Document:
     return document_service.create_from_website(
-        db, embedder, user.id, url=body.url.strip(), title=body.title, llm=llm
+        db,
+        embedder,
+        user.id,
+        url=body.url.strip(),
+        title=body.title,
+        llm=llm,
+        meta=DocumentMeta(body.kind, body.exam_year, body.exam_session),
     )
 
 
 @router.get("/{document_id}", response_model=DocumentOut)
 def get_document(document_id: uuid.UUID, user: CurrentUser, db: DbSession) -> Document:
     return document_service.get_owned_document(db, user.id, document_id)
+
+
+@router.patch("/{document_id}", response_model=DocumentOut)
+def update_document(
+    document_id: uuid.UUID, body: DocumentUpdate, user: CurrentUser, db: DbSession
+) -> Document:
+    return document_service.update_document(
+        db, user.id, document_id, body.model_dump(exclude_unset=True)
+    )
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

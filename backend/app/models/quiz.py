@@ -29,6 +29,27 @@ class Topic(Base):
     # Case-insensitive uniqueness per user is created in the migration (functional index).
 
 
+class DocumentTopic(Base):
+    """A topic found in a document, in document order. The anchor (pages and/or heading) says where
+    its passages are, so a quiz on the topic can pull the right chunks."""
+
+    __tablename__ = "document_topics"
+
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True
+    )
+    topic_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("topics.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    position: Mapped[int] = mapped_column(Integer)
+    first_page: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_page: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Section title shared by the topic's chunks (documents with no pages, such as pasted text)
+    heading: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    topic: Mapped[Topic] = relationship()
+
+
 class Quiz(Base):
     __tablename__ = "quizzes"
 

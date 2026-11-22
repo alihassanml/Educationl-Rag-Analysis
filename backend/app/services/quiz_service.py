@@ -16,7 +16,6 @@ from app.models.quiz import (
     QuestionResponse,
     Quiz,
     QuizAttempt,
-    Topic,
     TopicProgress,
 )
 from app.schemas.quizzes import (
@@ -35,6 +34,7 @@ from app.services import (
     recommendation_service,
     retrieval_service,
     scoring_service,
+    topic_service,
 )
 from app.services.embedding_service import Embedder
 from app.services.groq_service import GroqService, LLMOutputError, LLMUnavailableError
@@ -179,18 +179,6 @@ def _sample_context(
     ]
 
 
-def _get_or_create_topic(db: Session, user_id: uuid.UUID, name: str) -> Topic:
-    name = " ".join(name.split())[:120] or "General"
-    topic = db.scalar(
-        select(Topic).where(Topic.user_id == user_id, func.lower(Topic.name) == name.lower())
-    )
-    if topic is None:
-        topic = Topic(user_id=user_id, name=name)
-        db.add(topic)
-        db.flush()
-    return topic
-
-
 def generate_quiz(
     db: Session,
     embedder: Embedder,
@@ -208,9 +196,17 @@ def generate_quiz(
     context = _CONTEXT_CHUNKS * 2 if earlier else _CONTEXT_CHUNKS
 
     if topic:
-        chunks = retrieval_service.retrieve(
-            db, embedder, user_id, topic, request.document_ids, top_k=context
+        # A topic found in the student's documents has an anchor: its own pages or heading
+        known = topic_service.find_topic(db, user_id, topic)
+        chunks = (
+            topic_service.anchor_chunks(db, user_id, known.id, context, request.document_ids)
+            if known
+            else []
         )
+        if not chunks:
+            chunks = retrieval_service.retrieve(
+                db, embedder, user_id, topic, request.document_ids, top_k=context
+            )
         if not chunks:
             raise AppError(
                 422,
@@ -275,7 +271,7 @@ def generate_quiz(
             "Could not create a reliable quiz from this material. Please try again.",
         )
 
-    topic_row = _get_or_create_topic(db, user_id, topic or model_topic or "General")
+    topic_row = topic_service.get_or_create_topic(db, user_id, topic or model_topic or "General")
     doc_ids = sorted({str(c.document_id) for c in chunks})
     quiz = Quiz(
         user_id=user_id,

@@ -14,8 +14,9 @@ from app.models.document import (
     Document,
     DocumentChunk,
 )
-from app.services import chunking_service, pdf_service, source_service
+from app.services import chunking_service, pdf_service, source_service, topic_service
 from app.services.embedding_service import Embedder
+from app.services.groq_service import GroqService
 
 logger = logging.getLogger("app.documents")
 
@@ -83,6 +84,7 @@ def create_and_process(
     title: str | None,
     path: Path,
     size: int,
+    llm: GroqService | None = None,
 ) -> Document:
     document = Document(
         user_id=user_id,
@@ -95,7 +97,7 @@ def create_and_process(
     )
     db.add(document)
     db.commit()
-    _process(db, embedder, document, path)
+    _process(db, embedder, document, path, llm=llm)
     return document
 
 
@@ -107,6 +109,7 @@ def create_from_text(
     title: str,
     text: str,
     source_url: str | None = None,
+    llm: GroqService | None = None,
 ) -> Document:
     """Index pasted text or the text of a web page. The text is kept as a .txt file so the
     document is stored and deleted exactly like an uploaded PDF."""
@@ -146,12 +149,19 @@ def create_from_text(
         path,
         pages=[pdf_service.PageText(page_number=None, text=text)],
         no_text_message="Not enough readable text was found to index.",
+        llm=llm,
     )
     return document
 
 
 def create_from_website(
-    db: Session, embedder: Embedder, user_id: uuid.UUID, *, url: str, title: str | None
+    db: Session,
+    embedder: Embedder,
+    user_id: uuid.UUID,
+    *,
+    url: str,
+    title: str | None,
+    llm: GroqService | None = None,
 ) -> Document:
     """Add a web address: a page is read as text, a link to a PDF is downloaded as a PDF."""
     fetched = source_service.fetch(url)
@@ -168,13 +178,16 @@ def create_from_website(
             title=title,
             path=path,
             size=len(fetched.body),
+            llm=llm,
         )
     page_title, text = source_service.extract_text(fetched)
     chosen = (title or "").strip() or page_title or source_service.title_from_url(url)
-    return create_from_text(db, embedder, user_id, title=chosen, text=text, source_url=url)
+    return create_from_text(db, embedder, user_id, title=chosen, text=text, source_url=url, llm=llm)
 
 
-def reindex(db: Session, embedder: Embedder, document: Document) -> None:
+def reindex(
+    db: Session, embedder: Embedder, document: Document, llm: GroqService | None = None
+) -> None:
     """Rebuild a document's passages from its stored file, after a change to how text is read or
     chunked. Saved chats keep their citation snapshots (title, page, snippet)."""
     path = Path(document.storage_path)
@@ -190,9 +203,10 @@ def reindex(db: Session, embedder: Embedder, document: Document) -> None:
             path,
             pages=[pdf_service.PageText(page_number=None, text=text)],
             no_text_message="Not enough readable text was found to index.",
+            llm=llm,
         )
     else:
-        _process(db, embedder, document, path)
+        _process(db, embedder, document, path, llm=llm)
 
 
 def _fail(db: Session, document: Document, message: str) -> None:
@@ -210,6 +224,7 @@ def _process(
     *,
     pages: list[pdf_service.PageText] | None = None,
     no_text_message: str = _NO_TEXT_MESSAGE,
+    llm: GroqService | None = None,
 ) -> None:
     """Index a document. PDFs are read from `path`; other sources pass their text as `pages`."""
     settings = get_settings()
@@ -241,6 +256,7 @@ def _process(
         document.status = STATUS_READY
         document.error_message = None
         db.commit()
+        topic_service.extract_safely(db, llm, document)
     except pdf_service.PdfError as exc:
         _fail(db, document, str(exc))
     except Exception:
@@ -270,6 +286,8 @@ def get_owned_document(db: Session, user_id: uuid.UUID, document_id: uuid.UUID) 
 def delete_document(db: Session, user_id: uuid.UUID, document_id: uuid.UUID) -> None:
     document = get_owned_document(db, user_id, document_id)
     path = Path(document.storage_path)
-    db.delete(document)  # chunks and vectors go with it (ON DELETE CASCADE)
+    db.delete(document)  # chunks, vectors and topic links go with it (ON DELETE CASCADE)
+    db.flush()
+    topic_service.prune_unused_topics(db, user_id)  # a topic stays while progress or a quiz uses it
     db.commit()
     path.unlink(missing_ok=True)

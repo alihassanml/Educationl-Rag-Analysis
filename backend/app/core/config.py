@@ -60,6 +60,15 @@ class Settings(BaseSettings):
     # Quizzes
     quiz_max_generation_attempts: int = 3
 
+    # Topic extraction (runs when a document becomes ready): the PDF outline, else headings, else
+    # the LLM names topics. A source is used only when it gives a count between these two.
+    topics_min_per_document: int = 2
+    topics_max_per_document: int = 12
+    # Passages sampled from a document when the LLM has to name its topics
+    topics_llm_sample_chunks: int = 12
+    # Turn off to skip the LLM step (outline and headings are still used)
+    topics_llm_fallback: bool = True
+
     # Adaptive learning thresholds (percent); see recommendation_service
     mastery_min_attempts: int = 3
     mastery_needs_revision_below: int = 60

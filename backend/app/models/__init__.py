@@ -1,7 +1,15 @@
 from app.models.chat import ChatCitation, ChatMessage, ChatThread, MessageFeedback
 from app.models.document import Document, DocumentChunk
 from app.models.evaluation import EvalDataset, EvalItem, EvalResult, EvalRun
-from app.models.quiz import Question, QuestionResponse, Quiz, QuizAttempt, Topic, TopicProgress
+from app.models.quiz import (
+    DocumentTopic,
+    Question,
+    QuestionResponse,
+    Quiz,
+    QuizAttempt,
+    Topic,
+    TopicProgress,
+)
 from app.models.user import User
 
 __all__ = [
@@ -10,6 +18,7 @@ __all__ = [
     "ChatThread",
     "Document",
     "DocumentChunk",
+    "DocumentTopic",
     "EvalDataset",
     "EvalItem",
     "EvalResult",

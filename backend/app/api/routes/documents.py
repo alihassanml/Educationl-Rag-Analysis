@@ -8,6 +8,7 @@ from app.models.document import Document
 from app.schemas.documents import DocumentList, DocumentOut, TextDocumentIn, WebsiteDocumentIn
 from app.services import document_service
 from app.services.embedding_service import Embedder, get_embedder
+from app.services.groq_service import GroqService, get_groq_service
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -28,6 +29,7 @@ def upload_document(
     user: CurrentUser,
     db: DbSession,
     embedder: Annotated[Embedder, Depends(get_embedder)],
+    llm: Annotated[GroqService, Depends(get_groq_service)],
     file: Annotated[UploadFile, File()],
     title: Annotated[str | None, Form(max_length=255)] = None,
 ) -> Document:
@@ -35,7 +37,14 @@ def upload_document(
         user.id, file.filename or "", file.content_type or "", file.file
     )
     return document_service.create_and_process(
-        db, embedder, user.id, filename=file.filename or "", title=title, path=path, size=size
+        db,
+        embedder,
+        user.id,
+        filename=file.filename or "",
+        title=title,
+        path=path,
+        size=size,
+        llm=llm,
     )
 
 
@@ -45,9 +54,10 @@ def add_text_document(
     user: CurrentUser,
     db: DbSession,
     embedder: Annotated[Embedder, Depends(get_embedder)],
+    llm: Annotated[GroqService, Depends(get_groq_service)],
 ) -> Document:
     return document_service.create_from_text(
-        db, embedder, user.id, title=body.title, text=body.text
+        db, embedder, user.id, title=body.title, text=body.text, llm=llm
     )
 
 
@@ -57,9 +67,10 @@ def add_website_document(
     user: CurrentUser,
     db: DbSession,
     embedder: Annotated[Embedder, Depends(get_embedder)],
+    llm: Annotated[GroqService, Depends(get_groq_service)],
 ) -> Document:
     return document_service.create_from_website(
-        db, embedder, user.id, url=body.url.strip(), title=body.title
+        db, embedder, user.id, url=body.url.strip(), title=body.title, llm=llm
     )
 
 

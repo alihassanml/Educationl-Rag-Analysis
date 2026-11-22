@@ -2,6 +2,8 @@ export type User = { id: string; email: string; is_admin: boolean; created_at: s
 
 export type DocumentStatus = "uploaded" | "processing" | "ready" | "failed";
 
+export type DocumentSource = "pdf" | "website" | "text";
+
 export type StudyDocument = {
   id: string;
   title: string;
@@ -11,6 +13,8 @@ export type StudyDocument = {
   error_message: string | null;
   page_count: number | null;
   created_at: string;
+  /** Where the material came from. A PDF link is stored as a "pdf". */
+  source_type: DocumentSource;
 };
 
 export type DocumentList = { items: StudyDocument[]; total: number };
@@ -119,6 +123,42 @@ export type ProgressSummary = {
   recent_activity: Activity[];
   score_history: Activity[];
   latest_document: { id: string; title: string } | null;
+};
+
+export type DayActivity = { date: string; questions: number; quizzes: number };
+
+export type DocumentUsage = {
+  id: string;
+  title: string;
+  source_type: DocumentSource;
+  page_count: number | null;
+  chunk_count: number;
+  times_cited: number;
+  pages_cited: number;
+  last_cited_at: string | null;
+};
+
+export type HotPage = { document_id: string; document_title: string; page_number: number; times_cited: number };
+
+/** How the student uses their material, from chats, citations, quizzes and the library. */
+export type StudyInsights = {
+  questions_asked: number;
+  answers_with_sources: number;
+  answers_not_found: number;
+  citations_total: number;
+  pages_indexed: number;
+  chunks_indexed: number;
+  helpful_votes: number;
+  unhelpful_votes: number;
+  active_days: number;
+  current_streak: number;
+  longest_streak: number;
+  /** The student's local date (YYYY-MM-DD), the last day of `activity` */
+  today: string;
+  /** Twelve weeks, oldest first */
+  activity: DayActivity[];
+  documents: DocumentUsage[];
+  hot_pages: HotPage[];
 };
 
 export type EvalMode = "dense" | "hybrid";

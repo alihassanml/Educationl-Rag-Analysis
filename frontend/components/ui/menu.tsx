@@ -15,7 +15,7 @@ export type MenuItem = {
 };
 
 /** Row menu. Button opens a menu; arrow keys move, Esc closes and returns focus to the button. */
-export function Menu({ label, items }: { label: string; items: MenuItem[] }) {
+export function Menu({ label, items, triggerClassName }: { label: string; items: MenuItem[]; triggerClassName?: string }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -55,9 +55,12 @@ export function Menu({ label, items }: { label: string; items: MenuItem[] }) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex size-9 items-center justify-center rounded-control border border-stone-strong bg-paper text-ink-2 hover:bg-stone-100 hover:text-ink max-sm:size-10"
+        className={cn(
+          "inline-flex size-7 items-center justify-center rounded-md text-ink-2 transition-colors duration-[120ms] hover:bg-stone hover:text-ink aria-expanded:bg-stone aria-expanded:text-ink max-sm:size-10",
+          triggerClassName,
+        )}
       >
-        <MoreHorizontal size={20} strokeWidth={1.75} aria-hidden="true" />
+        <MoreHorizontal size={16} strokeWidth={1.75} aria-hidden="true" />
       </button>
       {open ? (
         <div role="menu" aria-label={label} className="absolute right-0 z-20 mt-1 w-52 rounded-panel border border-stone bg-paper p-1 shadow-md">

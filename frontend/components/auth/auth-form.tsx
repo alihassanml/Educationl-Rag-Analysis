@@ -129,7 +129,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       <p className="mt-6 text-sm text-ink-2">
         {copy.switchText}{" "}
-        <Link href={copy.switchHref} className="font-medium text-clay-strong underline-offset-4 hover:underline">
+        <Link href={copy.switchHref} className="font-medium text-accent-link underline-offset-4 hover:underline">
           {copy.switchLink}
         </Link>
       </p>

@@ -19,6 +19,7 @@ import type {
   QuizList,
   StartEvalRunInput,
   StudyDocument,
+  StudyInsights,
   ThreadDetail,
   ThreadSummary,
   TopicProgressList,
@@ -41,6 +42,10 @@ export const documentsApi = {
     formData.append("file", file);
     return apiRequest<StudyDocument>("/documents", { method: "POST", formData });
   },
+  /** A web page, or a link to a PDF. The server reads it and indexes it like an upload. */
+  addLink: (url: string, title?: string) =>
+    apiRequest<StudyDocument>("/documents/website", { method: "POST", json: { url, title: title || null } }),
+  addText: (title: string, text: string) => apiRequest<StudyDocument>("/documents/text", { method: "POST", json: { title, text } }),
   remove: (id: string) => apiRequest<void>(`/documents/${id}`, { method: "DELETE" }),
 };
 
@@ -60,10 +65,11 @@ export const tutorApi = {
     documentIds: string[] | null,
     onEvent: (event: SseEvent) => void,
     signal?: AbortSignal,
+    mode: "ask" | "quiz" | "summary" | "simple" = "ask",
   ): Promise<void> {
     const response = await apiStream(
       `/tutor/threads/${threadId}/messages`,
-      { question, document_ids: scopeOf(documentIds) },
+      { question, document_ids: scopeOf(documentIds), mode },
       signal,
     );
     for await (const event of readSse(response.body!)) onEvent(event);
@@ -96,6 +102,11 @@ export const quizzesApi = {
 export const progressApi = {
   summary: (signal?: AbortSignal) => apiRequest<ProgressSummary>("/progress/summary", { signal }),
   topics: (signal?: AbortSignal) => apiRequest<TopicProgressList>("/progress/topics", { signal }),
+  /** Streak, activity and library usage, dated in the browser's time zone */
+  insights: (signal?: AbortSignal) => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return apiRequest<StudyInsights>(`/progress/insights${tz ? `?tz=${encodeURIComponent(tz)}` : ""}`, { signal });
+  },
 };
 
 export const evalApi = {

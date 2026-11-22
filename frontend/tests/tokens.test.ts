@@ -19,31 +19,31 @@ const ratio = (foreground: string, background: string) => contrastRatio(tokens[f
 // Every pair from docs/UI_REDESIGN.md section 3.2, with the ratio the brief reports (rounded down).
 // WCAG 2.1 AA: 4.5:1 for normal text, 3:1 for large text and UI shapes.
 const TEXT_PAIRS: [string, string, number][] = [
-  ["ink", "paper", 17.2],
-  ["ink", "stone-100", 15.6],
-  ["ink", "stone", 12.5],
-  ["ink-2", "paper", 6.69],
-  ["ink-2", "stone-100", 6.08],
-  ["ink-2", "stone", 4.88],
-  ["ink-3", "paper", 5.33],
-  ["paper", "clay-strong", 5.31],
-  ["clay-strong", "paper", 5.31],
-  ["clay-strong", "stone-100", 4.83],
-  ["paper", "clay-stronger", 6.75],
-  ["clay-stronger", "clay-soft", 5.95],
+  ["ink", "paper", 17.73],
+  ["ink", "stone-100", 16.54],
+  ["ink", "stone", 14.32],
+  ["ink-2", "paper", 7.55],
+  ["ink-2", "stone-100", 7.05],
+  ["ink-2", "stone", 6.1],
+  ["ink-3", "paper", 7.55],
+  ["paper", "clay-strong", 17.22],
+  ["clay-strong", "paper", 17.22],
+  ["clay-strong", "stone-100", 16.06],
+  ["paper", "clay-stronger", 21.0],
+  ["clay-stronger", "clay-soft", 18.36],
   ["success", "success-soft", 5.52],
-  ["warning", "warning-soft", 5.43],
+  ["warning", "warning-soft", 5.42],
   ["danger", "danger-soft", 5.79],
-  ["success", "paper", 4.5],
-  ["warning", "paper", 4.5],
-  ["danger", "paper", 4.5],
+  ["success", "paper", 6.25],
+  ["warning", "paper", 5.92],
+  ["danger", "paper", 6.53],
 ];
 
 const LARGE_OR_UI_PAIRS: [string, string, number][] = [
-  ["stone-strong", "paper", 3.45],
-  ["stone-strong", "stone-100", 3.14],
-  ["clay", "paper", 3.75],
-  ["paper", "clay", 3.75],
+  ["stone-strong", "paper", 3.76],
+  ["stone-strong", "stone-100", 3.51],
+  ["clay", "paper", 3.05],
+  ["paper", "clay", 3.05],
 ];
 
 describe("contrastRatio", () => {
@@ -53,11 +53,11 @@ describe("contrastRatio", () => {
   });
 });
 
-describe("Paper, Clay & Stone tokens", () => {
-  it("keeps the three owner colours exactly", () => {
+describe("Clean tokens", () => {
+  it("keeps the brand colours exactly: white, periwinkle #baccf4 and a cool grey hairline", () => {
     expect(tokens.paper.toLowerCase()).toBe("#ffffff");
-    expect(tokens.clay.toLowerCase()).toBe("#d36243");
-    expect(tokens.stone.toLowerCase()).toBe("#dcdcdc");
+    expect(tokens["clay-300"].toLowerCase()).toBe("#baccf4");
+    expect(tokens.stone.toLowerCase()).toBe("#e5e7eb");
   });
 
   it("is light only: no dark block, no leftover Midnight & Ice variables", () => {
@@ -79,7 +79,21 @@ describe("Paper, Clay & Stone tokens", () => {
     expect(value).toBeGreaterThanOrEqual(documented - 0.1);
   });
 
-  it("documents why clay needs a darker partner: white on clay fails AA for small text", () => {
-    expect(ratio("paper", "clay")).toBeLessThan(4.5);
+  it("documents why the brand colour needs partners: neither text nor white text works on #baccf4", () => {
+    expect(contrastRatio("#ffffff", tokens["clay-300"])).toBeLessThan(4.5);
+    expect(ratio("ink", "clay-300")).toBeGreaterThanOrEqual(4.5); // dark text on it is fine
+    expect(ratio("ink-2", "clay-300")).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("has no trace of the old terracotta palette", () => {
+    expect(css).not.toMatch(/#(d36243|b5492c|9c3d26|fbeee9|f6dcd2|e8a48f)/i);
+  });
+
+  it("gives every role that carries text enough contrast on white and on the soft fill", () => {
+    for (const role of ["accent-ink", "accent-link"]) {
+      expect(ratio(role, "paper")).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(role, "clay-soft")).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(contrastRatio(tokens["on-accent"], tokens["clay-strong"])).toBeGreaterThanOrEqual(4.5);
   });
 });

@@ -9,7 +9,7 @@ _MIN_WORDS = 5
 @dataclass(frozen=True)
 class TextChunk:
     chunk_index: int
-    page_number: int
+    page_number: int | None
     content: str
 
 

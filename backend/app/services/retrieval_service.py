@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-from sqlalchemy import Select, Text, cast, func, select
+from sqlalchemy import Select, Text, cast, func, select, tuple_
 from sqlalchemy.dialects.postgresql import TSQUERY
 from sqlalchemy.orm import Session
 
@@ -197,3 +197,79 @@ def retrieve(
         if len(selected) == top_k:
             break
     return selected
+
+
+def _spread(count: int, picks: int) -> list[int]:
+    """`picks` indexes spread evenly over `count` chunks, to cover the whole document."""
+    picks = min(picks, count)
+    return sorted({int((i + 0.5) * count / picks) for i in range(picks)})
+
+
+def document_titles(
+    db: Session, user_id: uuid.UUID, document_ids: list[uuid.UUID] | None = None
+) -> list[tuple[uuid.UUID, str]]:
+    """(id, title) of the user's ready documents, newest first, optionally a selection."""
+    stmt = select(Document.id, Document.title).where(
+        Document.user_id == user_id, Document.status == STATUS_READY
+    )
+    if document_ids:
+        stmt = stmt.where(Document.id.in_(document_ids))
+    return [(row[0], row[1]) for row in db.execute(stmt.order_by(Document.created_at.desc()))]
+
+
+def retrieve_coverage(
+    db: Session,
+    user_id: uuid.UUID,
+    document_ids: list[uuid.UUID] | None = None,
+    limit: int | None = None,
+) -> list[RetrievedChunk]:
+    """A sample of passages from across the material, with no similarity bar.
+
+    For requests with no specific subject ("quiz me on everything"). The sample is shared out
+    between the documents and spread over each one, so every part of the material can be used.
+    """
+    limit = limit or get_settings().retrieval_coverage_chunks
+    if document_ids:
+        check_document_scope(db, user_id, document_ids)
+    counts = db.execute(
+        _scoped(
+            select(Document.id, Document.title, func.count(DocumentChunk.id)), user_id, document_ids
+        )
+        .group_by(Document.id, Document.title, Document.created_at)
+        .order_by(Document.created_at.desc())
+        .limit(limit)
+    ).all()
+    if not counts:
+        return []
+
+    quota, extra = divmod(limit, len(counts))
+    wanted: dict[uuid.UUID, list[int]] = {}
+    for position, (document_id, _title, total) in enumerate(counts):
+        wanted[document_id] = _spread(total, quota + (1 if position < extra else 0))
+    titles = {document_id: title for document_id, title, _ in counts}
+
+    rows = db.execute(
+        select(DocumentChunk)
+        .where(
+            DocumentChunk.user_id == user_id,
+            tuple_(DocumentChunk.document_id, DocumentChunk.chunk_index).in_(
+                [
+                    (document_id, index)
+                    for document_id, indexes in wanted.items()
+                    for index in indexes
+                ]
+            ),
+        )
+        .order_by(DocumentChunk.document_id, DocumentChunk.chunk_index)
+    ).scalars()
+    return [
+        RetrievedChunk(
+            chunk_id=chunk.id,
+            document_id=chunk.document_id,
+            document_title=titles[chunk.document_id],
+            page_number=chunk.page_number,
+            content=chunk.content,
+            similarity=0.0,  # chosen for coverage, not matched to a query
+        )
+        for chunk in rows
+    ]

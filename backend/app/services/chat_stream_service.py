@@ -23,8 +23,22 @@ from app.models.chat import (
 from app.services import chat_service
 from app.services.embedding_service import Embedder
 from app.services.groq_service import GroqService, LLMUnavailableError
+from app.services.intent_service import (
+    is_broad_request,
+    mentioned_documents,
+    reformat_instruction,
+    requested_question_count,
+    smalltalk_kind,
+    smalltalk_reply,
+)
 from app.services.rag_service import NOT_FOUND_ANSWER
-from app.services.retrieval_service import RetrievedChunk, check_document_scope, retrieve
+from app.services.retrieval_service import (
+    RetrievedChunk,
+    check_document_scope,
+    document_titles,
+    retrieve,
+    retrieve_coverage,
+)
 from app.services.rewrite_service import RewriteResult, rewrite_followup
 
 logger = logging.getLogger("app.chat")
@@ -51,6 +65,31 @@ as [1]. Use plain square brackets and cite only numbers that appear in the passa
 - Reply in plain text. Do not use JSON."""
 
 
+# What each chat mode asks the answer call to do. "ask" adds nothing. The passages rules in the
+# system prompt (cite, never use outside knowledge, NOT_FOUND) apply to every mode.
+MODE_INSTRUCTIONS = {
+    "ask": "",
+    "quiz": (
+        "Do not answer directly. Write exactly {count} multiple-choice questions (options A to D) "
+        "that test the student, using only the passages and covering different parts of them. "
+        "Number the questions. After the questions, list the correct answers, each with a "
+        "one-line reason and its passage number."
+    ),
+    "summary": "Write a short summary as 3 to 6 bullet points, each with its passage number.",
+    "simple": (
+        "Explain it in plain words a beginner would understand, using short sentences. "
+        "Keep it under 150 words."
+    ),
+}
+
+
+# Added when the passages were sampled from across the material, not matched to the question
+COVERAGE_INSTRUCTION = (
+    "The passages are a sample from across the student's material. Base the answer on them and "
+    "say which document it comes from."
+)
+
+
 @dataclass
 class PreparedMessage:
     """Everything decided before streaming starts, while a normal HTTP error is still possible."""
@@ -61,6 +100,7 @@ class PreparedMessage:
     question: str
     document_ids: list[uuid.UUID] | None
     history: list[tuple[str, str]] = field(default_factory=list)
+    mode: str = "ask"
 
 
 def _title(question: str) -> str:
@@ -74,6 +114,7 @@ def prepare_message(
     thread_id: uuid.UUID,
     question: str,
     document_ids: list[uuid.UUID] | None,
+    mode: str = "ask",
 ) -> PreparedMessage:
     """Check ownership and scope, then save the student's message before anything streams."""
     thread = chat_service.get_owned_thread(db, user_id, thread_id)
@@ -93,7 +134,7 @@ def prepare_message(
         thread.title = _title(question)
     thread.updated_at = _now()
     db.commit()
-    return PreparedMessage(user_id, thread.id, message.id, question, document_ids, history)
+    return PreparedMessage(user_id, thread.id, message.id, question, document_ids, history, mode)
 
 
 def make_snippet(content: str) -> str:
@@ -185,8 +226,42 @@ def run_stream(
     text_parts: list[str] = []
     model = llm.model_name
     try:
+        if kind := smalltalk_kind(prepared.question):
+            # "hi", "thanks", "what can you do": answered directly, never searched for or refused
+            names = [t for _, t in document_titles(db, prepared.user_id, prepared.document_ids)]
+            reply = smalltalk_reply(kind, names)
+            yield "sources", []
+            yield "token", {"text": reply}
+            message = _save_answer(
+                db, prepared, content=reply, status=STATUS_COMPLETE, abstained=False,
+                chunks=[], model=model, latency=latency,
+            )  # fmt: skip
+            yield (
+                "done",
+                {
+                    "message_id": str(message.id),
+                    "abstained": False,
+                    "standalone_query": prepared.question,
+                    "rewrite_used": False,
+                    "unknown_markers": [],
+                    "latency_ms": latency,
+                },
+            )
+            return
         rewrite = RewriteResult(prepared.question, ran=False, changed=False, fallback=False)
-        if prepared.history:
+        reformat = None
+        previous_question = next((c for r, c in reversed(prepared.history) if r == "user"), None)
+        if prepared.mode == "ask" and previous_question:
+            # "in bullets", "shorter", "translate to Urdu": same question, a new form
+            reformat = reformat_instruction(prepared.question)
+        if reformat and previous_question:
+            rewrite = RewriteResult(previous_question, ran=False, changed=True, fallback=False)
+            user_message = db.get(ChatMessage, prepared.user_message_id)
+            if user_message is not None:
+                user_message.standalone_query = previous_question
+                user_message.rewrite_used = True
+                db.commit()
+        elif prepared.history:
             yield "status", {"stage": "rewriting"}
             started = time.perf_counter()
             rewrite = rewrite_followup(llm, prepared.history, prepared.question)
@@ -201,6 +276,15 @@ def run_stream(
         yield "status", {"stage": "searching"}
         started = time.perf_counter()
         chunks = retrieve(db, embedder, prepared.user_id, rewrite.query, prepared.document_ids)
+        covering = False
+        if not chunks:
+            # Nothing matched. A broad request ("quiz me on all topics", "the hardest topic in
+            # <document>") matches no single passage, so sample across the material instead.
+            titles = document_titles(db, prepared.user_id, prepared.document_ids)
+            if is_broad_request(prepared.question, mode=prepared.mode, documents=titles):
+                named = mentioned_documents(prepared.question, titles)
+                chunks = retrieve_coverage(db, prepared.user_id, named or prepared.document_ids)
+                covering = bool(chunks)
         latency["retrieve"] = _ms(started)
         yield "sources", _source_event(chunks)
 
@@ -224,6 +308,15 @@ def run_stream(
 
         yield "status", {"stage": "writing"}
         user_prompt = f"<passages>\n{_passages(chunks)}\n</passages>\n\nQuestion: {rewrite.query}"
+        instruction = MODE_INSTRUCTIONS.get(prepared.mode, "").format(
+            count=requested_question_count(prepared.question)
+        )
+        if reformat:
+            instruction = reformat
+        elif covering and not instruction:
+            instruction = COVERAGE_INSTRUCTION
+        if instruction:
+            user_prompt += f"\n\nHow to answer: {instruction}"
         started = time.perf_counter()
         pending = ""  # held back until we know the model is not answering NOT_FOUND
         deciding = True

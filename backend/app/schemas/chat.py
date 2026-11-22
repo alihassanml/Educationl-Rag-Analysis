@@ -57,9 +57,15 @@ class ThreadDetail(ThreadOut):
     messages: list[MessageOut]
 
 
+ChatMode = Literal["ask", "quiz", "summary", "simple"]
+
+
 class MessageCreate(BaseModel):
-    question: str = Field(min_length=3, max_length=1000)
+    question: str = Field(min_length=2, max_length=1000)
     document_ids: list[uuid.UUID] | None = Field(default=None, max_length=50)
+    # How the answer is written. The student's own words are saved as typed; the mode only
+    # changes the instruction the answer call receives.
+    mode: ChatMode = "ask"
 
 
 class FeedbackIn(BaseModel):

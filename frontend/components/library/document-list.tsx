@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircleQuestion, Trash2 } from "lucide-react";
+import { FileText, Globe, MessageCircleQuestion, Trash2, Type, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Menu, type MenuItem } from "@/components/ui/menu";
@@ -10,7 +10,7 @@ import { ApiError } from "@/lib/api-client";
 import { documentsApi } from "@/lib/api";
 import { formatBytes, formatDate } from "@/lib/formatters";
 import { formatRelative } from "@/lib/relative-time";
-import type { StudyDocument } from "@/types/api";
+import type { DocumentSource, StudyDocument } from "@/types/api";
 
 type Props = { documents: StudyDocument[]; onDeleted: (id: string) => void };
 
@@ -26,11 +26,27 @@ function Uploaded({ doc }: { doc: StudyDocument }) {
   );
 }
 
+const SOURCE: Record<DocumentSource, { icon: LucideIcon; label: string; retry: string }> = {
+  pdf: { icon: FileText, label: "PDF", retry: "Upload a text-based PDF" },
+  website: { icon: Globe, label: "Web page", retry: "Check the address or add it again" },
+  text: { icon: Type, label: "Pasted text", retry: "Add the text again" },
+};
+
+function SourceIcon({ doc }: { doc: StudyDocument }) {
+  const { icon: Icon, label } = SOURCE[doc.source_type ?? "pdf"];
+  return (
+    <span title={label} className="shrink-0 text-ink-2">
+      <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
 function FailureNote({ doc }: { doc: StudyDocument }) {
   if (doc.status !== "failed") return null;
   return (
     <p className="mt-1 text-small text-danger">
-      {doc.error_message ?? "Processing failed."} Upload a text-based PDF
+      {doc.error_message ?? "Processing failed."} {SOURCE[doc.source_type ?? "pdf"].retry}
     </p>
   );
 }
@@ -97,9 +113,12 @@ export function DocumentList({ documents, onDeleted }: Props) {
             {documents.map((doc) => (
               <tr key={doc.id} className="h-12 border-t border-stone align-middle">
                 <td className="px-4 py-2">
-                  <p className="truncate font-medium text-ink" title={doc.title}>
-                    {doc.title}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <SourceIcon doc={doc} />
+                    <p className="truncate font-medium text-ink" title={doc.title}>
+                      {doc.title}
+                    </p>
+                  </div>
                   <FailureNote doc={doc} />
                 </td>
                 <td className="px-4 py-2 text-ink-2">{pagesText(doc)}</td>
@@ -123,7 +142,10 @@ export function DocumentList({ documents, onDeleted }: Props) {
         {documents.map((doc) => (
           <li key={doc.id} className="rounded-panel border border-stone bg-paper p-4">
             <div className="flex items-start justify-between gap-2">
-              <p className="min-w-0 break-words font-medium text-ink">{doc.title}</p>
+              <p className="flex min-w-0 items-center gap-2 break-words font-medium text-ink">
+                <SourceIcon doc={doc} />
+                {doc.title}
+              </p>
               <Menu label={`Actions for ${doc.title}`} items={menuFor(doc)} />
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-small text-ink-2">

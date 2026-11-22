@@ -14,11 +14,13 @@ from app.models.document import (
     Document,
     DocumentChunk,
 )
-from app.services import chunking_service, pdf_service
+from app.services import chunking_service, pdf_service, source_service
 from app.services.embedding_service import Embedder
 
 logger = logging.getLogger("app.documents")
 
+SOURCE_TEXT_MIME = "text/plain"
+SOURCE_WEBSITE_MIME = "text/html"
 _PDF_MAGIC = b"%PDF-"
 _READ_BLOCK = 1024 * 1024
 _NO_TEXT_MESSAGE = (
@@ -97,6 +99,81 @@ def create_and_process(
     return document
 
 
+def create_from_text(
+    db: Session,
+    embedder: Embedder,
+    user_id: uuid.UUID,
+    *,
+    title: str,
+    text: str,
+    source_url: str | None = None,
+) -> Document:
+    """Index pasted text or the text of a web page. The text is kept as a .txt file so the
+    document is stored and deleted exactly like an uploaded PDF."""
+    text = text.strip()
+    if len(text) < source_service.MIN_TEXT_CHARS:
+        raise AppError(
+            400, "text_too_short", "Add a little more text so there is something to study"
+        )
+    if len(text) > source_service.MAX_TEXT_CHARS:
+        raise AppError(
+            413,
+            "text_too_long",
+            f"Text must be {source_service.MAX_TEXT_CHARS:,} characters or fewer",
+        )
+    directory = _storage_dir(user_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{uuid.uuid4().hex}.txt"
+    data = text.encode("utf-8")
+    path.write_bytes(data)
+
+    label = _safe_title(source_url or "", title)
+    document = Document(
+        user_id=user_id,
+        title=label,
+        original_filename=(source_url or f"{label}.txt")[:255],
+        storage_path=str(path),
+        mime_type=SOURCE_WEBSITE_MIME if source_url else SOURCE_TEXT_MIME,
+        file_size=len(data),
+        status=STATUS_PROCESSING,
+    )
+    db.add(document)
+    db.commit()
+    _process(
+        db,
+        embedder,
+        document,
+        path,
+        pages=[pdf_service.PageText(page_number=None, text=text)],
+        no_text_message="Not enough readable text was found to index.",
+    )
+    return document
+
+
+def create_from_website(
+    db: Session, embedder: Embedder, user_id: uuid.UUID, *, url: str, title: str | None
+) -> Document:
+    """Add a web address: a page is read as text, a link to a PDF is downloaded as a PDF."""
+    fetched = source_service.fetch(url)
+    if fetched.kind == "pdf":
+        directory = _storage_dir(user_id)
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / f"{uuid.uuid4().hex}.pdf"
+        path.write_bytes(fetched.body)
+        return create_and_process(
+            db,
+            embedder,
+            user_id,
+            filename=source_service.filename_from_url(url),
+            title=title,
+            path=path,
+            size=len(fetched.body),
+        )
+    page_title, text = source_service.extract_text(fetched)
+    chosen = (title or "").strip() or page_title or source_service.title_from_url(url)
+    return create_from_text(db, embedder, user_id, title=chosen, text=text, source_url=url)
+
+
 def _fail(db: Session, document: Document, message: str) -> None:
     db.rollback()
     document.status = STATUS_FAILED
@@ -104,16 +181,26 @@ def _fail(db: Session, document: Document, message: str) -> None:
     db.commit()
 
 
-def _process(db: Session, embedder: Embedder, document: Document, path: Path) -> None:
+def _process(
+    db: Session,
+    embedder: Embedder,
+    document: Document,
+    path: Path,
+    *,
+    pages: list[pdf_service.PageText] | None = None,
+    no_text_message: str = _NO_TEXT_MESSAGE,
+) -> None:
+    """Index a document. PDFs are read from `path`; other sources pass their text as `pages`."""
     settings = get_settings()
     try:
-        pages = pdf_service.extract_pages(path)
-        document.page_count = len(pages)
+        if pages is None:
+            pages = pdf_service.extract_pages(path)
+            document.page_count = len(pages)
         chunks = chunking_service.chunk_pages(
             pages, settings.chunk_size_words, settings.chunk_overlap_words
         )
         if not chunks:
-            _fail(db, document, _NO_TEXT_MESSAGE)
+            _fail(db, document, no_text_message)
             return
         vectors = embedder.embed_documents([c.content for c in chunks])
         db.add_all(

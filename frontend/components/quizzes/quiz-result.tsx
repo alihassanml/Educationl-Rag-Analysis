@@ -33,10 +33,10 @@ export function QuizResult({ result }: { result: AttemptResult }) {
             {needsReview ? (
               <ButtonLink href={`/tutor?q=${encodeURIComponent(`Explain ${result.topic} in simple words`)}`}>Review this topic</ButtonLink>
             ) : (
-              <ButtonLink href="/quizzes">{result.topic_status === "doing_well" ? "Try a harder quiz" : "Try another quiz"}</ButtonLink>
+              <ButtonLink href="/tutor?mode=quiz">{result.topic_status === "doing_well" ? "Try a harder quiz" : "Try another quiz"}</ButtonLink>
             )}
             {needsReview ? (
-              <ButtonLink variant="secondary" href="/quizzes">
+              <ButtonLink variant="secondary" href="/tutor?mode=quiz">
                 Try another quiz
               </ButtonLink>
             ) : null}

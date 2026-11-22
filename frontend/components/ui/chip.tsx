@@ -9,7 +9,7 @@ const tones: Record<ChipTone, string> = {
   success: "bg-success-soft text-success",
   warning: "bg-warning-soft text-warning",
   danger: "bg-danger-soft text-danger",
-  clay: "bg-clay-soft text-clay-stronger",
+  clay: "bg-clay-soft text-accent-ink",
 };
 
 /** 24px pill. The label is always text, so status never relies on colour alone. */

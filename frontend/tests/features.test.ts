@@ -12,7 +12,8 @@ describe("feature registry", () => {
     for (const feature of plannedFeatures()) {
       expect(feature.nav, `${feature.id} is planned and must not have a nav entry`).toBeUndefined();
     }
-    expect(hrefs).toEqual(["/tutor", "/dashboard", "/library", "/quizzes", "/progress", "/evaluation"]);
+    // No Quizzes entry: quizzes are taken inside the chat
+    expect(hrefs).toEqual(["/tutor", "/dashboard", "/library", "/progress", "/evaluation"]);
   });
 
   it("keeps the Evaluation Lab admin only", () => {

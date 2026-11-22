@@ -268,9 +268,16 @@ def test_another_users_thread_and_documents_are_404_and_no_message_is_saved(
     assert fake_groq.stream_calls == [] and fake_groq.calls == []
 
 
-def test_short_question_is_rejected_before_streaming(chat) -> None:
+def test_a_one_character_question_is_rejected_before_streaming(chat, fake_groq) -> None:
     client, thread_id = chat
-    assert _send(client, thread_id, "hi").status_code == 422
+    assert _send(client, thread_id, "?").status_code == 422
+    assert fake_groq.stream_calls == []
+
+
+def test_a_two_letter_question_is_accepted(chat, fake_groq) -> None:
+    client, thread_id = chat
+    fake_groq.stream_replies.append(["Hello [1]."])
+    assert _send(client, thread_id, "hi").status_code == 200
 
 
 def test_snippets_end_at_a_word_boundary_with_an_ellipsis() -> None:
@@ -282,3 +289,169 @@ def test_snippets_end_at_a_word_boundary_with_an_ellipsis() -> None:
     assert snippet.endswith("…") and snippet[:-1].endswith("word")
     assert len(snippet) <= SNIPPET_CHARS + 1
     assert make_snippet("x" * 500).endswith("…")  # no spaces at all: still cut
+
+
+def test_mode_changes_the_answer_instruction_but_saves_the_question_as_typed(
+    chat, fake_groq
+) -> None:
+    client, thread_id = chat
+    fake_groq.stream_replies.append(["Q1 [1]."])
+    response = _send(client, thread_id, mode="quiz")
+    assert response.status_code == 200
+
+    call = fake_groq.stream_calls[0]
+    assert "How to answer:" in call["user"] and "multiple-choice" in call["user"]
+    assert QUESTION in call["user"]
+    saved = client.get(f"/api/v1/tutor/threads/{thread_id}").json()["messages"][0]
+    assert saved["content"] == QUESTION  # the instruction is never stored or shown back
+
+
+def test_ask_mode_adds_no_instruction(chat, fake_groq) -> None:
+    client, thread_id = chat
+    fake_groq.stream_replies.append(["Answer [1]."])
+    _send(client, thread_id)
+    assert "How to answer:" not in fake_groq.stream_calls[0]["user"]
+
+
+def test_unknown_mode_is_rejected(chat) -> None:
+    client, thread_id = chat
+    assert _send(client, thread_id, mode="hack").status_code == 422
+
+
+# Broad requests: no single passage matches "all topics", but the material is there
+
+
+def test_quiz_on_all_topics_samples_the_material_instead_of_saying_not_found(
+    chat, fake_groq
+) -> None:
+    client, thread_id = chat
+    fake_groq.stream_replies.append(["1. What stops recursion? [1]"])
+    response = _send(client, thread_id, "quiz me all topic maximum 10 quiz", mode="quiz")
+    events = parse_sse(response.text)
+
+    assert "token" in names(events)
+    done = events[-1][1]
+    assert done["abstained"] is False
+    call = fake_groq.stream_calls[0]
+    assert "<passages>" in call["user"] and "Recursion is a method" in call["user"]
+    assert "exactly 10 multiple-choice questions" in call["user"]  # the number asked for
+
+
+def test_the_number_of_questions_is_capped_and_defaults_to_five(chat, fake_groq) -> None:
+    client, thread_id = chat
+    fake_groq.stream_replies.append(["Q [1]"])
+    _send(client, thread_id, "quiz me on everything with 50 questions", mode="quiz")
+    assert "exactly 10 multiple-choice" in fake_groq.stream_calls[0]["user"]
+
+    fake_groq.replies.append(
+        {"standalone_question": "quiz me on everything"}
+    )  # the follow-up rewrite
+    fake_groq.stream_replies.append(["Q [1]"])
+    _send(client, thread_id, "quiz me on everything", mode="quiz")
+    assert "exactly 5 multiple-choice" in fake_groq.stream_calls[1]["user"]
+
+
+def test_naming_a_document_covers_that_document(chat, fake_groq) -> None:
+    client, thread_id = chat
+    fake_groq.stream_replies.append(["It is the base case [1]."])
+    _send(client, thread_id, "Explain the hardest topic in Notes simply", mode="simple")
+    call = fake_groq.stream_calls[0]
+    assert "<passages>" in call["user"]
+    assert "sample from across the student's material" in call["user"] or "beginner" in call["user"]
+
+
+def test_a_specific_topic_the_material_does_not_cover_still_says_not_found(chat, fake_groq) -> None:
+    client, thread_id = chat
+    response = _send(client, thread_id, "quiz me on quantum chromodynamics", mode="quiz")
+    done = parse_sse(response.text)[-1][1]
+    assert done["abstained"] is True
+    assert fake_groq.stream_calls == []  # nothing was sent to the model
+
+
+def test_a_broad_question_outside_the_selected_documents_stays_inside_the_selection(
+    auth_client, fake_groq
+) -> None:
+    upload(auth_client, [RECURSION], title="Recursion Notes")
+    other = upload(
+        auth_client,
+        ["Photosynthesis converts light into chemical energy in plants."],
+        title="Biology",
+    )
+    thread_id = _thread(auth_client)
+    fake_groq.stream_replies.append(["Plants [1]."])
+    _send(
+        auth_client,
+        thread_id,
+        "quiz me on everything",
+        mode="quiz",
+        document_ids=[other.json()["id"]],
+    )
+    prompt = fake_groq.stream_calls[0]["user"]
+    assert "Photosynthesis" in prompt and "Recursion is a method" not in prompt
+
+
+# Small talk is answered, not searched for or refused
+
+
+def test_hi_gets_a_greeting_not_a_not_found(chat, fake_groq, db) -> None:
+    client, thread_id = chat
+    events = parse_sse(_send(client, thread_id, "hi").text)
+
+    assert names(events) == ["sources", "token", "done"]
+    assert "Hi! I'm your study tutor" in events[1][1]["text"] and "Notes" in events[1][1]["text"]
+    assert events[-1][1]["abstained"] is False
+    assert fake_groq.stream_calls == [] and fake_groq.calls == []  # no model call, no search
+    saved = client.get(f"/api/v1/tutor/threads/{thread_id}").json()["messages"][1]
+    assert saved["abstained"] is False and saved["citations"] == []
+
+
+def test_a_greeting_inside_a_real_question_is_still_searched(chat, fake_groq) -> None:
+    client, thread_id = chat
+    fake_groq.stream_replies.append(["It stops at the base case [1]."])
+    events = parse_sse(_send(client, thread_id, "hi, " + QUESTION).text)
+    assert "status" in names(events) and fake_groq.stream_calls
+
+
+# "give me in bullets": the same question again, answered in a new form
+
+
+def test_a_formatting_follow_up_searches_for_the_previous_question_not_its_own_words(
+    chat, fake_groq
+) -> None:
+    client, thread_id = chat
+    fake_groq.stream_replies.append(["A function calls itself [1]."])
+    _send(client, thread_id)
+
+    fake_groq.stream_replies.append(
+        ["- It calls itself [1]"]
+    )  # no rewrite reply is queued: none is needed
+    events = parse_sse(_send(client, thread_id, "give me in bullets posint").text)
+
+    assert events[-1][1]["abstained"] is False and "token" in names(events)
+    call = fake_groq.stream_calls[1]
+    assert QUESTION in call["user"] and "bulleted list" in call["user"]
+    assert "posint" not in call["user"]
+    assert fake_groq.calls == []  # the rewrite model was not called either
+
+    thread = client.get(f"/api/v1/tutor/threads/{thread_id}").json()
+    follow_up = [m for m in thread["messages"] if m["role"] == "user"][1]
+    assert follow_up["content"] == "give me in bullets posint"  # saved as typed
+    assert follow_up["standalone_query"] == QUESTION and follow_up["rewrite_used"] is True
+
+
+def test_a_formatting_request_as_the_first_message_has_nothing_to_reformat(chat, fake_groq) -> None:
+    client, thread_id = chat
+    events = parse_sse(_send(client, thread_id, "in bullets").text)
+    assert events[-1][1]["abstained"] is True  # no previous answer to work from
+    assert fake_groq.stream_calls == []
+
+
+def test_a_real_question_after_an_answer_is_not_treated_as_formatting(chat, fake_groq) -> None:
+    client, thread_id = chat
+    fake_groq.stream_replies.append(["First [1]."])
+    _send(client, thread_id)
+    fake_groq.replies.append({"standalone_question": "What is a base case?"})
+    fake_groq.stream_replies.append(["A base case stops recursion [1]."])
+    _send(client, thread_id, "what is a base case?")
+    assert "bulleted list" not in fake_groq.stream_calls[1]["user"]
+    assert len(fake_groq.calls) == 1  # the normal follow-up rewrite ran

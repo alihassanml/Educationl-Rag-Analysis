@@ -1,10 +1,12 @@
 "use client";
 
-import { ArrowDown, FileSearch, FileText, History, Lightbulb, ListChecks, PanelRight, type LucideIcon } from "lucide-react";
+import { ArrowDown, Download, FileSearch, FileText, Lightbulb, ListChecks, PanelRight, type LucideIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
+import { useUpload } from "@/components/library/use-upload";
 import { Dialog } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/toast";
 import { EmptyState, ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import { ApiError } from "@/lib/api-client";
 import { documentsApi, tutorApi } from "@/lib/api";
@@ -12,10 +14,16 @@ import { applyEvent, initialLive, markStopped, type LiveAnswer, type Source } fr
 import { useGreeting } from "@/lib/greeting";
 import { cn } from "@/lib/cn";
 import { useApi } from "@/lib/use-api";
+import { chatToMarkdown, downloadText } from "@/lib/export-chat";
+import { isLoneLink } from "@/lib/validators";
+import { IconButton } from "@/components/ui/icon-button";
 import type { FeedbackRating, FeedbackReason, StudyDocument, ThreadDetail } from "@/types/api";
 import { AnswerBlock, type AnswerView } from "./answer-card";
 import { Composer } from "./composer";
-import { HistoryPanel } from "./history-panel";
+import { NEW_CHAT_EVENT } from "@/lib/chat-events";
+import { parseQuizRequest, type QuizRequest } from "@/lib/quiz-request";
+import { modeOf, type ChatMode } from "./modes";
+import { QuizCard } from "./quiz-card";
 import { toSources } from "./sources";
 import { SourcesList, SourcesPanel } from "./sources-panel";
 
@@ -23,6 +31,10 @@ type Turn = {
   key: string;
   question: string;
   documentIds: string[];
+  /** How the answer was asked for; saved chats do not record it, so they read as "ask" */
+  mode?: ChatMode;
+  /** Set in Quiz me mode: the turn is a quiz card, not a written answer */
+  quiz?: QuizRequest;
   /** What was actually searched, shown only when a follow-up was rewritten */
   searchedFor: string | null;
   answer: AnswerView | null;
@@ -100,27 +112,34 @@ function turnsFromThread(detail: ThreadDetail | null): Turn[] {
 
 export function TutorView({ threadId }: { threadId?: string }) {
   const docs = useApi(documentsApi.list);
-  const threads = useApi(tutorApi.threads);
+  const toast = useToast();
+  // Material can be added without leaving the chat: paste a link, or attach, paste or drop a PDF
+  const [adding, setAdding] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const sources = useUpload((added) => {
+    docs.reload();
+    if (added.status === "failed") setNotice(`${added.title}: ${added.error_message ?? "it could not be read."}`);
+    else toast.show(`Added “${added.title}” to your library`);
+  });
   const detail = useApi((signal) => (threadId ? tutorApi.thread(threadId, signal) : Promise.resolve(null)));
   const params = useSearchParams();
   const router = useRouter();
 
   const docParam = params.get("doc");
   const [question, setQuestion] = useState(params.get("q") ?? "");
+  const modeParam = params.get("mode");
+  const [mode, setMode] = useState<ChatMode>(modeParam === "quiz" || modeParam === "summary" || modeParam === "simple" ? modeParam : "ask");
   const [scope, setScope] = useState<string[]>(docParam ? [docParam] : []);
   const loaded = useMemo(() => turnsFromThread(detail.data), [detail.data]);
   const [edited, setEdited] = useState<Turn[] | null>(null);
   const turns = edited ?? loaded;
   const setTurns = (update: (all: Turn[]) => Turn[]) => setEdited((current) => update(current ?? loaded));
 
-  const [activeThread, setActiveThread] = useState<string | null>(threadId ?? null);
   const [streaming, setStreaming] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-  const [notice, setNotice] = useState<string | null>(null);
   const [showJump, setShowJump] = useState(false);
   const greeting = useGreeting();
 
@@ -175,8 +194,17 @@ export function TutorView({ threadId }: { threadId?: string }) {
     if (activeMarker !== null) document.getElementById(`source-${activeMarker}`)?.scrollIntoView?.({ block: "nearest" });
   }, [activeMarker]);
 
-  async function send(text: string, documentIds: string[]) {
+  async function send(text: string, documentIds: string[], sendMode: ChatMode = mode) {
     if (streaming) return;
+    if (sendMode === "quiz") {
+      // A quiz is made and marked by the quiz service, right here in the conversation
+      const key = `turn-${nextKey.current++}`;
+      atBottom.current = true;
+      setQuestion("");
+      setTurns((all) => [...all, { key, question: text, documentIds, mode: "quiz", quiz: parseQuizRequest(text), searchedFor: null, answer: null }]);
+      setActiveKey(key);
+      return;
+    }
     const key = `turn-${nextKey.current++}`;
     const controller = new AbortController();
     abortRef.current = controller;
@@ -189,7 +217,7 @@ export function TutorView({ threadId }: { threadId?: string }) {
     setAnnouncement("");
     setStreaming(true);
     setQuestion("");
-    setTurns((all) => [...all, { key, question: text, documentIds, searchedFor: null, answer: viewOf(live) }]);
+    setTurns((all) => [...all, { key, question: text, documentIds, mode: sendMode, searchedFor: null, answer: viewOf(live) }]);
     setActiveKey(key);
     setActiveMarker(null);
 
@@ -197,7 +225,6 @@ export function TutorView({ threadId }: { threadId?: string }) {
       if (!threadRef.current) {
         const created = await tutorApi.createThread();
         threadRef.current = created.id;
-        setActiveThread(created.id);
         // The address follows the chat without remounting, so the answer keeps streaming
         window.history.replaceState(null, "", `/tutor/${created.id}`);
       }
@@ -210,6 +237,7 @@ export function TutorView({ threadId }: { threadId?: string }) {
           show(event.event === "done" && live.rewriteUsed ? { searchedFor: live.standaloneQuery ?? null } : {});
         },
         controller.signal,
+        sendMode,
       );
       if (live.status === "streaming") {
         live = { ...live, stage: null, status: "failed", error: "The connection ended before the answer was finished. Try again." };
@@ -227,19 +255,34 @@ export function TutorView({ threadId }: { threadId?: string }) {
     } finally {
       setStreaming(false);
       abortRef.current = null;
-      threads.reload();
+    }
+  }
+
+  async function addSource(run: () => Promise<StudyDocument | null>, message: string) {
+    setAdding(message);
+    setNotice(null);
+    try {
+      return await run();
+    } finally {
+      setAdding(null);
     }
   }
 
   function ask() {
     const text = question.trim();
-    if (text.length >= 3 && !streaming) void send(text, scope);
+    if (isLoneLink(text)) {
+      void addSource(() => sources.addLink(text), "Reading the link and adding it to your library").then((added) => {
+        if (added) setQuestion("");
+      });
+      return;
+    }
+    if (text.length >= 2 && !streaming) void send(text, scope);
   }
 
   function retry(turn: Turn) {
     setTurns((all) => all.filter((t) => t.key !== turn.key));
     setQuestion((current) => (current === turn.question ? "" : current));
-    void send(turn.question, turn.documentIds);
+    void send(turn.question, turn.documentIds, turn.mode);
   }
 
   async function rate(turn: Turn, rating: FeedbackRating, reason?: FeedbackReason) {
@@ -267,58 +310,58 @@ export function TutorView({ threadId }: { threadId?: string }) {
   function newChat() {
     abortRef.current?.abort();
     threadRef.current = null;
-    setActiveThread(null);
     setEdited([]);
     setActiveKey(null);
     setQuestion("");
     setNotice(null);
-    setHistoryOpen(false);
     if (window.location.pathname !== "/tutor") router.push("/tutor");
   }
 
-  async function renameThread(id: string, title: string) {
-    try {
-      await tutorApi.renameThread(id, title);
-      threads.reload();
-    } catch (error) {
-      setNotice(error instanceof ApiError ? error.message : "The chat could not be renamed.");
-    }
+  function exportChat() {
+    const title = turns[0]?.question.slice(0, 60) ?? "Study chat";
+    const markdown = chatToMarkdown(
+      title,
+      turns.map((t) => ({
+        question: t.question,
+        mode: t.mode,
+        quiz: t.quiz,
+        answer: t.answer ? { text: t.answer.text, abstained: t.answer.abstained, sources: t.answer.sources.map((s) => ({ title: s.title, page: s.page })) } : null,
+      })),
+    );
+    downloadText(`${title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").toLowerCase() || "study-chat"}.md`, markdown);
+    toast.show("Chat exported");
   }
 
-  async function deleteThread(id: string) {
-    try {
-      await tutorApi.deleteThread(id);
-      threads.reload();
-      if (id === activeThread) newChat();
-    } catch (error) {
-      setNotice(error instanceof ApiError ? error.message : "The chat could not be deleted.");
+  // Keyboard: / jumps to the question box, Esc stops an answer that is being written
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const typing = !!target && (target.matches("input, textarea, select") || target.isContentEditable);
+      if (event.key === "/" && !typing && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        composerRef.current?.focus();
+      } else if (event.key === "Escape" && streaming && abortRef.current) {
+        abortRef.current.abort();
+      }
     }
-  }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  });
 
-  const history = (
-    <HistoryPanel
-      threads={threads.data ?? []}
-      loading={threads.loading}
-      error={threads.error?.message ?? null}
-      activeId={activeThread}
-      onNewChat={newChat}
-      onRename={renameThread}
-      onDelete={deleteThread}
-      onNavigate={() => setHistoryOpen(false)}
-    />
-  );
+  // The rail's + button and the history drawer ask for a fresh chat through this event
+  useEffect(() => {
+    const onNewChat = () => newChat();
+    window.addEventListener(NEW_CHAT_EVENT, onNewChat);
+    return () => window.removeEventListener(NEW_CHAT_EVENT, onNewChat);
+  });
 
   const noDocuments = !threadId && turns.length === 0 && docs.data !== null && ready.length === 0;
 
   const showWorkspace = !docs.loading && !detail.loading && !detail.error && !noDocuments && docs.data;
 
   return (
-    // The workspace fills the area beside the sidebar and is as tall as the screen, so only the conversation scrolls
+    // The workspace fills the area beside the rail and is as tall as the screen, so only the conversation scrolls
     <div className="flex h-[calc(100dvh-3.5625rem)] lg:h-dvh">
-      <aside aria-label="Chats" className="hidden w-[264px] shrink-0 overflow-y-auto border-r border-stone bg-stone-50 p-4 xl:block">
-        {history}
-      </aside>
-
       <section aria-label="Study tutor" className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-stone px-4 sm:px-6">
           <div className="min-w-0">
@@ -326,10 +369,11 @@ export function TutorView({ threadId }: { threadId?: string }) {
             <p className="hidden truncate text-small text-ink-2 md:block">Answers come from your own uploaded material</p>
           </div>
           <div className="flex shrink-0 gap-2">
-            <Button variant="secondary" size="sm" className="xl:hidden" onClick={() => setHistoryOpen(true)}>
-              <History size={16} strokeWidth={1.75} aria-hidden="true" />
-              History
-            </Button>
+            {turns.length > 0 ? (
+              <IconButton label="Export chat as Markdown" onClick={exportChat}>
+                <Download size={16} strokeWidth={1.75} aria-hidden="true" />
+              </IconButton>
+            ) : null}
             {activeSources.length > 0 ? (
               <Button variant="secondary" size="sm" className="2xl:hidden" onClick={() => setSourcesOpen(true)}>
                 <PanelRight size={16} strokeWidth={1.75} aria-hidden="true" />
@@ -339,7 +383,7 @@ export function TutorView({ threadId }: { threadId?: string }) {
           </div>
         </header>
 
-        <div ref={scrollRef} onScroll={onConversationScroll} className="min-h-0 flex-1 overflow-y-auto">
+        <div ref={scrollRef} onScroll={onConversationScroll} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div className={cn("mx-auto flex w-full flex-col gap-6 px-4 py-6 sm:px-6", turns.length === 0 ? "max-w-[1040px]" : "max-w-[760px]")}>
             {docs.loading || detail.loading ? <LoadingBlock label={threadId ? "Loading your chat" : "Loading your documents"} /> : null}
             {docs.error ? <ErrorBlock message={docs.error.message} onRetry={docs.reload} /> : null}
@@ -397,18 +441,24 @@ export function TutorView({ threadId }: { threadId?: string }) {
             {showWorkspace && turns.length > 0 ? (
               <ol className="flex flex-col gap-10">
                 {turns.map((turn) => (
-                  <li key={turn.key} className="flex flex-col gap-4">
+                  <li key={turn.key} className={cn("flex flex-col gap-4", turn.key.startsWith("turn-") && "msg-in")}>
                     <div className="flex max-w-[85%] flex-col items-end gap-1 self-end">
-                      <p className="rounded-panel bg-stone-100 px-4 py-2.5 text-ink">{turn.question}</p>
+                      <p className="rounded-panel bg-stone-100 px-4 py-2.5 text-ink [overflow-wrap:anywhere]">
+                        {turn.mode && turn.mode !== "ask" ? <span className="mb-0.5 block text-small font-medium text-accent-ink">{modeOf(turn.mode).label}</span> : null}
+                        {turn.question}
+                      </p>
                       {turn.searchedFor ? <p className="text-small text-ink-2">Searched your material for: {turn.searchedFor}</p> : null}
                     </div>
+                    {turn.quiz ? (
+                      <QuizCard request={turn.quiz} documentIds={turn.documentIds} onAgain={() => void send(turn.question, turn.documentIds, "quiz")} />
+                    ) : null}
                     {turn.answer ? (
                       <AnswerBlock
                         answer={turn.answer}
                         onRephrase={() => composerRef.current?.focus()}
                         onOpenSource={(source) => openSource(turn, source)}
                         onRetry={() => retry(turn)}
-                        onAskAgain={streaming ? undefined : () => void send(turn.question, turn.documentIds)}
+                        onAskAgain={streaming ? undefined : () => void send(turn.question, turn.documentIds, turn.mode)}
                         onFeedback={(rating, reason) => void rate(turn, rating, reason)}
                       />
                     ) : null}
@@ -456,6 +506,11 @@ export function TutorView({ threadId }: { threadId?: string }) {
                 scope={scope}
                 onScopeChange={setScope}
                 inputRef={composerRef}
+                onAttachPdf={(file) => void addSource(() => sources.upload(file), `Adding ${file.name} to your library`)}
+                adding={adding}
+                addError={sources.error}
+                mode={mode}
+                onModeChange={setMode}
               />
             </div>
           </div>
@@ -464,9 +519,6 @@ export function TutorView({ threadId }: { threadId?: string }) {
 
       <SourcesPanel sources={activeSources} activeMarker={activeMarker} />
 
-      <Dialog open={historyOpen} title="History" variant="sheet" side="left" onClose={() => setHistoryOpen(false)} className="xl:hidden">
-        {history}
-      </Dialog>
       <Dialog open={sourcesOpen} title="Sources" variant="sheet" onClose={() => setSourcesOpen(false)} className="2xl:hidden">
         <SourcesList sources={activeSources} activeMarker={activeMarker} />
       </Dialog>

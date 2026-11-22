@@ -13,3 +13,4 @@ pgvector==0.5.1
 groq==1.7.0
 sentence-transformers==6.2.0
 arq==0.28.0
+httpx==0.28.1

@@ -1,7 +1,6 @@
 import {
   BarChart3,
   BookOpen,
-  ClipboardList,
   FlaskConical,
   LayoutDashboard,
   MessageCircleQuestion,
@@ -57,7 +56,7 @@ export const FEATURES: Feature[] = [
     id: "quizzes",
     status: "live",
     label: "Quizzes",
-    nav: { href: "/quizzes", group: "practise", icon: ClipboardList },
+    // No nav entry: quizzes are taken in the chat (Quiz me). The /quizzes pages stay for history and old links.
     landing: {
       overline: "Adaptive quizzes",
       title: "Practise with questions from your own files",

@@ -1,34 +1,40 @@
-/* EduRAG design tokens: "Paper, Clay & Stone" (docs/UI_REDESIGN.md, section 3).
-   Light theme only. Components read these through the Tailwind aliases in app/globals.css and
-   never hard-code hex. tests/tokens.test.ts enforces the WCAG 2.1 AA pairs listed in the brief.
+/* EduRAG design tokens: "Clean" (white surfaces, cool grey hairlines, dark actions, and periwinkle
+   #BACCF4 as the one brand colour). Components read these through the Tailwind aliases in
+   app/globals.css and never hard-code hex. tests/tokens.test.ts enforces the WCAG 2.1 AA pairs.
 
-   Owner colours: Paper #FFFFFF (main), Clay #D36243 (accent), Stone #DCDCDC (cards, borders).
-   White on Clay is 3.75:1, which fails AA for small text, so --clay-strong (same hue, darker)
-   is used for button fills and links. --clay itself is for accents, icons, focus rings, charts and
-   headline words of 24px and above.
+   #BACCF4 is too light to carry text, or white text, so it is used for surfaces (the sidebar, the
+   hero card, soft fills). Anything that carries text uses a role token instead:
+   --clay-strong filled buttons (dark ink), --on-accent text on them, --accent-ink and
+   --accent-link periwinkle-navy text on light surfaces. The token names keep the old "clay" prefix
+   so components did not have to change; "clay" now simply means the accent.
 
    A dark set can be added later as a second block that redefines the same variable names. */
 
 :root {
   /* Surfaces */
   --paper: #ffffff;
-  --stone-50: #f7f7f7;
-  --stone-100: #f4f4f4;
-  --stone: #dcdcdc;
-  --stone-strong: #8a8a8a;
+  --stone-50: #f9fafb;
+  --stone-100: #f6f7f9;
+  --stone: #e5e7eb;
+  --stone-strong: #7b8494;
 
   /* Text */
-  --ink: #1c1b1a;
-  --ink-2: #5c5c5c;
-  --ink-3: #6b6b6b;
+  --ink: #111827;
+  --ink-2: #4b5563;
+  --ink-3: #4b5563;
 
   /* Clay */
-  --clay: #d36243;
-  --clay-strong: #b5492c;
-  --clay-stronger: #9c3d26;
-  --clay-soft: #fbeee9;
-  --clay-200: #f6dcd2;
-  --clay-300: #e8a48f;
+  --clay: #7392dc;
+  --clay-strong: #151a2e;
+  --clay-stronger: #000000;
+  --clay-soft: #eaf0fc;
+  --clay-200: #d9e3f9;
+  --clay-300: #baccf4;
+
+  /* Roles: text on an accent fill, accent text on light surfaces, and links */
+  --on-accent: #ffffff;
+  --accent-ink: #26396b;
+  --accent-link: #2c4175;
 
   /* Status */
   --success: #1a6e44;
@@ -38,12 +44,12 @@
   --danger: #b3261e;
   --danger-soft: #fceeee;
 
-  --focus: var(--clay);
+  --focus: #2c4175;
 
   /* Elevation: neutral shadows, floating layers only */
-  --elevation-sm: 0 1px 2px rgb(28 27 26 / 0.06);
-  --elevation-md: 0 8px 24px -8px rgb(28 27 26 / 0.16);
-  --elevation-lg: 0 24px 48px -12px rgb(28 27 26 / 0.2);
+  --elevation-sm: 0 1px 2px rgb(17 24 39 / 0.05);
+  --elevation-md: 0 8px 24px -8px rgb(17 24 39 / 0.14);
+  --elevation-lg: 0 24px 48px -12px rgb(17 24 39 / 0.18);
 
   /* Motion */
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);

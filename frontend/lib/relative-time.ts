@@ -15,3 +15,12 @@ export function formatRelative(iso: string, now: number = Date.now()): string {
   }
   return "just now";
 }
+
+/** The date shown beside a chat in the history list: "2 days ago" for the last week, then "Nov 14"
+ *  (with the year once it is from another year). */
+export function formatChatDate(iso: string, now: number = Date.now()): string {
+  const date = new Date(iso);
+  if (now - date.getTime() < 7 * 24 * 3600 * 1000) return formatRelative(iso, now);
+  const sameYear = date.getFullYear() === new Date(now).getFullYear();
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) }).format(date);
+}

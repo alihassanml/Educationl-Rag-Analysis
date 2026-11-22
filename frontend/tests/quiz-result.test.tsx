@@ -49,7 +49,7 @@ describe("QuizResult", () => {
   it("gives one primary next step for a topic that needs revision", () => {
     render(<QuizResult result={result} />);
     expect(screen.getByRole("link", { name: "Review this topic" }).getAttribute("href")).toContain("/tutor?q=");
-    expect(screen.getByRole("link", { name: "Try another quiz" })).toHaveAttribute("href", "/quizzes");
+    expect(screen.getByRole("link", { name: "Try another quiz" })).toHaveAttribute("href", "/tutor?mode=quiz");
   });
 
   it("offers the notes as a PDF download", () => {

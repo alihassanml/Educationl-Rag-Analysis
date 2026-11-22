@@ -60,7 +60,7 @@ export function ProgressView() {
         ) : null}
 
         {topics.data && topics.data.items.length === 0 ? (
-          <EmptyState title="No quiz results yet" icon={BarChart3} action={<ButtonLink href="/quizzes">Start a quiz</ButtonLink>}>
+          <EmptyState title="No quiz results yet" icon={BarChart3} action={<ButtonLink href="/tutor?mode=quiz">Start a quiz</ButtonLink>}>
             Complete a quiz and your topic progress will appear here
           </EmptyState>
         ) : null}

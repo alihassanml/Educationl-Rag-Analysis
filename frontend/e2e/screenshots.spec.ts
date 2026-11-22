@@ -53,24 +53,20 @@ test("sweep every screen", async ({ browser }) => {
   await page.locator("#pdf-upload").setInputFiles(pdf);
   await page.getByRole("row").filter({ hasText: "recursion-notes" }).getByText("Ready").waitFor();
 
-  await page.getByRole("link", { name: "Study tutor" }).first().click();
+  await page.getByRole("button", { name: "New chat" }).first().click();
   await page.getByRole("button", { name: /Summarise the key ideas/ }).waitFor();
   await page.screenshot({ path: path.join(sweep, "tutor-empty-1280.png"), fullPage: true, scale: "css" });
   await page.getByLabel("Your question").fill("What does a recursive function need to stop calling itself?");
   await page.getByRole("button", { name: "Send question" }).click();
   await page.getByRole("button", { name: "Copy answer" }).waitFor(); // the answer has finished
-  await page.getByRole("link", { name: "Quizzes" }).first().click();
-  await page.getByRole("button", { name: "New quiz" }).first().click();
-  await page.getByLabel("Number of questions").selectOption("3");
-  await page.getByRole("button", { name: "Create quiz" }).click();
+  // Quizzes are taken in the chat
+  await page.getByRole("button", { name: "Quiz me", exact: true }).click();
+  await page.getByLabel("Your question").fill("quiz me on recursion, 3 questions");
+  await page.getByRole("button", { name: "Send question" }).click();
   await page.getByText("0 of 3 answered").waitFor();
-  for (let i = 0; i < 2; i++) {
-    await page.getByText("A base case", { exact: true }).click();
-    await page.getByRole("button", { name: "Next" }).click();
-  }
-  await page.getByText("A base case", { exact: true }).click();
-  await page.getByRole("button", { name: "Submit quiz" }).click();
-  await page.getByText("3 of 3 correct").first().waitFor();
+  for (const radio of await page.getByRole("radio", { name: "A base case", exact: true }).all()) await radio.check();
+  await page.getByRole("button", { name: "Submit answers" }).click();
+  await page.getByText(/3 of 3 correct/).first().waitFor();
 
   await page.getByRole("link", { name: "Progress" }).first().click();
   await page.getByText("How we decide").waitFor();

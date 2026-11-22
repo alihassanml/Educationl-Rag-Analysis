@@ -19,7 +19,7 @@ export function CitationPill({ marker, title, page, snippet, onClick }: PillProp
         type="button"
         onClick={onClick}
         aria-label={title ? `Source ${marker}: ${title}${page ? `, ${page}` : ""}` : `Source ${marker}`}
-        className="mx-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-clay-soft px-1 text-xs font-medium text-clay-stronger hover:bg-clay-200"
+        className="mx-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-clay-soft px-1 text-xs font-medium text-accent-ink hover:bg-clay-200"
       >
         [{marker}]
       </button>
@@ -61,7 +61,7 @@ export function SourceCard({ title, page, snippet, marker, active, flat, childre
         <FileText size={20} strokeWidth={1.75} className="mt-0.5 shrink-0 text-ink-2" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-ink">
-            {marker !== undefined ? <span className="mr-1.5 text-clay-stronger">[{marker}]</span> : null}
+            {marker !== undefined ? <span className="mr-1.5 text-accent-ink">[{marker}]</span> : null}
             {title}
           </p>
           <p className="text-small text-ink-2">{page}</p>

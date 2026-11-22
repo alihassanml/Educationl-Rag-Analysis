@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel
 
@@ -54,3 +54,48 @@ class ProgressSummary(BaseModel):
     recent_activity: list[ActivityItem]
     score_history: list[ActivityItem]
     latest_document: LatestDocument | None
+
+
+# --- Study insights: what the student has done with their material, from chat and library data ---
+
+
+class DayActivity(BaseModel):
+    date: date
+    questions: int
+    quizzes: int
+
+
+class DocumentUsage(BaseModel):
+    id: uuid.UUID
+    title: str
+    source_type: str
+    page_count: int | None
+    chunk_count: int
+    times_cited: int
+    pages_cited: int
+    last_cited_at: datetime | None
+
+
+class HotPage(BaseModel):
+    document_id: uuid.UUID
+    document_title: str
+    page_number: int
+    times_cited: int
+
+
+class StudyInsights(BaseModel):
+    questions_asked: int
+    answers_with_sources: int
+    answers_not_found: int
+    citations_total: int
+    pages_indexed: int
+    chunks_indexed: int
+    helpful_votes: int
+    unhelpful_votes: int
+    active_days: int
+    current_streak: int
+    longest_streak: int
+    today: date
+    activity: list[DayActivity]
+    documents: list[DocumentUsage]
+    hot_pages: list[HotPage]

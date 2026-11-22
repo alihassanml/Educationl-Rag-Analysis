@@ -35,6 +35,8 @@ class Settings(BaseSettings):
 
     # Retrieval
     retrieval_top_k: int = 6
+    # Passages sampled across the documents for broad requests such as "quiz me on everything"
+    retrieval_coverage_chunks: int = 10
     retrieval_min_similarity: float = 0.6
     retrieval_duplicate_overlap: float = 0.9
     # "hybrid" fuses vector and full-text rankings. Stays "dense" unless the Evaluation Lab shows

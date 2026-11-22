@@ -97,7 +97,7 @@ function Summary({ metrics }: { metrics: EvalMetrics }) {
 function Header({ run }: { run: EvalRun }) {
   return (
     <>
-      <Link href="/evaluation" className="mb-4 inline-block text-sm text-clay-strong underline-offset-4 hover:underline">
+      <Link href="/evaluation" className="mb-4 inline-block text-sm text-accent-link underline-offset-4 hover:underline">
         Evaluation Lab
       </Link>
       <PageHeader

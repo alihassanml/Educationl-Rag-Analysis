@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class AskRequest(BaseModel):
-    question: str = Field(min_length=3, max_length=1000)
+    question: str = Field(min_length=2, max_length=1000)
     document_ids: list[uuid.UUID] | None = Field(default=None, max_length=50)
 
 

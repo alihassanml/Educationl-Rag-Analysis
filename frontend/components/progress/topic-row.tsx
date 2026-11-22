@@ -3,14 +3,15 @@ import { TopicStatusLabel } from "@/components/ui/status-label";
 import { formatDate } from "@/lib/formatters";
 import type { TopicProgress } from "@/types/api";
 
-/** Compact list row: topic, status, accuracy as a bar with its text, and optionally the reason. */
-export function TopicRow({ topic, compact = false }: { topic: TopicProgress; compact?: boolean }) {
+/** Compact list row: topic, status, accuracy as a bar with its text, and optionally the reason.
+ *  `hideStatus` drops the chip where the surrounding section already says it (the dashboard's "Needs revision" list). */
+export function TopicRow({ topic, compact = false, hideStatus = false }: { topic: TopicProgress; compact?: boolean; hideStatus?: boolean }) {
   const percent = topic.accuracy_percent;
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-medium text-ink">{topic.topic_name}</p>
-        <TopicStatusLabel status={topic.status} />
+        {hideStatus ? null : <TopicStatusLabel status={topic.status} />}
       </div>
       <ProgressBar value={percent ?? 0} label={`${topic.topic_name} accuracy`} />
       {/* The bar already shows the percentage, so it is not repeated here */}

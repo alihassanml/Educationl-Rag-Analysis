@@ -1,14 +1,19 @@
 "use client";
 
-import { SearchX } from "lucide-react";
+import { Check, ChevronRight, Copy, RotateCcw, SearchX } from "lucide-react";
+import { useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { IconButton } from "@/components/ui/icon-button";
 import { CitationPill } from "@/components/ui/citation";
 import { ErrorBlock } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
-import { splitAnswer } from "@/lib/answer-text";
+import { cn } from "@/lib/cn";
+import { hideOpenMarkup, parseAnswer } from "@/lib/markdown";
+import { useSmoothText } from "@/lib/use-smooth-text";
 import type { LiveStage, Source } from "@/lib/chat-state";
 import type { FeedbackRating, FeedbackReason } from "@/types/api";
+import { AnswerMarkdown } from "./answer-markdown";
 import { FeedbackButtons } from "./feedback-buttons";
 import { pageText } from "./sources";
 
@@ -46,6 +51,11 @@ const STAGE_LABEL: Record<LiveStage, string> = {
 export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAgain, onFeedback }: Props) {
   const toast = useToast();
   const streaming = answer.status === "streaming";
+  // Text appears a few characters at a time as it arrives. A saved answer shows at once.
+  const { shown, done: revealed } = useSmoothText(answer.text, streaming, answer.status === "stopped" || answer.status === "failed");
+  const writing = streaming || !revealed;
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   if (answer.abstained && answer.status === "complete") {
     return (
@@ -72,17 +82,18 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
     );
   }
 
-  const paragraphs = splitAnswer(
-    answer.text,
-    answer.sources.map((s) => s.marker),
-  );
+  const validMarkers = answer.sources.map((s) => s.marker);
   const byMarker = new Map(answer.sources.map((s) => [s.marker, s]));
+  // While text is still being revealed, an unclosed ** or ` stays hidden until its partner arrives
+  const blocks = parseAnswer(writing ? hideOpenMarkup(shown) : shown, validMarkers);
 
   async function copy() {
     const list = answer.sources.map((s) => `- ${s.title}, ${pageText(s.page).toLowerCase()}`).join("\n");
     try {
       await navigator.clipboard.writeText(answer.sources.length > 0 ? `${answer.text}\n\nSources:\n${list}` : answer.text);
       toast.show("Answer copied");
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
     } catch {
       // Clipboard can be blocked; the answer stays selectable on screen
     }
@@ -97,50 +108,59 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
       ) : null}
 
       {answer.sources.length > 0 ? (
-        <ul aria-label="Sources for this answer" className="mb-4 flex flex-wrap gap-2">
-          {answer.sources.map((source) => (
-            <li key={source.marker}>
-              <button
-                type="button"
-                onClick={() => onOpenSource?.(source)}
-                className="flex max-w-full items-center gap-2 rounded-control border border-stone bg-paper px-3 py-1.5 text-left text-small text-ink hover:bg-stone-100"
-              >
-                <span className="font-medium text-clay-stronger">[{source.marker}]</span>
-                <span className="truncate">{source.title}</span>
-                <span className="shrink-0 text-ink-2">{source.deleted ? "Source deleted" : pageText(source.page)}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="mb-3">
+          <button
+            type="button"
+            aria-expanded={sourcesOpen}
+            aria-controls="answer-sources"
+            onClick={() => setSourcesOpen((open) => !open)}
+            className="-ml-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-ink-2 transition-colors duration-[120ms] hover:bg-stone-100 hover:text-ink"
+          >
+            {answer.sources.length === 1 ? "1 source" : `${answer.sources.length} sources`}
+            <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true" className={cn("transition-transform duration-[120ms]", sourcesOpen && "rotate-90")} />
+          </button>
+          {sourcesOpen ? (
+            <ul id="answer-sources" aria-label="Sources for this answer" className="mt-1 flex flex-col">
+              {answer.sources.map((source) => (
+                <li key={source.marker}>
+                  <button
+                    type="button"
+                    onClick={() => onOpenSource?.(source)}
+                    className="-ml-2 flex w-full max-w-[720px] items-baseline gap-2 rounded-lg px-2 py-1.5 text-left text-small text-ink hover:bg-stone-100"
+                  >
+                    <span className="font-medium text-accent-ink">[{source.marker}]</span>
+                    <span className="truncate">{source.title}</span>
+                    <span className="ml-auto shrink-0 text-ink-2">{source.deleted ? "Source deleted" : pageText(source.page)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       ) : null}
 
-      {paragraphs.length > 0 ? (
-        <div className="flex max-w-[720px] flex-col gap-3 text-base text-ink">
-          {paragraphs.map((segments, i) => (
-            <p key={i} className="whitespace-pre-wrap">
-              {segments.map((segment, j) =>
-                segment.type === "text" ? (
-                  segment.text
-                ) : (
-                  <CitationPill
-                    key={j}
-                    marker={segment.marker}
-                    title={byMarker.get(segment.marker)?.title}
-                    page={pageText(byMarker.get(segment.marker)?.page ?? null)}
-                    snippet={byMarker.get(segment.marker)?.snippet}
-                    onClick={() => {
-                      const source = byMarker.get(segment.marker);
-                      if (source) onOpenSource?.(source);
-                    }}
-                  />
-                ),
-              )}
-              {streaming && i === paragraphs.length - 1 ? (
-                <span aria-hidden="true" className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-ink motion-reduce:animate-none" />
-              ) : null}
-            </p>
-          ))}
-        </div>
+      {blocks.length > 0 ? (
+        <AnswerMarkdown
+          blocks={blocks}
+          cite={(marker, key) => (
+            <CitationPill
+              key={key}
+              marker={marker}
+              title={byMarker.get(marker)?.title}
+              page={pageText(byMarker.get(marker)?.page ?? null)}
+              snippet={byMarker.get(marker)?.snippet}
+              onClick={() => {
+                const source = byMarker.get(marker);
+                if (source) onOpenSource?.(source);
+              }}
+            />
+          )}
+          cursor={
+            writing ? (
+              <span aria-hidden="true" className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-ink motion-reduce:animate-none" />
+            ) : null
+          }
+        />
       ) : null}
 
       {answer.status === "stopped" ? (
@@ -154,15 +174,15 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
         </div>
       ) : null}
 
-      {answer.status === "complete" || answer.status === "stopped" ? (
-        <div className="mt-3 flex flex-wrap items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={copy} aria-label="Copy answer">
-            Copy
-          </Button>
+      {(answer.status === "complete" || answer.status === "stopped") && revealed ? (
+        <div className="msg-in -ml-2 mt-2 flex items-center">
+          <IconButton label="Copy answer" onClick={copy}>
+            {copied ? <Check size={16} strokeWidth={1.75} aria-hidden="true" /> : <Copy size={16} strokeWidth={1.75} aria-hidden="true" />}
+          </IconButton>
           {onAskAgain ? (
-            <Button variant="ghost" size="sm" onClick={onAskAgain}>
-              Ask again
-            </Button>
+            <IconButton label="Ask again" onClick={onAskAgain}>
+              <RotateCcw size={16} strokeWidth={1.75} aria-hidden="true" />
+            </IconButton>
           ) : null}
           {answer.id && onFeedback ? <FeedbackButtons value={answer.feedback ?? null} onRate={onFeedback} /> : null}
         </div>

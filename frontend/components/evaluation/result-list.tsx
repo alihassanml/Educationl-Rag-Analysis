@@ -44,7 +44,7 @@ export function ResultList({
               onClick={() => onFilterChange(f.value)}
               className={cn(
                 "h-9 rounded-control border px-3 text-sm font-medium",
-                filter === f.value ? "border-clay bg-clay-soft text-clay-strong" : "border-stone bg-paper text-ink-2 hover:text-ink",
+                filter === f.value ? "border-clay bg-clay-soft text-accent-link" : "border-stone bg-paper text-ink-2 hover:text-ink",
               )}
             >
               {f.label}
@@ -72,7 +72,7 @@ export function ResultList({
               {result.error ? <p className="mt-2 text-sm text-warning">{result.error}</p> : null}
               {result.retrieved.length > 0 ? (
                 <details className="mt-3 text-sm">
-                  <summary className="cursor-pointer font-medium text-clay-strong">Retrieved passages</summary>
+                  <summary className="cursor-pointer font-medium text-accent-link">Retrieved passages</summary>
                   <ol className="mt-2 flex flex-col gap-1">
                     {result.retrieved.map((chunk) => (
                       <li key={chunk.chunk_id} className="flex flex-wrap items-center gap-x-3 text-ink-2">

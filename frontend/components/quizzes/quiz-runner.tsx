@@ -78,7 +78,7 @@ export function QuizRunner({ quiz, onSubmitted }: Props) {
                   key={optionIndex}
                   className={cn(
                     "flex w-full cursor-pointer items-start gap-3 rounded-control border px-4 py-3 text-sm transition-colors duration-[120ms] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-clay",
-                    checked ? "border-clay bg-clay-soft text-clay-stronger" : "border-stone bg-paper text-ink hover:bg-stone-100",
+                    checked ? "border-clay bg-clay-soft text-accent-ink" : "border-stone bg-paper text-ink hover:bg-stone-100",
                   )}
                 >
                   <input

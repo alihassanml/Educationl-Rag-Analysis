@@ -12,7 +12,7 @@ export function RunList({ runs }: { runs: EvalRun[] }) {
           <div className="min-w-0">
             <Link
               href={`/evaluation/runs/${run.id}`}
-              className="font-medium text-clay-strong underline-offset-4 hover:underline"
+              className="font-medium text-accent-link underline-offset-4 hover:underline"
             >
               {run.dataset_name}, {modeLabel(run.config.retrieval_mode).toLowerCase()} retrieval
             </Link>

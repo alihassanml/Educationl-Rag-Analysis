@@ -10,7 +10,7 @@ class PdfError(Exception):
 
 @dataclass(frozen=True)
 class PageText:
-    page_number: int  # 1-based
+    page_number: int | None  # 1-based; None for sources that have no pages
     text: str
 
 

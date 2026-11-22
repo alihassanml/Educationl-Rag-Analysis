@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
-@import "../styles/theme-sky.css";
 
 @theme inline {
   /* Colours (names match docs/UI_REDESIGN.md section 3) */
@@ -18,6 +17,9 @@
   --color-clay-soft: var(--clay-soft);
   --color-clay-200: var(--clay-200);
   --color-clay-300: var(--clay-300);
+  --color-on-accent: var(--on-accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-link: var(--accent-link);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
@@ -25,10 +27,9 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
 
-  /* Typography: Google Sans Flex, loaded in app/layout.tsx */
-  --font-sans: var(--font-google-sans-flex), "Google Sans Flex", "Google Sans", Roboto, system-ui, -apple-system,
-    "Segoe UI", sans-serif;
-  --font-mono: "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Typography: Hanken Grotesk, loaded in app/layout.tsx */
+  --font-sans: var(--font-hanken-grotesk), "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --text-xs: 12px;
   --text-xs--line-height: 16px;
@@ -78,6 +79,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+h1,
+h2,
+h3 {
+  letter-spacing: -0.015em;
+}
+
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
@@ -95,6 +102,49 @@ body {
     scroll-behavior: auto !important;
   }
 }
+/* A message that is added live eases in; saved chats do not animate. Reduced motion is handled by the global rule above. */
+@keyframes msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.msg-in {
+  animation: msg-in 320ms var(--ease) both;
+}
+
+/* The history page slides in from the rail and back out. Reduced motion is handled by the global rule above. */
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+    transform: translateX(-56px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes drawer-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-56px);
+  }
+}
+.drawer-in {
+  animation: drawer-in 260ms var(--ease) both;
+}
+.drawer-out {
+  animation: drawer-out 160ms var(--ease) both;
+}
+
 /* Dotted panel background used behind landing screenshots */
 .dot-grid {
   background-image: radial-gradient(circle, var(--stone) 1px, transparent 1px);

@@ -64,20 +64,27 @@ test("uploading a PDF indexes it and rejects non-PDFs", async () => {
 const FIRST_QUESTION = "What does a recursive function need to stop calling itself?";
 
 async function openHistory() {
-  // The history rail sits inline from 1280px; below that it opens as a drawer
-  const rail = page.getByRole("complementary", { name: "Chats" });
-  if (await rail.isVisible()) return rail;
-  await page.getByRole("button", { name: "History" }).click();
-  return page.getByRole("dialog", { name: "History" });
+  // History is a floating panel opened from the rail's clock button (the top bar's on small screens)
+  const open = page.getByRole("dialog", { name: "Chat history" });
+  if (!(await open.isVisible())) await page.getByRole("button", { name: "Chat history" }).first().click();
+  return open;
+}
+
+/** The answer's sources sit behind a "N sources" dropdown */
+async function openSources() {
+  const toggle = page.getByRole("button", { name: /^\d+ sources?$/ }).first();
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+  return page.getByRole("list", { name: "Sources for this answer" }).first();
 }
 
 test("a new chat streams an answer with a citation that opens the source", async () => {
-  await page.getByRole("link", { name: "Study tutor" }).first().click();
+  await page.getByRole("button", { name: "New chat" }).first().click(); // the + in the rail
+  await expect(page).toHaveURL(/\/tutor/);
   await page.getByLabel("Your question").fill(FIRST_QUESTION);
   await page.getByRole("button", { name: "Send question" }).click();
 
   // Sources arrive first, then the text; the address follows the saved chat
-  const sources = page.getByRole("list", { name: "Sources for this answer" });
+  const sources = await openSources();
   await expect(sources.getByRole("button", { name: /recursion-notes/ })).toBeVisible();
   await expect(page.getByText("According to your notes")).toBeVisible();
   await expect(page.getByRole("button", { name: "Copy answer" })).toBeVisible(); // the answer has finished
@@ -100,7 +107,7 @@ test("a follow-up shows what was searched, and the chat survives a reload, renam
   await page.reload();
   await expect(page.locator("main ol p").filter({ hasText: FIRST_QUESTION })).toBeVisible(); // the saved question, not the history link
   await expect(page.getByText(/^Searched your material for:/)).toBeVisible();
-  await expect(page.getByRole("list", { name: "Sources for this answer" }).first()).toBeVisible();
+  await expect(await openSources()).toBeVisible();
   await expect(page.getByText("According to your notes").first()).toBeVisible();
 
   let drawer = await openHistory();
@@ -126,32 +133,31 @@ test("a question the material cannot answer is declined in a new chat", async ()
   await expect(page.getByText("Not found in your material")).toBeVisible();
 });
 
-test("a quiz can be created, taken once, and scored", async () => {
-  await page.getByRole("link", { name: "Quizzes" }).first().click();
-  await page.getByRole("button", { name: "New quiz" }).first().click();
-  await page.getByLabel("Number of questions").selectOption("3");
-  await page.getByRole("button", { name: "Create quiz" }).click();
+test("a quiz is created, taken and scored inside the chat", async () => {
+  await page.getByRole("button", { name: "New chat" }).first().click();
+  await expect(page).toHaveURL(/\/tutor/);
+  await page.getByRole("button", { name: "Quiz me", exact: true }).click();
+  await page.getByLabel("Your question").fill("quiz me on recursion, 3 questions");
+  await page.getByRole("button", { name: "Send question" }).click();
 
+  const submit = page.getByRole("button", { name: "Submit answers" });
+  await expect(submit).toBeVisible();
+  await expect(submit).toBeDisabled();
   await expect(page.getByText("0 of 3 answered")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Next" })).toBeDisabled();
   await expect(page.getByText("The notes say a recursive function needs a base case")).toHaveCount(0); // answers hidden
 
-  // One question per view. Option order is shuffled by the backend, so pick by text; Enter moves on
-  for (let i = 0; i < 2; i++) {
-    await page.getByText("A base case", { exact: true }).click();
-    await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
-    await page.keyboard.press("Enter");
-    await expect(page.getByText(`Question ${i + 2} of 3`).first()).toBeVisible();
-  }
-  await page.getByText("A base case", { exact: true }).click();
+  // Option order is shuffled by the backend, so pick by text
+  for (const radio of await page.getByRole("radio", { name: "A base case", exact: true }).all()) await radio.check();
   await expect(page.getByText("3 of 3 answered")).toBeVisible();
-  await page.getByRole("button", { name: "Submit quiz" }).click();
+  await submit.click();
 
-  await expect(page.getByText("3 of 3 correct").first()).toBeVisible();
+  await expect(page.getByText(/3 of 3 correct/).first()).toBeVisible();
   await expect(page.getByText("The notes say a recursive function needs a base case").first()).toBeVisible();
   await expect(page.getByText(/Source: recursion-notes, page [12]/).first()).toBeVisible();
 
-  await page.reload(); // the saved result is shown again, not the quiz form
+  // The saved result opens again on its own page, not as a quiz form
+  await page.getByRole("link", { name: /Open full page/ }).click();
+  await expect(page).toHaveURL(/\/quizzes\//);
   await expect(page.getByText("3 of 3 correct").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Submit quiz" })).toHaveCount(0);
 
@@ -183,7 +189,7 @@ test("deleting a document asks first and removes it", async () => {
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByRole("dialog", { name: /Delete recursion-notes/ }).or(page.getByRole("dialog"))).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
-  await expect(page.getByRole("cell", { name: "recursion-notes", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "PDF recursion-notes", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Actions for recursion-notes" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
@@ -192,7 +198,8 @@ test("deleting a document asks first and removes it", async () => {
 });
 
 test("signing out ends the session", async () => {
-  await page.getByRole("button", { name: "Sign out" }).first().click();
+  await page.getByRole("button", { name: "Account" }).click(); // the avatar at the bottom of the rail
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login/);
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login/);

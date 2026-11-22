@@ -20,7 +20,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         if (groupItems.length === 0) return null;
         return (
           <div key={group}>
-            <p className="mb-1.5 px-3 text-xs font-semibold uppercase tracking-[0.06em] text-ink-2">{NAV_GROUP_LABELS[group]}</p>
+            <p className="mb-1.5 px-3 text-small font-medium text-ink-2">{NAV_GROUP_LABELS[group]}</p>
             <ul className="flex flex-col gap-0.5">
               {groupItems.map(({ label, href, icon: Icon }) => {
                 const active = pathname === href || pathname.startsWith(`${href}/`);
@@ -32,10 +32,9 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                       aria-current={active ? "page" : undefined}
                       className={cn(
                         "relative flex h-10 items-center gap-3 rounded-control px-3 text-sm font-medium transition-colors duration-[120ms]",
-                        active ? "bg-clay-soft text-clay-stronger" : "text-ink-2 hover:bg-stone-100 hover:text-ink",
+                        active ? "bg-clay-soft text-accent-ink" : "text-ink-2 hover:bg-stone-100 hover:text-ink",
                       )}
                     >
-                      {active ? <span aria-hidden="true" className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-clay" /> : null}
                       <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
                       {label}
                     </Link>

@@ -7,7 +7,7 @@ type Variant = "primary" | "secondary" | "ghost" | "destructive" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-clay-strong text-paper hover:bg-clay-stronger active:bg-clay-stronger",
+  primary: "bg-clay-strong text-on-accent hover:bg-clay-stronger active:bg-clay-stronger",
   secondary: "border border-stone-strong bg-paper text-ink hover:bg-stone-100 active:bg-stone",
   // Still a bordered button, so it never reads as plain text
   ghost: "border border-stone-strong bg-paper text-ink hover:bg-stone-100 active:bg-stone",

@@ -1,8 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.api.deps import CurrentUser, DbSession
-from app.schemas.progress import ProgressSummary, TopicProgressList
-from app.services import progress_service
+from app.schemas.progress import ProgressSummary, StudyInsights, TopicProgressList
+from app.services import insights_service, progress_service
 
 router = APIRouter(prefix="/progress", tags=["progress"])
 
@@ -15,3 +15,14 @@ def summary(user: CurrentUser, db: DbSession) -> ProgressSummary:
 @router.get("/topics", response_model=TopicProgressList)
 def topics(user: CurrentUser, db: DbSession) -> TopicProgressList:
     return progress_service.topic_progress_list(db, user.id)
+
+
+@router.get("/insights", response_model=StudyInsights)
+def insights(
+    user: CurrentUser,
+    db: DbSession,
+    tz: str | None = Query(
+        default=None, max_length=64, description="IANA time zone, e.g. Asia/Karachi"
+    ),
+) -> StudyInsights:
+    return insights_service.insights(db, user.id, tz)

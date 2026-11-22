@@ -27,7 +27,7 @@ export function SegmentedTiles<T extends string>({ name, legend, options, value,
               className={cn(
                 "flex min-h-10 cursor-pointer flex-col justify-center rounded-control border px-3 py-2 text-sm transition-colors duration-[120ms]",
                 "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-clay",
-                selected ? "border-clay bg-clay-soft text-clay-stronger" : "border-stone bg-paper text-ink hover:bg-stone-100",
+                selected ? "border-clay bg-clay-soft text-accent-ink" : "border-stone bg-paper text-ink hover:bg-stone-100",
                 disabled && "cursor-not-allowed opacity-60",
               )}
             >

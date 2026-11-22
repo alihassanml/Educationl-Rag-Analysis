@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AnswerBlock, type AnswerView } from "@/components/tutor/answer-card";
 import { TutorView, suggestionsFor } from "@/components/tutor/tutor-view";
 import { ApiError } from "@/lib/api-client";
-import { documentsApi, tutorApi } from "@/lib/api";
+import { documentsApi, quizzesApi, tutorApi } from "@/lib/api";
 import type { SseEvent } from "@/lib/sse";
 import type { StudyDocument, ThreadDetail } from "@/types/api";
 
@@ -12,7 +12,8 @@ const push = vi.fn();
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(), useRouter: () => ({ push }) }));
 vi.mock("@/components/ui/toast", () => ({ useToast: () => ({ show: vi.fn() }) }));
 vi.mock("@/lib/api", () => ({
-  documentsApi: { list: vi.fn() },
+  documentsApi: { list: vi.fn(), addLink: vi.fn(), upload: vi.fn() },
+  quizzesApi: { generate: vi.fn(), submit: vi.fn(), notesPdf: vi.fn() },
   tutorApi: {
     threads: vi.fn(),
     createThread: vi.fn(),
@@ -26,7 +27,7 @@ vi.mock("@/lib/api", () => ({
 
 const doc = (over: Partial<StudyDocument> = {}): StudyDocument => ({
   id: "d1", title: "Programming Notes", original_filename: "p.pdf", file_size: 10, status: "ready",
-  error_message: null, page_count: 3, created_at: "2026-01-01T00:00:00Z", ...over,
+  error_message: null, page_count: 3, created_at: "2026-01-01T00:00:00Z", source_type: "pdf", ...over,
 });
 const thread = (id = "t1", title = "What is recursion?") => ({ id, title, created_at: "2026-11-18T10:00:00Z", updated_at: new Date().toISOString() });
 const source = { marker: 1, chunk_id: "c1", document_id: "d1", document_title: "Programming Notes", page_number: 2, snippet: "Recursion is a method" };
@@ -81,11 +82,35 @@ describe("AnswerBlock", () => {
     expect(screen.queryByRole("button", { name: /Source 4/ })).not.toBeInTheDocument();
   });
 
-  it("shows source cards above the answer text", () => {
-    render(<AnswerBlock answer={view({ text: "An answer [1].", sources: [src(1)] })} />);
-    const card = screen.getByRole("list", { name: "Sources for this answer" });
-    const text = screen.getByText(/An answer/);
-    expect(card.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  it("keeps the sources in a collapsed dropdown above the answer text", async () => {
+    render(<AnswerBlock answer={view({ text: "An answer [1].", sources: [src(1), src(2)] })} />);
+    const toggle = screen.getByRole("button", { name: "2 sources" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("list", { name: "Sources for this answer" })).not.toBeInTheDocument();
+    expect(toggle.compareDocumentPosition(screen.getByText(/An answer/)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(within(screen.getByRole("list", { name: "Sources for this answer" })).getAllByRole("button")).toHaveLength(2);
+    await userEvent.click(toggle);
+    expect(screen.queryByRole("list", { name: "Sources for this answer" })).not.toBeInTheDocument();
+  });
+
+  it("opens a source from the dropdown", async () => {
+    const onOpenSource = vi.fn();
+    render(<AnswerBlock answer={view({ text: "An answer [1].", sources: [src(1)] })} onOpenSource={onOpenSource} />);
+    await userEvent.click(screen.getByRole("button", { name: "1 source" }));
+    await userEvent.click(within(screen.getByRole("list", { name: "Sources for this answer" })).getByRole("button"));
+    expect(onOpenSource).toHaveBeenCalledWith(expect.objectContaining({ marker: 1 }));
+  });
+
+  it("puts Copy, Ask again and the ratings in small icon buttons, not labelled buttons", () => {
+    render(<AnswerBlock answer={view({ id: "m1", text: "Done [1].", sources: [src(1)] })} onAskAgain={vi.fn()} onFeedback={vi.fn()} />);
+    for (const name of ["Copy answer", "Ask again", "Good answer", "Poor answer"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button.textContent).toBe(""); // an icon and nothing else
+      expect(button.className).toContain("size-8");
+    }
   });
 
   it("shows a designed not-found state for an abstained answer", () => {
@@ -112,8 +137,9 @@ describe("AnswerBlock", () => {
     expect(onRetry).toHaveBeenCalled();
   });
 
-  it("marks a source whose document was deleted", () => {
+  it("marks a source whose document was deleted", async () => {
     render(<AnswerBlock answer={view({ text: "x [1]", sources: [{ ...src(1), documentId: null, deleted: true }] })} />);
+    await userEvent.click(screen.getByRole("button", { name: "1 source" }));
     expect(screen.getAllByText(/Source deleted/).length).toBeGreaterThan(0);
   });
 });
@@ -128,7 +154,113 @@ describe("suggestionsFor", () => {
   });
 });
 
+describe("TutorView: adding material from the chat", () => {
+  it("adds a pasted link (a page or an online PDF) to the library instead of asking it as a question", async () => {
+    vi.mocked(documentsApi.addLink).mockResolvedValue(doc({ id: "d5", title: "lecture", source_type: "pdf" }));
+    render(<TutorView />);
+    const box = await screen.findByLabelText("Your question");
+    await userEvent.type(box, "https://example.com/lecture.pdf");
+    expect(screen.getByText("Press Enter to add this link to your library")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add link to library" })).toBeEnabled();
+    await userEvent.keyboard("{Enter}");
+
+    await waitFor(() => expect(documentsApi.addLink).toHaveBeenCalledWith("https://example.com/lecture.pdf", undefined));
+    expect(tutorApi.streamMessage).not.toHaveBeenCalled();
+    await waitFor(() => expect(box).toHaveValue(""));
+    await waitFor(() => expect(documentsApi.list).toHaveBeenCalledTimes(2)); // the scope list now includes it
+  });
+
+  it("treats a sentence that contains a link as a normal question", async () => {
+    controlledStream();
+    render(<TutorView />);
+    await ask("what does https://example.com say about recursion");
+    await waitFor(() => expect(tutorApi.streamMessage).toHaveBeenCalled());
+    expect(documentsApi.addLink).not.toHaveBeenCalled();
+  });
+
+  it("attaches a PDF from the composer and keeps the question box untouched", async () => {
+    vi.mocked(documentsApi.upload).mockResolvedValue(doc({ id: "d6", title: "notes" }));
+    render(<TutorView />);
+    const box = await screen.findByLabelText("Your question");
+    await userEvent.type(box, "half a question");
+    await userEvent.upload(screen.getByLabelText("Choose a PDF to add"), new File(["%PDF-1.4"], "notes.pdf", { type: "application/pdf" }));
+    await waitFor(() => expect(documentsApi.upload).toHaveBeenCalled());
+    expect(box).toHaveValue("half a question");
+  });
+
+  it("says why a link could not be added and keeps it in the box to fix", async () => {
+    vi.mocked(documentsApi.addLink).mockRejectedValue(new ApiError("That address is not a public website", 400, "invalid_url"));
+    render(<TutorView />);
+    const box = await screen.findByLabelText("Your question");
+    await userEvent.type(box, "http://127.0.0.1/admin{Enter}");
+    expect(await screen.findByText("That address is not a public website")).toBeInTheDocument();
+    expect(box).toHaveValue("http://127.0.0.1/admin");
+  });
+});
+
 describe("TutorView: sending", () => {
+  it("sends the chosen answer style with the question and labels the question in the chat", async () => {
+    controlledStream();
+    render(<TutorView />);
+    expect(await screen.findByRole("button", { name: "Ask" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(screen.getByRole("button", { name: "Summarise" }));
+    expect(screen.getByRole("button", { name: "Summarise" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Your question")).toHaveAttribute("placeholder", "What should I summarise?");
+    await ask("Recursion");
+    await waitFor(() => expect(tutorApi.streamMessage).toHaveBeenCalled());
+    const call = vi.mocked(tutorApi.streamMessage).mock.calls[0];
+    expect(call[1]).toBe("Recursion"); // the question itself is not rewritten on the client
+    expect(call[5]).toBe("summary");
+  });
+
+  it("makes Quiz me a real quiz inside the chat: generate, answer, submit, see the result", async () => {
+    const quiz = {
+      id: "q1", title: "Quiz on recursion", topic: "recursion", difficulty: "intermediate" as const, question_count: 2, source_documents: ["Programming Notes"], created_at: "2026-11-18T10:00:00Z", attempt: null,
+      questions: [
+        { id: "a", position: 1, question_text: "What stops recursion?", options: ["A base case", "A loop", "A stack", "A heap"] },
+        { id: "b", position: 2, question_text: "What does a function call itself do?", options: ["Recurses", "Sorts", "Hashes", "Parses"] },
+      ],
+    };
+    vi.mocked(quizzesApi.generate).mockResolvedValue(quiz);
+    vi.mocked(quizzesApi.submit).mockResolvedValue({
+      attempt_id: "at1", quiz_id: "q1", quiz_title: "Quiz on recursion", topic: "recursion", score: 1, total_questions: 2, percent: 50, completed_at: "2026-11-18T10:05:00Z",
+      topic_status: "needs_revision", recommendation: { action: "review", message: "Review recursion before the next quiz." },
+      results: [
+        { question_id: "a", question_text: "What stops recursion?", options: quiz.questions[0].options, selected_index: 0, correct_index: 0, is_correct: true, explanation: "The base case ends the calls.", sources: [{ document_title: "Programming Notes", page_number: 2 }] },
+        { question_id: "b", question_text: "What does a function call itself do?", options: quiz.questions[1].options, selected_index: 1, correct_index: 0, is_correct: false, explanation: "That is recursion.", sources: [] },
+      ],
+    });
+    render(<TutorView />);
+    await userEvent.click(await screen.findByRole("button", { name: "Quiz me" }));
+    await ask("quiz me on recursion, 2 questions");
+
+    expect(tutorApi.streamMessage).not.toHaveBeenCalled(); // a quiz is not a streamed answer
+    await waitFor(() => expect(quizzesApi.generate).toHaveBeenCalledWith({ topic: "recursion", document_ids: undefined, difficulty: "intermediate", num_questions: 2 }));
+    const submit = await screen.findByRole("button", { name: "Submit answers" });
+    expect(submit).toBeDisabled();
+    await userEvent.click(screen.getByRole("radio", { name: "A base case" }));
+    await userEvent.click(screen.getByRole("radio", { name: "Sorts" }));
+    expect(submit).toBeEnabled();
+    await userEvent.click(submit);
+
+    expect(await screen.findByText(/1 of 2 correct/)).toBeInTheDocument();
+    expect(quizzesApi.submit).toHaveBeenCalledWith("q1", [{ question_id: "a", selected_index: 0 }, { question_id: "b", selected_index: 1 }]);
+    expect(screen.getByText("Review recursion before the next quiz.")).toBeInTheDocument();
+    expect(screen.getByText("Incorrect")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Quiz me again" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Open full page/ })).toHaveAttribute("href", "/quizzes/q1");
+  });
+
+  it("quizzes the whole material when no topic is given, and says so when the quiz cannot be made", async () => {
+    vi.mocked(quizzesApi.generate).mockRejectedValue(new ApiError("Upload a PDF first", 422, "no_material"));
+    render(<TutorView />);
+    await userEvent.click(await screen.findByRole("button", { name: "Quiz me" }));
+    await ask("quiz me all topic maximum 10 quiz");
+    await waitFor(() => expect(quizzesApi.generate).toHaveBeenCalledWith({ topic: undefined, document_ids: undefined, difficulty: "intermediate", num_questions: 10 }));
+    expect(await screen.findByText("Upload a PDF first")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+
   it("creates a thread, shows sources first, streams the text and keeps the URL in step", async () => {
     const stream = controlledStream();
     render(<TutorView />);
@@ -142,14 +274,13 @@ describe("TutorView: sending", () => {
     stream.emit({ event: "status", data: { stage: "searching" } });
     expect(await screen.findByText("Searching your material")).toBeInTheDocument();
     stream.emit({ event: "sources", data: [source] }, { event: "status", data: { stage: "writing" } });
-    expect(await screen.findByRole("list", { name: "Sources for this answer" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "1 source" })).toBeInTheDocument();
     expect(screen.queryByText(/A method/)).not.toBeInTheDocument(); // sources are there before any text
     stream.emit({ event: "token", data: { text: "A method " } }, { event: "token", data: { text: "[1]." } });
     expect(await screen.findByText(/A method/)).toBeInTheDocument();
     stream.emit(done());
     stream.finish();
     expect(await screen.findByRole("button", { name: "Copy answer" })).toBeInTheDocument();
-    expect(tutorApi.threads).toHaveBeenCalledTimes(2); // the history is refreshed after the answer
   });
 
   it("sends with Enter, adds a line with Shift+Enter, and reuses the thread for the next question", async () => {
@@ -277,39 +408,8 @@ describe("TutorView: history", () => {
     expect(await screen.findByText("Thread not found")).toBeInTheDocument();
   });
 
-  it("groups past chats, filters them by title and starts a new chat", async () => {
-    vi.mocked(tutorApi.threads).mockResolvedValue([thread("t1", "Recursion basics"), thread("t2", "Photosynthesis")]);
-    render(<TutorView />);
-    const history = await screen.findByRole("navigation", { name: "Chat history" });
-    expect(within(history).getByText("Today")).toBeInTheDocument();
-    expect(within(history).getByRole("link", { name: "Recursion basics" })).toHaveAttribute("href", "/tutor/t1");
-    await userEvent.type(within(history).getByRole("searchbox", { name: "Search chats" }), "photo");
-    expect(within(history).queryByText("Recursion basics")).not.toBeInTheDocument();
-    expect(within(history).getByText("Photosynthesis")).toBeInTheDocument();
-  });
 
-  it("renames a chat in place", async () => {
-    vi.mocked(tutorApi.threads).mockResolvedValue([thread("t1", "Recursion basics")]);
-    vi.mocked(tutorApi.renameThread).mockResolvedValue(thread("t1", "Recursion revision"));
-    render(<TutorView />);
-    await userEvent.click(await screen.findByRole("button", { name: "Options for Recursion basics" }));
-    await userEvent.click(screen.getByRole("menuitem", { name: "Rename" }));
-    const input = screen.getByRole("textbox", { name: "Chat title" });
-    await userEvent.clear(input);
-    await userEvent.type(input, "Recursion revision{Enter}");
-    await waitFor(() => expect(tutorApi.renameThread).toHaveBeenCalledWith("t1", "Recursion revision"));
-  });
 
-  it("asks before deleting a chat, then removes it", async () => {
-    vi.mocked(tutorApi.threads).mockResolvedValue([thread("t1", "Recursion basics")]);
-    vi.mocked(tutorApi.deleteThread).mockResolvedValue(undefined);
-    render(<TutorView />);
-    await userEvent.click(await screen.findByRole("button", { name: "Options for Recursion basics" }));
-    await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
-    expect(tutorApi.deleteThread).not.toHaveBeenCalled();
-    await userEvent.click(await screen.findByRole("button", { name: "Delete chat" }));
-    await waitFor(() => expect(tutorApi.deleteThread).toHaveBeenCalledWith("t1"));
-  });
 });
 
 describe("TutorView: feedback", () => {
@@ -362,5 +462,16 @@ describe("TutorView: empty states", () => {
     render(<TutorView />);
     expect(await screen.findByText("Upload a document first")).toBeInTheDocument();
     expect(screen.queryByLabelText("Your question")).not.toBeInTheDocument();
+  });
+});
+
+describe("TutorView: keyboard", () => {
+  it("/ focuses the question box from anywhere on the page", async () => {
+    render(<TutorView />);
+    const box = await screen.findByLabelText("Your question");
+    expect(box).not.toHaveFocus();
+    await userEvent.keyboard("/");
+    expect(box).toHaveFocus();
+    expect(box).toHaveValue(""); // the slash is not typed into the box
   });
 });

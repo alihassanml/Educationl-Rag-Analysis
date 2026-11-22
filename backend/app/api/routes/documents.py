@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.models.document import Document
-from app.schemas.documents import DocumentList, DocumentOut
+from app.schemas.documents import DocumentList, DocumentOut, TextDocumentIn, WebsiteDocumentIn
 from app.services import document_service
 from app.services.embedding_service import Embedder, get_embedder
 
@@ -36,6 +36,30 @@ def upload_document(
     )
     return document_service.create_and_process(
         db, embedder, user.id, filename=file.filename or "", title=title, path=path, size=size
+    )
+
+
+@router.post("/text", response_model=DocumentOut, status_code=status.HTTP_201_CREATED)
+def add_text_document(
+    body: TextDocumentIn,
+    user: CurrentUser,
+    db: DbSession,
+    embedder: Annotated[Embedder, Depends(get_embedder)],
+) -> Document:
+    return document_service.create_from_text(
+        db, embedder, user.id, title=body.title, text=body.text
+    )
+
+
+@router.post("/website", response_model=DocumentOut, status_code=status.HTTP_201_CREATED)
+def add_website_document(
+    body: WebsiteDocumentIn,
+    user: CurrentUser,
+    db: DbSession,
+    embedder: Annotated[Embedder, Depends(get_embedder)],
+) -> Document:
+    return document_service.create_from_website(
+        db, embedder, user.id, url=body.url.strip(), title=body.title
     )
 
 

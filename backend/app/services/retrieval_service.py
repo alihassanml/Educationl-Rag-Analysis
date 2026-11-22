@@ -104,6 +104,24 @@ def _dense_candidates(
     return [_Candidate(chunk, title, 1.0 - float(dist)) for chunk, title, dist in rows]
 
 
+def _or_tsquery(query: str):  # type: ignore[no-untyped-def]
+    """The question's (stemmed, stop-word free) terms joined with OR. plainto_tsquery safely parses
+    any user text but joins its terms with AND, which would miss most natural-language questions."""
+    return cast(func.replace(cast(func.plainto_tsquery("english", query), Text), "&", "|"), TSQUERY)
+
+
+def _keyword_matches(db: Session, query: str, chunk_ids: list[uuid.UUID]) -> set[uuid.UUID]:
+    """Which of these chunks share at least one real word with the question."""
+    if not chunk_ids:
+        return set()
+    rows = db.scalars(
+        select(DocumentChunk.id).where(
+            DocumentChunk.id.in_(chunk_ids), DocumentChunk.tsv.op("@@")(_or_tsquery(query))
+        )
+    )
+    return set(rows)
+
+
 def _fulltext_candidates(
     db: Session,
     query: str,
@@ -114,13 +132,9 @@ def _fulltext_candidates(
 ) -> list[_Candidate]:
     """Chunks sharing at least one (stemmed) word with the query, best match first.
 
-    plainto_tsquery safely parses any user text; its terms are joined with AND, which would miss
-    most natural-language questions, so they are switched to OR before matching. Each row also
-    carries its cosine similarity so the same relevance gate can be applied to it.
+    Each row also carries its cosine similarity so the same relevance gate can be applied to it.
     """
-    tsquery = cast(
-        func.replace(cast(func.plainto_tsquery("english", query), Text), "&", "|"), TSQUERY
-    )
+    tsquery = _or_tsquery(query)
     distance = DocumentChunk.embedding.cosine_distance(query_vector)
     stmt = _scoped(
         select(DocumentChunk, Document.title, distance.label("distance")), user_id, document_ids
@@ -153,7 +167,9 @@ def retrieve(
 
     "dense" ranks by vector similarity. "hybrid" fuses the vector ranking with a full-text
     ranking (reciprocal rank fusion). In both modes a chunk must reach the similarity threshold,
-    so hybrid can reorder and add keyword matches but never lowers the abstention bar.
+    or a lower one when it shares a real word with the question: the right passage for a short
+    question ("How are users authenticated?" -> "Authentication: JWT") often scores just under the
+    threshold. The answer step still replies "not found" when the passages do not answer.
     """
     settings = get_settings()
     top_k = top_k or settings.retrieval_top_k
@@ -173,10 +189,14 @@ def retrieve(
         dense = _dense_candidates(db, query_vector, user_id, document_ids, top_k * 3)
         ordered = [(candidate, None) for candidate in dense]  # type: ignore[misc]
 
+    floor = min(threshold, settings.retrieval_keyword_min_similarity)
+    near_misses = [c.chunk.id for c, _ in ordered if floor <= c.similarity < threshold]
+    keyword_hits = _keyword_matches(db, query, near_misses)
+
     selected: list[RetrievedChunk] = []
     kept_texts: list[str] = []
     for candidate, rrf_score in ordered:
-        if candidate.similarity < threshold:
+        if candidate.similarity < threshold and candidate.chunk.id not in keyword_hits:
             continue
         if _is_near_duplicate(
             candidate.chunk.content, kept_texts, settings.retrieval_duplicate_overlap

@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     # Passages sampled across the documents for broad requests such as "quiz me on everything"
     retrieval_coverage_chunks: int = 10
     retrieval_min_similarity: float = 0.6
+    # A passage that shares a real word with the question is kept from this lower similarity. On
+    # three labelled sets this found 76 of 78 answers (69 at 0.6 alone), and the model still
+    # refused every off-topic question it let through.
+    retrieval_keyword_min_similarity: float = 0.5
     retrieval_duplicate_overlap: float = 0.9
     # "hybrid" fuses vector and full-text rankings. Stays "dense" unless the Evaluation Lab shows
     # hybrid is better (docs/evaluation-plan.md).

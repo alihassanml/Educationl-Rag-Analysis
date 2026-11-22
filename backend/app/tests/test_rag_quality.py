@@ -295,3 +295,60 @@ def test_reindex_rebuilds_the_passages_of_a_stored_document(db, tmp_path: Path) 
     assert document.status == "ready"
     assert contents and all("stale" not in c for c in contents)
     assert any("Recursion is a method" in c for c in contents)
+
+
+# The answer gate: a near miss is kept only when it shares a real word with the question
+
+
+class _FixedEmbedder:
+    """Every passage sits at similarity 0.55 to every question: just under the 0.6 bar."""
+
+    def _vector(self, along: float) -> list[float]:
+        from app.tests.conftest import DIM
+
+        vector = [0.0] * DIM
+        vector[0], vector[1] = along, (1 - along**2) ** 0.5
+        return vector
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [self._vector(0.55) for _ in texts]
+
+    def embed_query(self, text: str) -> list[float]:
+        from app.tests.conftest import DIM
+
+        return [1.0] + [0.0] * (DIM - 1)
+
+
+def test_a_near_miss_is_kept_only_when_it_shares_a_word_with_the_question(
+    db, tmp_path: Path
+) -> None:
+    from app.services import document_service, retrieval_service
+    from app.tests.helpers import make_pdf, make_user
+
+    user = make_user(db, "student@example.com", is_admin=False)
+    path = tmp_path / "security.pdf"
+    path.write_bytes(
+        make_pdf(
+            [
+                "Authentication: JWT tokens are issued for student and teacher accounts.",
+                "Hosting: the frontend runs on Vercel and the backend on Railway.",
+            ]
+        )
+    )
+    document_service.create_and_process(
+        db, _FixedEmbedder(), user.id, filename="security.pdf", title="Security",
+        path=path, size=path.stat().st_size,
+    )  # fmt: skip
+
+    # The real bar (tests otherwise run with a low one, for the fake bag-of-words vectors)
+    found = retrieval_service.retrieve(
+        db, _FixedEmbedder(), user.id, "How are users authenticated?", min_similarity=0.6
+    )
+    assert [c.page_number for c in found] == [
+        1
+    ]  # "authenticated" and "Authentication" share a stem
+
+    nothing = retrieval_service.retrieve(
+        db, _FixedEmbedder(), user.id, "Who won the World Cup?", min_similarity=0.6
+    )
+    assert nothing == []  # under the bar and no shared word: still "not found"

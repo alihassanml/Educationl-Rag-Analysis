@@ -13,7 +13,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -29,6 +29,7 @@ from app.schemas.teacher_style import (
     TeacherStyleStatus,
 )
 from app.services import retrieval_service
+from app.services.access_service import readable_documents, shared_with
 from app.services.embedding_service import Embedder
 from app.services.groq_service import GroqService, LLMOutputError, LLMUnavailableError
 from app.services.retrieval_service import RetrievedChunk
@@ -147,8 +148,10 @@ def teacher_documents(db: Session, user_id: uuid.UUID) -> list[Document]:
         db.scalars(
             select(Document)
             .where(
-                Document.user_id == user_id,
-                Document.kind == KIND_TEACHER,
+                # The student's own teacher material, and every document a teacher shared with
+                # one of their classes (those count as teacher material automatically)
+                or_(Document.kind == KIND_TEACHER, shared_with(user_id)),
+                readable_documents(user_id),
                 Document.status == STATUS_READY,
             )
             .order_by(Document.created_at, Document.id)

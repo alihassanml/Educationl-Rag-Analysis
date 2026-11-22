@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.errors import NotFoundError
 from app.models.document import STATUS_READY, Document, DocumentChunk
+from app.services.access_service import readable_documents
 from app.services.embedding_service import Embedder
 from app.services.youtube_service import link_at
 
@@ -54,13 +55,14 @@ def _is_near_duplicate(candidate: str, kept: list[str], threshold: float) -> boo
 
 
 def check_document_scope(db: Session, user_id: uuid.UUID, document_ids: list[uuid.UUID]) -> None:
-    """Every requested document must belong to the user, else act as if it does not exist."""
-    owned = set(
+    """Every requested document must be the user's own or shared with their class, else act as if
+    it does not exist."""
+    allowed = set(
         db.scalars(
-            select(Document.id).where(Document.user_id == user_id, Document.id.in_(document_ids))
+            select(Document.id).where(readable_documents(user_id), Document.id.in_(document_ids))
         )
     )
-    if owned != set(document_ids):
+    if allowed != set(document_ids):
         raise NotFoundError("Document")
 
 
@@ -82,11 +84,10 @@ def _scoped(
     user_id: uuid.UUID,
     document_ids: list[uuid.UUID] | None,  # type: ignore[type-arg]
 ) -> Select:  # type: ignore[type-arg]
-    """Restrict to the user's own chunks of ready documents, and the selected documents."""
+    """Restrict to ready documents the user may read (own or shared with their class), and to the
+    selected documents."""
     stmt = stmt.join(Document, Document.id == DocumentChunk.document_id).where(
-        DocumentChunk.user_id == user_id,
-        Document.user_id == user_id,
-        Document.status == STATUS_READY,
+        readable_documents(user_id), Document.status == STATUS_READY
     )
     if document_ids:
         stmt = stmt.where(DocumentChunk.document_id.in_(document_ids))
@@ -253,9 +254,9 @@ def _spread(count: int, picks: int) -> list[int]:
 def document_titles(
     db: Session, user_id: uuid.UUID, document_ids: list[uuid.UUID] | None = None
 ) -> list[tuple[uuid.UUID, str]]:
-    """(id, title) of the user's ready documents, newest first, optionally a selection."""
+    """(id, title) of the ready documents the user may read, newest first."""
     stmt = select(Document.id, Document.title).where(
-        Document.user_id == user_id, Document.status == STATUS_READY
+        readable_documents(user_id), Document.status == STATUS_READY
     )
     if document_ids:
         stmt = stmt.where(Document.id.in_(document_ids))
@@ -296,7 +297,6 @@ def retrieve_coverage(
     rows = db.execute(
         select(DocumentChunk)
         .where(
-            DocumentChunk.user_id == user_id,
             tuple_(DocumentChunk.document_id, DocumentChunk.chunk_index).in_(
                 [
                     (document_id, index)

@@ -121,7 +121,7 @@ def add_youtube_document(
 
 @router.get("/{document_id}", response_model=DocumentOut)
 def get_document(document_id: uuid.UUID, user: CurrentUser, db: DbSession) -> Document:
-    return document_service.get_owned_document(db, user.id, document_id)
+    return document_service.get_readable_document(db, user.id, document_id)
 
 
 @router.patch("/{document_id}", response_model=DocumentOut)

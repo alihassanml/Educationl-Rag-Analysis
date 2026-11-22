@@ -253,9 +253,10 @@ def test_the_profile_is_built_once_and_rebuilt_only_when_the_material_changes(
     assert len(fake_groq.calls) == 2
     assert student.get("/api/v1/teacher-style").json()["ready"] is True
     assert db.query(TeacherStyleProfile).count() == 1
-    assert student.get("/api/v1/teacher-style").json()["teacher_documents"] == [
-        "Teacher slides",
+    # (both uploads share one transaction timestamp here, so their order is not fixed)
+    assert sorted(student.get("/api/v1/teacher-style").json()["teacher_documents"]) == [
         "More slides",
+        "Teacher slides",
     ]
     _ = doc
 

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from app.api.deps import require_trusted_origin
 from app.api.routes import (
     auth,
+    classes,
     diagnostic,
     documents,
     evaluation,
@@ -20,6 +21,7 @@ api_router = APIRouter(prefix="/api/v1", dependencies=[Depends(require_trusted_o
 api_router.include_router(health.router)
 api_router.include_router(auth.router)
 api_router.include_router(documents.router)
+api_router.include_router(classes.router)
 api_router.include_router(tutor.router)
 api_router.include_router(quizzes.router)
 api_router.include_router(diagnostic.router)

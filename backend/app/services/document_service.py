@@ -25,6 +25,7 @@ from app.services import (
     topic_service,
     youtube_service,
 )
+from app.services.access_service import readable_documents
 from app.services.embedding_service import Embedder
 from app.services.groq_service import GroqService
 from app.workers.queue import get_job_queue
@@ -400,6 +401,16 @@ def list_documents(
 def get_owned_document(db: Session, user_id: uuid.UUID, document_id: uuid.UUID) -> Document:
     document = db.scalar(
         select(Document).where(Document.id == document_id, Document.user_id == user_id)
+    )
+    if document is None:
+        raise NotFoundError("Document")
+    return document
+
+
+def get_readable_document(db: Session, user_id: uuid.UUID, document_id: uuid.UUID) -> Document:
+    """A document the user owns or that a teacher shared with one of their classes (read-only)."""
+    document = db.scalar(
+        select(Document).where(Document.id == document_id, readable_documents(user_id))
     )
     if document is None:
         raise NotFoundError("Document")

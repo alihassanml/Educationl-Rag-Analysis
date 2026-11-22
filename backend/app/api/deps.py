@@ -7,7 +7,7 @@ from app.core.config import get_settings
 from app.core.errors import AppError
 from app.core.security import decode_access_token
 from app.db.session import get_db
-from app.models.user import User
+from app.models.user import ROLE_TEACHER, User
 
 DbSession = Annotated[Session, Depends(get_db)]
 
@@ -42,3 +42,12 @@ def require_admin(user: CurrentUser) -> User:
 
 
 AdminUser = Annotated[User, Depends(require_admin)]
+
+
+def require_teacher(user: CurrentUser) -> User:
+    if user.role != ROLE_TEACHER:
+        raise AppError(403, "forbidden", "This area is for teachers")
+    return user
+
+
+TeacherUser = Annotated[User, Depends(require_teacher)]

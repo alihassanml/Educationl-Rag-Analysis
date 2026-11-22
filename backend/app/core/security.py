@@ -18,10 +18,12 @@ def verify_password(password: str, password_hash: str) -> bool:
     return _hasher.verify(password, password_hash)
 
 
-def create_access_token(user_id: UUID) -> str:
+def create_access_token(user_id: UUID, role: str = "student") -> str:
+    """The role is informational for the client; every request still reads it from the database."""
     settings = get_settings()
     expires = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
-    return jwt.encode({"sub": str(user_id), "exp": expires}, settings.secret_key, _ALGORITHM)
+    claims = {"sub": str(user_id), "role": role, "exp": expires}
+    return jwt.encode(claims, settings.secret_key, _ALGORITHM)
 
 
 def decode_access_token(token: str) -> UUID | None:

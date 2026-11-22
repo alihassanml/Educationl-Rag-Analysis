@@ -4,7 +4,7 @@ from app.api.deps import CurrentUser, DbSession
 from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.models.user import User
-from app.schemas.auth import Credentials, PreferencesIn, UserOut
+from app.schemas.auth import Credentials, PreferencesIn, RegisterIn, UserOut
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -14,7 +14,7 @@ def _set_session_cookie(response: Response, user: User) -> None:
     settings = get_settings()
     response.set_cookie(
         settings.cookie_name,
-        create_access_token(user.id),
+        create_access_token(user.id, user.role),
         max_age=settings.access_token_expire_minutes * 60,
         httponly=True,
         secure=settings.cookie_secure,
@@ -24,8 +24,8 @@ def _set_session_cookie(response: Response, user: User) -> None:
 
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-def register(body: Credentials, response: Response, db: DbSession) -> User:
-    user = auth_service.register(db, body.email, body.password)
+def register(body: RegisterIn, response: Response, db: DbSession) -> User:
+    user = auth_service.register(db, body.email, body.password, body.display_name, body.role)
     _set_session_cookie(response, user)
     return user
 

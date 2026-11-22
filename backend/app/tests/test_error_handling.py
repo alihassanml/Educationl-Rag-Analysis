@@ -11,7 +11,8 @@ def test_unexpected_errors_return_a_generic_message_without_internals(client, mo
     monkeypatch.setattr(auth_service, "register", boom)
     safe_client = TestClient(app, raise_server_exceptions=False)
     response = safe_client.post(
-        "/api/v1/auth/register", json={"email": "a@example.com", "password": "password123"}
+        "/api/v1/auth/register",
+        json={"email": "a@example.com", "password": "password123", "display_name": "Sam"},
     )
     assert response.status_code == 500
     assert response.json() == {

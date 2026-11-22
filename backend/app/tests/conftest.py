@@ -161,9 +161,19 @@ def client(client_factory: Callable[[], Any]):  # type: ignore[no-untyped-def]
 
 
 def register(
-    client: Any, email: str = "student@example.com", password: str = "password123"
+    client: Any,
+    email: str = "student@example.com",
+    password: str = "password123",
+    role: str = "student",
+    display_name: str | None = None,
 ) -> dict:
-    response = client.post("/api/v1/auth/register", json={"email": email, "password": password})
+    body = {
+        "email": email,
+        "password": password,
+        "role": role,
+        "display_name": display_name or f"{email.split('@')[0]} user",
+    }
+    response = client.post("/api/v1/auth/register", json=body)
     assert response.status_code == 201, response.text
     return response.json()
 

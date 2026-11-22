@@ -67,4 +67,42 @@ describe("AuthForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Hide password" }));
     expect(input).toHaveAttribute("type", "password");
   });
+
+  it("registers a student with a display name by default", async () => {
+    vi.mocked(authApi.register).mockResolvedValue({ id: "1", email: "a@b.com", is_admin: false, role: "student", created_at: "" });
+    render(<AuthForm mode="register" />);
+    await userEvent.type(screen.getByLabelText("Display name"), "Sam Lee");
+    await userEvent.type(screen.getByLabelText("Email"), "a@b.com");
+    await userEvent.type(screen.getByLabelText("Password"), "password123");
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+    expect(authApi.register).toHaveBeenCalledWith("a@b.com", "password123", "Sam Lee", "student");
+    expect(replace).toHaveBeenCalledWith("/tutor");
+  });
+
+  it("registers a teacher and sends them to the teacher area", async () => {
+    vi.mocked(authApi.register).mockResolvedValue({ id: "1", email: "t@b.com", is_admin: false, role: "teacher", created_at: "" });
+    render(<AuthForm mode="register" />);
+    await userEvent.click(screen.getByLabelText(/Teacher/));
+    await userEvent.type(screen.getByLabelText("Display name"), "Ms Khan");
+    await userEvent.type(screen.getByLabelText("Email"), "t@b.com");
+    await userEvent.type(screen.getByLabelText("Password"), "password123");
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+    expect(authApi.register).toHaveBeenCalledWith("t@b.com", "password123", "Ms Khan", "teacher");
+    expect(replace).toHaveBeenCalledWith("/teacher");
+  });
+
+  it("asks for a display name that is not an email", async () => {
+    render(<AuthForm mode="register" />);
+    await userEvent.type(screen.getByLabelText("Display name"), "a@b.com");
+    await userEvent.type(screen.getByLabelText("Email"), "a@b.com");
+    await userEvent.type(screen.getByLabelText("Password"), "password123");
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+    expect(screen.getByText("Use a name, not an email address")).toBeInTheDocument();
+    expect(authApi.register).not.toHaveBeenCalled();
+  });
+
+  it("does not ask for a display name when signing in", () => {
+    render(<AuthForm mode="login" />);
+    expect(screen.queryByLabelText("Display name")).not.toBeInTheDocument();
+  });
 });

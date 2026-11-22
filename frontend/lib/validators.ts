@@ -6,6 +6,13 @@ export const credentialsSchema = z.object({
   password: z.string().min(8, "Use at least 8 characters").max(128, "Use 128 characters or fewer"),
 });
 
+export const displayNameSchema = z
+  .string()
+  .trim()
+  .min(2, "Use at least 2 characters")
+  .max(60, "Use 60 characters or fewer")
+  .refine((value) => !value.includes("@"), "Use a name, not an email address");
+
 export const MAX_UPLOAD_MB = 20;
 
 export function validatePdf(file: File): string | null {

@@ -9,7 +9,9 @@ import { Field, Input, describedBy } from "@/components/ui/field";
 import { Notice } from "@/components/ui/feedback";
 import { ApiError } from "@/lib/api-client";
 import { authApi } from "@/lib/api";
-import { credentialsSchema, fieldErrors, serverFieldErrors } from "@/lib/validators";
+import { SegmentedTiles } from "@/components/ui/segmented-tiles";
+import type { AccountRole } from "@/types/api";
+import { credentialsSchema, displayNameSchema, fieldErrors, serverFieldErrors } from "@/lib/validators";
 
 type Mode = "login" | "register";
 
@@ -41,6 +43,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const expired = useSearchParams().has("expired");
   const [values, setValues] = useState({ email: "", password: "" });
+  const [displayName, setDisplayName] = useState("");
+  const [role, setRole] = useState<AccountRole>("student");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -54,15 +58,26 @@ export function AuthForm({ mode }: { mode: Mode }) {
       setErrors(fieldErrors(parsed.error));
       return;
     }
+    const name = displayNameSchema.safeParse(displayName);
+    if (mode === "register" && !name.success) {
+      setErrors({ displayName: name.error.issues[0]?.message ?? "Enter a name" });
+      return;
+    }
     setErrors({});
     setPending(true);
     try {
-      const action = mode === "login" ? authApi.login : authApi.register;
-      await action(parsed.data.email, parsed.data.password);
-      router.replace("/tutor"); // the chat is the first screen
+      const user =
+        mode === "login"
+          ? await authApi.login(parsed.data.email, parsed.data.password)
+          : await authApi.register(parsed.data.email, parsed.data.password, displayName.trim(), role);
+      router.replace(user?.role === "teacher" ? "/teacher" : "/tutor"); // students start in the chat
     } catch (error) {
       // Entered values are kept so the student can correct them
-      if (error instanceof ApiError && error.fields.length > 0) setErrors(serverFieldErrors(error.fields));
+      if (error instanceof ApiError && error.fields.length > 0) {
+        const fields = serverFieldErrors(error.fields);
+        if (fields.display_name) fields.displayName = fields.display_name;
+        setErrors(fields);
+      }
       setFormError(error instanceof ApiError ? error.message : "Something went wrong. Please try again.");
       setPending(false);
     }
@@ -80,6 +95,32 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <AlertCircle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
             {formError}
           </div>
+        ) : null}
+        {mode === "register" ? (
+          <>
+            <SegmentedTiles
+              name="role"
+              legend="I am a"
+              value={role}
+              onChange={setRole}
+              disabled={pending}
+              options={[
+                { value: "student", label: "Student", description: "Study from my own material" },
+                { value: "teacher", label: "Teacher", description: "Run classes and share material" },
+              ]}
+            />
+            <Field id="displayName" label="Display name" error={errors.displayName} hint="Other people see this, never your email">
+              <Input
+                id="displayName"
+                autoComplete="nickname"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                aria-invalid={Boolean(errors.displayName)}
+                aria-describedby={describedBy("displayName", errors.displayName, "hint")}
+                disabled={pending}
+              />
+            </Field>
+          </>
         ) : null}
         <Field id="email" label="Email" error={errors.email}>
           <Input

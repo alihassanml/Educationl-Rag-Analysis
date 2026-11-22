@@ -1,6 +1,7 @@
 import { apiDownload, apiRequest, apiStream } from "./api-client";
 import { readSse, type SseEvent } from "./sse";
 import type {
+  AccountRole,
   AskResponse,
   AttemptResult,
   DiagnosticStatus,
@@ -33,8 +34,8 @@ import type {
 } from "@/types/api";
 
 export const authApi = {
-  register: (email: string, password: string) =>
-    apiRequest<User>("/auth/register", { method: "POST", json: { email, password } }),
+  register: (email: string, password: string, displayName: string, role: AccountRole) =>
+    apiRequest<User>("/auth/register", { method: "POST", json: { email, password, display_name: displayName, role } }),
   login: (email: string, password: string) =>
     apiRequest<User>("/auth/login", { method: "POST", json: { email, password } }),
   logout: () => apiRequest<void>("/auth/logout", { method: "POST" }),

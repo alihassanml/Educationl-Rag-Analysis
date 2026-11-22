@@ -1,4 +1,14 @@
-export type User = { id: string; email: string; is_admin: boolean; lighter_steps_enabled?: boolean; created_at: string };
+export type AccountRole = "student" | "teacher";
+
+export type User = {
+  id: string;
+  email: string;
+  is_admin: boolean;
+  role?: AccountRole;
+  display_name?: string;
+  lighter_steps_enabled?: boolean;
+  created_at: string;
+};
 
 export type DocumentStatus = "uploaded" | "processing" | "ready" | "failed";
 

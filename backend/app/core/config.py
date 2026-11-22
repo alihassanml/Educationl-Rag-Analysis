@@ -69,6 +69,12 @@ class Settings(BaseSettings):
     # Turn off to skip the LLM step (outline and headings are still used)
     topics_llm_fallback: bool = True
 
+    # Automatic difficulty (percent of a quiz answered correctly); see recommendation_service
+    difficulty_up_from: int = 80  # at or above: the next quiz on the topic is one level harder
+    difficulty_down_below: int = 50  # below: one level easier
+    # Failed quizzes in a row at beginner level before the topic is marked as needing support
+    support_after_failed_attempts: int = 2
+
     # Adaptive learning thresholds (percent); see recommendation_service
     mastery_min_attempts: int = 3
     mastery_needs_revision_below: int = 60

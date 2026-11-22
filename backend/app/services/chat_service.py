@@ -80,6 +80,7 @@ def message_out(message: ChatMessage, user_id: uuid.UUID) -> MessageOut:
         standalone_query=message.standalone_query if message.rewrite_used else None,
         rewrite_used=message.rewrite_used,
         abstained=message.abstained,
+        simplified=message.simplified,
         status=message.status,  # type: ignore[arg-type]
         created_at=message.created_at,
         citations=[_citation_out(c) for c in message.citations],

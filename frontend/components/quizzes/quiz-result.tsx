@@ -2,6 +2,8 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { DownloadNotesButton } from "./download-notes-button";
+import { LevelChangeNote } from "./level-change";
+import { NextQuizButton } from "./next-quiz-button";
 import { ButtonLink } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { TopicStatusLabel } from "@/components/ui/status-label";
@@ -20,6 +22,7 @@ export function QuizResult({ result }: { result: AttemptResult }) {
             {result.score} of {result.total_questions} correct
           </p>
           <p className="mt-1 text-ink-2">{result.percent}%</p>
+          <LevelChangeNote result={result} />
           {result.recommendation ? (
             <div className="mt-4 border-t border-stone pt-4">
               <div className="flex items-center gap-3">
@@ -33,13 +36,9 @@ export function QuizResult({ result }: { result: AttemptResult }) {
             {needsReview ? (
               <ButtonLink href={`/tutor?q=${encodeURIComponent(`Explain ${result.topic} in simple words`)}`}>Review this topic</ButtonLink>
             ) : (
-              <ButtonLink href="/tutor?mode=quiz">{result.topic_status === "doing_well" ? "Try a harder quiz" : "Try another quiz"}</ButtonLink>
+              <NextQuizButton result={result} />
             )}
-            {needsReview ? (
-              <ButtonLink variant="secondary" href="/tutor?mode=quiz">
-                Try another quiz
-              </ButtonLink>
-            ) : null}
+            {needsReview ? <NextQuizButton result={result} variant="secondary" /> : null}
             <DownloadNotesButton quizId={result.quiz_id} />
             <ButtonLink variant="ghost" href="/progress">
               View progress

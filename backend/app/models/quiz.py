@@ -3,12 +3,14 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Integer,
     String,
     Text,
     UniqueConstraint,
+    false,
     func,
     text,
 )
@@ -141,6 +143,14 @@ class TopicProgress(Base):
     topic_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("topics.id", ondelete="CASCADE"))
     attempt_count: Mapped[int] = mapped_column(Integer, default=0)  # questions attempted
     correct_count: Mapped[int] = mapped_column(Integer, default=0)
+    # Level of the student's next quiz on this topic: set by the diagnostic or the first quiz, then
+    # moved by each quiz result (recommendation_service.next_level)
+    current_difficulty: Mapped[str] = mapped_column(
+        String(20), default="beginner", server_default="beginner"
+    )
+    # Failed quizzes in a row at beginner level; at the configured count `needs_support` is set
+    failed_streak: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    needs_support: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     last_practiced_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

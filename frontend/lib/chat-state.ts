@@ -21,6 +21,7 @@ export type LiveAnswer = {
   text: string;
   status: "streaming" | "complete" | "stopped" | "failed";
   abstained: boolean;
+  simplified: boolean;
   messageId?: string;
   standaloneQuery?: string;
   rewriteUsed: boolean;
@@ -34,6 +35,7 @@ export const initialLive = (): LiveAnswer => ({
   text: "",
   status: "streaming",
   abstained: false,
+  simplified: false,
   rewriteUsed: false,
   unknownMarkers: [],
 });
@@ -75,6 +77,7 @@ export function applyEvent(state: LiveAnswer, { event, data }: SseEvent): LiveAn
             stage: null,
             status: "complete",
             abstained: data.abstained === true,
+            simplified: data.simplified === true,
             messageId: typeof data.message_id === "string" ? data.message_id : undefined,
             standaloneQuery: typeof data.standalone_query === "string" ? data.standalone_query : undefined,
             rewriteUsed: data.rewrite_used === true,

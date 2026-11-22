@@ -54,7 +54,8 @@ export type QuizDetail = QuizSummary & { questions: QuizQuestion[] };
 export type GenerateQuizInput = {
   topic?: string;
   document_ids?: string[];
-  difficulty: Difficulty;
+  /** Left out, the server uses the topic's current level */
+  difficulty?: Difficulty;
   num_questions: number;
   /** "Give me 10 more": a quiz whose questions must not be repeated */
   exclude_quiz_id?: string;
@@ -85,6 +86,12 @@ export type AttemptResult = {
   results: QuestionResult[];
   topic_status: TopicStatus | null;
   recommendation: Recommendation | null;
+  /** Automatic difficulty: the level taken, the level of the next quiz on the topic, and why */
+  previous_difficulty: Difficulty | null;
+  next_difficulty: Difficulty | null;
+  level_change: "up" | "down" | "same" | null;
+  difficulty_reason: string | null;
+  topic_id: string | null;
 };
 
 export type TopicStatus = "insufficient_data" | "needs_revision" | "practicing" | "doing_well";
@@ -283,6 +290,8 @@ export type ChatMessageDto = {
   standalone_query: string | null;
   rewrite_used: boolean;
   abstained: boolean;
+  /** Written in simpler words because the topic needs revision */
+  simplified?: boolean;
   status: "complete" | "stopped" | "failed";
   created_at: string;
   citations: ChatCitation[];

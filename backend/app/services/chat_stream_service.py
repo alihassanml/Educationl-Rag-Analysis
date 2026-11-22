@@ -20,7 +20,7 @@ from app.models.chat import (
     ChatThread,
     _now,
 )
-from app.services import chat_service
+from app.services import chat_service, progress_service
 from app.services.embedding_service import Embedder
 from app.services.groq_service import GroqService, LLMUnavailableError
 from app.services.intent_service import (
@@ -84,6 +84,13 @@ MODE_INSTRUCTIONS = {
     ),
 }
 
+
+# Added when the passages belong to a topic the student needs to revise (accuracy below the
+# revision threshold), so the same grounded answer comes in simpler words
+SIMPLER_INSTRUCTION = (
+    "This student is finding this topic hard. Use simpler wording and short sentences, and add "
+    "one extra example. The example must come from the passages: do not invent one."
+)
 
 # Added when the passages were sampled from across the material, not matched to the question
 COVERAGE_INSTRUCTION = (
@@ -180,6 +187,7 @@ def _save_answer(
     chunks: list[RetrievedChunk],
     model: str,
     latency: dict[str, int],
+    simplified: bool = False,
 ) -> ChatMessage:
     message = ChatMessage(
         thread_id=prepared.thread_id,
@@ -187,6 +195,7 @@ def _save_answer(
         role=ROLE_ASSISTANT,
         content=content,
         abstained=abstained,
+        simplified=simplified,
         status=status,
         model=model,
         latency_ms=latency,
@@ -228,6 +237,7 @@ def run_stream(
     Closing the generator (the student pressed Stop, or disconnected) saves the partial answer
     as "stopped" and closes the provider stream."""
     latency = {"rewrite": 0, "retrieve": 0, "generate": 0}
+    simplified = False
     chunks: list[RetrievedChunk] = []
     text_parts: list[str] = []
     model = llm.model_name
@@ -311,6 +321,7 @@ def run_stream(
                 "rewrite_used": rewrite.changed,
                 "unknown_markers": unknown,
                 "latency_ms": latency,
+                "simplified": simplified,
             }
 
         if not chunks:
@@ -330,6 +341,10 @@ def run_stream(
             instruction = reformat
         elif covering and not instruction:
             instruction = COVERAGE_INSTRUCTION
+        if prepared.mode in ("ask", "simple") and not reformat and not covering:
+            simplified = progress_service.struggling_with(db, prepared.user_id, chunks)
+            if simplified:
+                instruction = f"{instruction} {SIMPLER_INSTRUCTION}".strip()
         if instruction:
             user_prompt += f"\n\nHow to answer: {instruction}"
         started = time.perf_counter()
@@ -367,7 +382,7 @@ def run_stream(
         unknown = sorted(n for n in shown if not 1 <= n <= len(chunks))
         message = _save_answer(
             db, prepared, content=content, status=STATUS_COMPLETE, abstained=False,
-            chunks=chunks, model=model, latency=latency,
+            chunks=chunks, model=model, latency=latency, simplified=simplified,
         )  # fmt: skip
         yield done(message, False, unknown)
     except GeneratorExit:

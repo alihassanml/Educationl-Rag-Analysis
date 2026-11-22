@@ -1,4 +1,5 @@
 import uuid
+from dataclasses import dataclass
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -15,6 +16,8 @@ from app.schemas.progress import (
 )
 from app.schemas.quizzes import Recommendation
 from app.services import recommendation_service as rules
+from app.services import topic_service
+from app.services.retrieval_service import RetrievedChunk
 
 _PRIORITY = {
     rules.NEEDS_REVISION: 0,
@@ -24,11 +27,32 @@ _PRIORITY = {
 }
 
 
+@dataclass(frozen=True)
+class AttemptOutcome:
+    """What one quiz result did to a topic."""
+
+    previous_difficulty: str  # the level the quiz was taken at
+    next_difficulty: str  # the level of the next quiz on the topic
+    old_status: str
+    new_status: str
+    needs_support: bool
+
+
 def record_attempt(
-    db: Session, user_id: uuid.UUID, topic_id: uuid.UUID, correct: int, total: int
-) -> None:
-    """Add a finished quiz to the topic's running totals. Called in the same transaction as the
-    attempt so the two can never disagree."""
+    db: Session,
+    user_id: uuid.UUID,
+    topic_id: uuid.UUID,
+    correct: int,
+    total: int,
+    difficulty: str = "beginner",
+    *,
+    adjust_level: bool = True,
+) -> AttemptOutcome:
+    """Add a finished quiz to the topic's running totals and move the topic's level by the result.
+    Called in the same transaction as the attempt so the two can never disagree.
+
+    `adjust_level=False` records the answers but leaves the level alone (diagnostic and
+    confidence quizzes set or restore the level in their own way)."""
     progress = db.scalar(
         select(TopicProgress)
         .where(TopicProgress.user_id == user_id, TopicProgress.topic_id == topic_id)
@@ -36,12 +60,48 @@ def record_attempt(
     )
     if progress is None:
         progress = TopicProgress(
-            user_id=user_id, topic_id=topic_id, attempt_count=0, correct_count=0
+            user_id=user_id,
+            topic_id=topic_id,
+            attempt_count=0,
+            correct_count=0,
+            current_difficulty="beginner",
+            failed_streak=0,
+            needs_support=False,
         )
         db.add(progress)
+    old_status = rules.classify(progress.correct_count, progress.attempt_count)
     progress.attempt_count += total
     progress.correct_count += correct
     progress.last_practiced_at = func.now()
+    following = difficulty
+    if adjust_level:
+        rule = rules.LevelRule.from_settings()
+        following = rules.next_level(difficulty, correct, total, rule)
+        progress.current_difficulty = following
+        progress.failed_streak = rules.next_failed_streak(
+            progress.failed_streak, difficulty, correct, total, rule
+        )
+        progress.needs_support = rules.needs_support(progress.failed_streak, rule)
+    return AttemptOutcome(
+        previous_difficulty=difficulty,
+        next_difficulty=following,
+        old_status=old_status,
+        new_status=rules.classify(progress.correct_count, progress.attempt_count),
+        needs_support=progress.needs_support,
+    )
+
+
+def struggling_with(db: Session, user_id: uuid.UUID, chunks: list[RetrievedChunk]) -> bool:
+    """Do these passages belong to a topic the student needs to revise?"""
+    topic_ids = topic_service.chunk_topic_ids(db, user_id, chunks)
+    if not topic_ids:
+        return False
+    rows = db.execute(
+        select(TopicProgress.correct_count, TopicProgress.attempt_count).where(
+            TopicProgress.user_id == user_id, TopicProgress.topic_id.in_(topic_ids)
+        )
+    )
+    return any(rules.classify(c, a) == rules.NEEDS_REVISION for c, a in rows)
 
 
 def _to_out(progress: TopicProgress, topic_name: str) -> TopicProgressOut:
@@ -139,4 +199,10 @@ def summary(db: Session, user_id: uuid.UUID) -> ProgressSummary:
     )
 
 
-__all__ = ["record_attempt", "summary", "topic_progress_list"]
+__all__ = [
+    "AttemptOutcome",
+    "record_attempt",
+    "struggling_with",
+    "summary",
+    "topic_progress_list",
+]

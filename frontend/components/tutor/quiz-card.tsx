@@ -4,6 +4,7 @@ import { CheckCircle2, ExternalLink, RotateCcw, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { DownloadNotesButton } from "@/components/quizzes/download-notes-button";
+import { LevelChangeNote, nextQuizLabel } from "@/components/quizzes/level-change";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TopicStatusLabel } from "@/components/ui/status-label";
@@ -25,13 +26,15 @@ type Props = {
   documentIds: string[];
   /** Start another quiz on the same request. */
   onAgain: () => void;
+  /** Start the next quiz on a topic. It is made at the level the topic is now at. */
+  onNext?: (topic: string) => void;
   /** The saved quiz's id, so a follow-up ("10 more") can avoid repeating its questions */
   onCreated?: (quizId: string) => void;
 };
 
 /** A real quiz, inside the conversation. It is created, answered and scored by the same quiz service
  *  as the Quizzes pages, so results, study notes and progress all still count. */
-export function QuizCard({ request, documentIds, onAgain, onCreated }: Props) {
+export function QuizCard({ request, documentIds, onAgain, onNext, onCreated }: Props) {
   const [state, setState] = useState<State>({ step: "writing" });
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -45,7 +48,8 @@ export function QuizCard({ request, documentIds, onAgain, onCreated }: Props) {
       .generate({
         topic: request.topic ?? undefined,
         document_ids: documentIds.length > 0 ? documentIds : undefined,
-        difficulty: "intermediate",
+        // No level unless the student chose one: the server uses the topic's current level
+        ...(request.difficulty ? { difficulty: request.difficulty } : {}),
         num_questions: request.count,
         ...(request.excludeQuizId ? { exclude_quiz_id: request.excludeQuizId } : {}),
       })
@@ -166,6 +170,7 @@ export function QuizCard({ request, documentIds, onAgain, onCreated }: Props) {
         {result.score} of {result.total_questions} correct <span className="text-base font-normal text-ink-2">({result.percent}%)</span>
       </p>
       {result.recommendation ? <p className="mt-1 text-ink">{result.recommendation.message}</p> : null}
+      <LevelChangeNote result={result} />
 
       <ol className="mt-5 divide-y divide-stone border-y border-stone">
         {result.results.map((r, index) => (
@@ -193,6 +198,11 @@ export function QuizCard({ request, documentIds, onAgain, onCreated }: Props) {
       </ol>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
+        {result.topic && result.next_difficulty && onNext ? (
+          <Button size="sm" onClick={() => onNext(result.topic as string)}>
+            {nextQuizLabel(result.level_change)}
+          </Button>
+        ) : null}
         <Button variant="secondary" size="sm" onClick={onAgain}>
           <RotateCcw size={14} strokeWidth={1.75} aria-hidden="true" />
           Quiz me again

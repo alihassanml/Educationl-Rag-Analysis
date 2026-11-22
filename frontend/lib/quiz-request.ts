@@ -21,6 +21,8 @@ const FOLLOW_UP_WORDS = new Set("more another again next extra additional differ
 export type QuizRequest = {
   topic: string | null;
   count: number;
+  /** Only when the student chose a level. Otherwise the server uses the topic's current level. */
+  difficulty?: "beginner" | "intermediate" | "advanced";
   /** A quiz whose questions this one must not repeat ("give me 10 more") */
   excludeQuizId?: string;
 };

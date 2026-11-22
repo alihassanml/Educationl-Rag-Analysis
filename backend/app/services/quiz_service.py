@@ -16,6 +16,7 @@ from app.models.quiz import (
     QuestionResponse,
     Quiz,
     QuizAttempt,
+    Topic,
     TopicProgress,
 )
 from app.schemas.quizzes import (
@@ -179,6 +180,18 @@ def _sample_context(
     ]
 
 
+def _topic_level(db: Session, user_id: uuid.UUID, topic: Topic | None) -> str:
+    """The level the student's next quiz on this topic should have: beginner without history."""
+    if topic is None:
+        return "beginner"
+    level = db.scalar(
+        select(TopicProgress.current_difficulty).where(
+            TopicProgress.user_id == user_id, TopicProgress.topic_id == topic.id
+        )
+    )
+    return level or "beginner"
+
+
 def generate_quiz(
     db: Session,
     embedder: Embedder,
@@ -191,16 +204,17 @@ def generate_quiz(
         retrieval_service.check_document_scope(db, user_id, request.document_ids)
     # "more", "another one", "give me 10 more" name no subject: quiz on the whole selection
     topic = request.topic if has_specific_topic(request.topic or "", _FOLLOW_UP) else None
+    known_topic = topic_service.find_topic(db, user_id, topic) if topic else None
+    difficulty = request.difficulty or _topic_level(db, user_id, known_topic)
     earlier = _earlier_questions(db, user_id, request.exclude_quiz_id)
     # New questions need passages the earlier quiz did not use up
     context = _CONTEXT_CHUNKS * 2 if earlier else _CONTEXT_CHUNKS
 
     if topic:
         # A topic found in the student's documents has an anchor: its own pages or heading
-        known = topic_service.find_topic(db, user_id, topic)
         chunks = (
-            topic_service.anchor_chunks(db, user_id, known.id, context, request.document_ids)
-            if known
+            topic_service.anchor_chunks(db, user_id, known_topic.id, context, request.document_ids)
+            if known_topic
             else []
         )
         if not chunks:
@@ -239,7 +253,7 @@ def generate_quiz(
         needed = request.num_questions - len(questions)
         user_message = (
             f"<passages>\n{passages}\n</passages>\n\n"
-            f"Write {needed} {request.difficulty}-level questions."
+            f"Write {needed} {difficulty}-level questions."
             + (f" Focus on the topic: {topic}." if topic else "")
             + avoid
         )
@@ -275,9 +289,9 @@ def generate_quiz(
     doc_ids = sorted({str(c.document_id) for c in chunks})
     quiz = Quiz(
         user_id=user_id,
-        title=f"{topic_row.name} ({request.difficulty})",
+        title=f"{topic_row.name} ({difficulty})",
         topic_id=topic_row.id,
-        difficulty=request.difficulty,
+        difficulty=difficulty,
         source_document_ids=doc_ids,
     )
     for position, q in enumerate(questions, start=1):
@@ -419,6 +433,27 @@ def _build_result(
             )
         )
     status = recommendation = None
+    level: dict[str, Any] = {}
+    if quiz.topic_id and quiz.topic:
+        following = recommendation_service.next_level(
+            quiz.difficulty, attempt.score, attempt.total_questions
+        )
+        order = recommendation_service.LEVELS
+        level = {
+            "topic_id": quiz.topic_id,
+            "previous_difficulty": quiz.difficulty,
+            "next_difficulty": following,
+            "level_change": (
+                "same"
+                if following == quiz.difficulty
+                else "up"
+                if order.index(following) > order.index(quiz.difficulty)
+                else "down"
+            ),
+            "difficulty_reason": recommendation_service.level_reason(
+                quiz.topic.name, attempt.score, attempt.total_questions, quiz.difficulty, following
+            ),
+        }
     if quiz.topic_id:
         progress = db.scalar(
             select(TopicProgress).where(
@@ -443,6 +478,7 @@ def _build_result(
         results=results,
         topic_status=status,
         recommendation=recommendation,
+        **level,
     )
 
 
@@ -482,7 +518,9 @@ def submit_attempt(
     ]
     db.add(attempt)
     if quiz.topic_id:
-        progress_service.record_attempt(db, user_id, quiz.topic_id, score, len(graded))
+        progress_service.record_attempt(
+            db, user_id, quiz.topic_id, score, len(graded), quiz.difficulty
+        )
     try:
         db.commit()
     except IntegrityError as exc:  # a concurrent double submit hit the unique constraint

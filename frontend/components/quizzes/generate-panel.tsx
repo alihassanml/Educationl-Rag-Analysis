@@ -11,7 +11,10 @@ import { ApiError } from "@/lib/api-client";
 import { quizzesApi } from "@/lib/api";
 import type { Difficulty, StudyDocument } from "@/types/api";
 
-const DIFFICULTIES: { value: Difficulty; label: string }[] = [
+type Level = "auto" | Difficulty;
+
+const DIFFICULTIES: { value: Level; label: string; description?: string }[] = [
+  { value: "auto", label: "Automatic", description: "Follows your results on the topic" },
   { value: "beginner", label: "Beginner" },
   { value: "intermediate", label: "Intermediate" },
   { value: "advanced", label: "Advanced" },
@@ -21,7 +24,7 @@ const DIFFICULTIES: { value: Difficulty; label: string }[] = [
 export function GeneratePanel({ documents, initialTopic = "", onCancel, onCreated }: { documents: StudyDocument[]; initialTopic?: string; onCancel: () => void; onCreated?: () => void }) {
   const router = useRouter();
   const [topic, setTopic] = useState(initialTopic);
-  const [difficulty, setDifficulty] = useState<Difficulty>("beginner");
+  const [difficulty, setDifficulty] = useState<Level>("auto");
   const [count, setCount] = useState(5);
   const [scope, setScope] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
@@ -35,7 +38,8 @@ export function GeneratePanel({ documents, initialTopic = "", onCancel, onCreate
       const quiz = await quizzesApi.generate({
         topic: topic.trim() || undefined,
         document_ids: scope.length > 0 ? scope : undefined,
-        difficulty,
+        // Only when the student picked a level themselves; otherwise the server decides
+        ...(difficulty === "auto" ? {} : { difficulty }),
         num_questions: count,
       });
       onCreated?.(); // close the dialog before leaving the page
@@ -51,7 +55,7 @@ export function GeneratePanel({ documents, initialTopic = "", onCancel, onCreate
       <Field id="topic" label="Topic" hint="Optional. Leave blank to be quizzed on a mix of your material">
         <Input id="topic" value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={120} placeholder="For example: Recursion" disabled={pending} aria-describedby="topic-hint" />
       </Field>
-      <SegmentedTiles name="difficulty" legend="Difficulty" options={DIFFICULTIES} value={difficulty} onChange={setDifficulty} disabled={pending} />
+      <SegmentedTiles name="difficulty" legend="Difficulty (choose a level to override the automatic one)" options={DIFFICULTIES} value={difficulty} onChange={setDifficulty} disabled={pending} />
       <Field id="count" label="Number of questions">
         <Select id="count" value={count} onChange={(e) => setCount(Number(e.target.value))} disabled={pending}>
           {[3, 5, 8, 10].map((n) => (

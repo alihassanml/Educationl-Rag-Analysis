@@ -225,6 +225,8 @@ describe("TutorView: sending", () => {
     vi.mocked(quizzesApi.submit).mockResolvedValue({
       attempt_id: "at1", quiz_id: "q1", quiz_title: "Quiz on recursion", topic: "recursion", score: 1, total_questions: 2, percent: 50, completed_at: "2026-11-18T10:05:00Z",
       topic_status: "needs_revision", recommendation: { action: "review", message: "Review recursion before the next quiz." },
+      previous_difficulty: "beginner", next_difficulty: "intermediate", level_change: "up", topic_id: "t1",
+      difficulty_reason: "You scored 1/2, so your next quiz on recursion will be intermediate.",
       results: [
         { question_id: "a", question_text: "What stops recursion?", options: quiz.questions[0].options, selected_index: 0, correct_index: 0, is_correct: true, explanation: "The base case ends the calls.", sources: [{ document_title: "Programming Notes", page_number: 2 }] },
         { question_id: "b", question_text: "What does a function call itself do?", options: quiz.questions[1].options, selected_index: 1, correct_index: 0, is_correct: false, explanation: "That is recursion.", sources: [] },
@@ -235,7 +237,7 @@ describe("TutorView: sending", () => {
     await ask("quiz me on recursion, 2 questions"); // the quiz service writes at least 3
 
     expect(tutorApi.streamMessage).not.toHaveBeenCalled(); // a quiz is not a streamed answer
-    await waitFor(() => expect(quizzesApi.generate).toHaveBeenCalledWith({ topic: "recursion", document_ids: undefined, difficulty: "intermediate", num_questions: 3 }));
+    await waitFor(() => expect(quizzesApi.generate).toHaveBeenCalledWith({ topic: "recursion", document_ids: undefined, num_questions: 3 }));
     const submit = await screen.findByRole("button", { name: "Submit answers" });
     expect(submit).toBeDisabled();
     await userEvent.click(screen.getByRole("radio", { name: "A base case" }));
@@ -248,6 +250,9 @@ describe("TutorView: sending", () => {
     expect(screen.getByText("Review recursion before the next quiz.")).toBeInTheDocument();
     expect(screen.getByText("Incorrect")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Quiz me again" })).toBeInTheDocument();
+    expect(screen.getByText("Level up")).toBeInTheDocument();
+    expect(screen.getByText("Beginner → Intermediate")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try a harder quiz" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Open full page/ })).toHaveAttribute("href", "/quizzes/q1");
   });
 
@@ -263,7 +268,7 @@ describe("TutorView: sending", () => {
     await screen.findByText("How is a number linked?");
     await ask("give me 10 more");
     await waitFor(() =>
-      expect(quizzesApi.generate).toHaveBeenLastCalledWith({ topic: "whatsap agent", document_ids: undefined, difficulty: "intermediate", num_questions: 10, exclude_quiz_id: "q1" }),
+      expect(quizzesApi.generate).toHaveBeenLastCalledWith({ topic: "whatsap agent", document_ids: undefined, num_questions: 10, exclude_quiz_id: "q1" }),
     );
   });
 
@@ -272,7 +277,7 @@ describe("TutorView: sending", () => {
     render(<TutorView />);
     await userEvent.click(await screen.findByRole("button", { name: "Quiz me" }));
     await ask("quiz me all topic maximum 10 quiz");
-    await waitFor(() => expect(quizzesApi.generate).toHaveBeenCalledWith({ topic: undefined, document_ids: undefined, difficulty: "intermediate", num_questions: 10 }));
+    await waitFor(() => expect(quizzesApi.generate).toHaveBeenCalledWith({ topic: undefined, document_ids: undefined, num_questions: 10 }));
     expect(await screen.findByText("Upload a PDF first")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });

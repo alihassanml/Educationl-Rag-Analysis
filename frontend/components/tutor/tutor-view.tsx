@@ -69,6 +69,7 @@ function viewOf(live: LiveAnswer, feedback: FeedbackRating | null = null): Answe
     // An answer that declined has no sources to show
     sources: live.abstained ? [] : live.sources,
     abstained: live.abstained,
+    simplified: live.simplified,
     error: live.error,
     feedback,
   };
@@ -98,6 +99,7 @@ function turnsFromThread(detail: ThreadDetail | null): Turn[] {
       stage: null,
       sources: message.abstained ? [] : toSources(message.citations),
       abstained: message.abstained,
+      simplified: message.simplified === true,
       error: message.status === "failed" ? "This answer could not be completed. Try again." : undefined,
       feedback: message.feedback,
     };
@@ -195,7 +197,7 @@ export function TutorView({ threadId }: { threadId?: string }) {
     if (activeMarker !== null) document.getElementById(`source-${activeMarker}`)?.scrollIntoView?.({ block: "nearest" });
   }, [activeMarker]);
 
-  async function send(text: string, documentIds: string[], sendMode: ChatMode = mode) {
+  async function send(text: string, documentIds: string[], sendMode: ChatMode = mode, quizRequest?: QuizRequest) {
     if (streaming) return;
     if (sendMode === "quiz") {
       // A quiz is made and marked by the quiz service, right here in the conversation
@@ -205,7 +207,7 @@ export function TutorView({ threadId }: { threadId?: string }) {
       // "Give me 10 more" continues the last quiz: same subject, new questions
       const last = [...turns].reverse().find((t) => t.quiz);
       const previous = last?.quiz ? { request: last.quiz, quizId: quizIds.current.get(last.key) ?? null } : null;
-      setTurns((all) => [...all, { key, question: text, documentIds, mode: "quiz", quiz: parseQuizRequest(text, previous), searchedFor: null, answer: null }]);
+      setTurns((all) => [...all, { key, question: text, documentIds, mode: "quiz", quiz: quizRequest ?? parseQuizRequest(text, previous), searchedFor: null, answer: null }]);
       setActiveKey(key);
       return;
     }
@@ -455,6 +457,7 @@ export function TutorView({ threadId }: { threadId?: string }) {
                         documentIds={turn.documentIds}
                         onCreated={(quizId) => quizIds.current.set(turn.key, quizId)}
                         onAgain={() => void send(turn.question, turn.documentIds, "quiz")}
+                        onNext={(topic) => void send(`Quiz me on ${topic}`, turn.documentIds, "quiz", { topic, count: turn.quiz?.count ?? 5 })}
                       />
                     ) : null}
                     {turn.answer ? (

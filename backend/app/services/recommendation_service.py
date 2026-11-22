@@ -78,5 +78,65 @@ def recommend(
     )
 
 
+LEVELS = ("beginner", "intermediate", "advanced")
+
+
+@dataclass(frozen=True)
+class LevelRule:
+    up_from: int = 80  # percent
+    down_below: int = 50  # percent
+    support_after: int = 2  # failed quizzes in a row at beginner
+
+    @classmethod
+    def from_settings(cls) -> "LevelRule":
+        s = get_settings()
+        return cls(s.difficulty_up_from, s.difficulty_down_below, s.support_after_failed_attempts)
+
+
+def next_level(current: str, correct: int, total: int, rule: LevelRule | None = None) -> str:
+    """The level of the next quiz on a topic, from the result of a quiz taken at `current`.
+    At or above `up_from` percent: one level up. Below `down_below` percent: one level down.
+    Otherwise it stays. Integer arithmetic keeps the boundaries exact: with 80 and 50, a score of
+    exactly 80% moves up and exactly 50% stays."""
+    rule = rule or LevelRule.from_settings()
+    index = LEVELS.index(current) if current in LEVELS else 0
+    if total > 0 and correct * 100 >= rule.up_from * total:
+        index += 1
+    elif total > 0 and correct * 100 < rule.down_below * total:
+        index -= 1
+    return LEVELS[max(0, min(index, len(LEVELS) - 1))]
+
+
+def is_failed(correct: int, total: int, rule: LevelRule | None = None) -> bool:
+    rule = rule or LevelRule.from_settings()
+    return total > 0 and correct * 100 < rule.down_below * total
+
+
+def next_failed_streak(
+    streak: int, difficulty: str, correct: int, total: int, rule: LevelRule | None = None
+) -> int:
+    """Failed quizzes in a row at beginner level. Any other result ends the run."""
+    if difficulty == LEVELS[0] and is_failed(correct, total, rule):
+        return streak + 1
+    return 0
+
+
+def needs_support(streak: int, rule: LevelRule | None = None) -> bool:
+    rule = rule or LevelRule.from_settings()
+    return streak >= rule.support_after
+
+
+def level_reason(topic: str, correct: int, total: int, previous: str, following: str) -> str:
+    """One plain sentence saying why the next quiz has the level it has."""
+    score = f"{correct}/{total}"
+    if following != previous:
+        return f"You scored {score}, so your next quiz on {topic} will be {following}."
+    if LEVELS.index(previous) == len(LEVELS) - 1 and not is_failed(correct, total):
+        return f"You scored {score}. {topic} is at the top level, so your next quiz stays advanced."
+    if previous == LEVELS[0] and is_failed(correct, total):
+        return f"You scored {score}. Your next quiz on {topic} stays beginner, so you can build up."
+    return f"You scored {score}, so your next quiz on {topic} stays {previous}."
+
+
 def percent(correct: int, attempted: int) -> int | None:
     return round(correct * 100 / attempted) if attempted else None

@@ -10,7 +10,8 @@ Difficulty = Literal["beginner", "intermediate", "advanced"]
 class GenerateQuizRequest(BaseModel):
     topic: str | None = Field(default=None, max_length=120)
     document_ids: list[uuid.UUID] | None = Field(default=None, max_length=50)
-    difficulty: Difficulty = "beginner"
+    # Left out, the server uses the topic's current level (beginner when there is no history)
+    difficulty: Difficulty | None = None
     num_questions: int = Field(default=5, ge=3, le=10)
     # "Give me 10 more": a quiz whose questions the new one must not repeat
     exclude_quiz_id: uuid.UUID | None = None
@@ -98,3 +99,10 @@ class AttemptResult(BaseModel):
     results: list[QuestionResult]
     topic_status: str | None
     recommendation: Recommendation | None
+    # Automatic difficulty: the level this quiz was taken at, the level of the next quiz on the
+    # topic, and why. All empty for a quiz that has no topic.
+    previous_difficulty: Difficulty | None = None
+    next_difficulty: Difficulty | None = None
+    level_change: Literal["up", "down", "same"] | None = None
+    difficulty_reason: str | None = None
+    topic_id: uuid.UUID | None = None

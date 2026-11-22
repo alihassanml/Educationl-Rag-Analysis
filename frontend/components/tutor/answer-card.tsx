@@ -25,6 +25,8 @@ export type AnswerView = {
   stage: LiveStage | null;
   sources: Source[];
   abstained: boolean;
+  /** Written in simpler words because the topic needs revision */
+  simplified?: boolean;
   error?: string;
   feedback?: FeedbackRating | null;
 };
@@ -161,6 +163,10 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
             ) : null
           }
         />
+      ) : null}
+
+      {answer.simplified && answer.status === "complete" ? (
+        <p className="mt-2 text-small text-ink-2">Explained more simply because this topic needs revision.</p>
       ) : null}
 
       {answer.status === "stopped" ? (

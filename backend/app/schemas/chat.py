@@ -48,6 +48,7 @@ class MessageOut(BaseModel):
     standalone_query: str | None
     rewrite_used: bool
     abstained: bool
+    simplified: bool = False
     status: Literal["complete", "stopped", "failed"]
     created_at: datetime
     citations: list[CitationOut]

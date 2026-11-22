@@ -73,6 +73,8 @@ class ChatMessage(Base):
     rewrite_used: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     rewrite_fallback: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     abstained: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    # Written in simpler words because the passages belong to a topic the student must revise
+    simplified: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     status: Mapped[str] = mapped_column(String(10), default=STATUS_COMPLETE)
     model: Mapped[str | None] = mapped_column(String(100), nullable=True)
     latency_ms: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)

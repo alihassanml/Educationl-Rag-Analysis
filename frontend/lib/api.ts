@@ -15,6 +15,7 @@ import type {
   FeedbackReason,
   FeedbackRating,
   GenerateQuizInput,
+  LearningPath,
   ProgressSummary,
   QuizDetail,
   QuizList,
@@ -98,6 +99,10 @@ export const quizzesApi = {
   result: (id: string, signal?: AbortSignal) => apiRequest<AttemptResult>(`/quizzes/${id}/attempt`, { signal }),
   /** Study notes PDF of a finished quiz */
   notesPdf: (id: string) => apiDownload(`/quizzes/${id}/notes.pdf`),
+};
+
+export const pathApi = {
+  get: (signal?: AbortSignal) => apiRequest<LearningPath>("/learning-path", { signal }),
 };
 
 export const diagnosticApi = {

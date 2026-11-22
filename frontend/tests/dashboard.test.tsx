@@ -1,10 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
-import { diagnosticApi, progressApi, tutorApi } from "@/lib/api";
+import { diagnosticApi, pathApi, progressApi, tutorApi } from "@/lib/api";
 import type { ProgressSummary, StudyInsights, TopicProgress } from "@/types/api";
 
-vi.mock("@/lib/api", () => ({ progressApi: { summary: vi.fn(), insights: vi.fn() }, tutorApi: { threads: vi.fn() }, diagnosticApi: { status: vi.fn(), start: vi.fn() } }));
+vi.mock("@/lib/api", () => ({ progressApi: { summary: vi.fn(), insights: vi.fn() }, tutorApi: { threads: vi.fn() }, diagnosticApi: { status: vi.fn(), start: vi.fn() }, pathApi: { get: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/components/progress/score-chart", () => ({ ScoreChart: () => <div>chart</div>, MIN_POINTS_FOR_CHART: 3 }));
 
@@ -28,6 +28,7 @@ beforeEach(() => {
   // Insights are optional: by default they fail, so the tests below cover the quiz-only fallback
   vi.mocked(progressApi.insights).mockRejectedValue(new Error("offline"));
   vi.mocked(diagnosticApi.status).mockRejectedValue(new Error("offline"));
+  vi.mocked(pathApi.get).mockRejectedValue(new Error("offline"));
 });
 
 /** Twelve weeks ending on 2026-11-22 (a Sunday), active on the last three days */
@@ -237,5 +238,43 @@ describe("diagnostic card", () => {
     render(<DashboardView />);
     await screen.findByText("Get started in three steps");
     expect(screen.queryByText("Start your diagnostic")).not.toBeInTheDocument();
+  });
+});
+
+describe("Course Map card", () => {
+  const studying: ProgressSummary = { ...empty, documents_total: 1, documents_ready: 1, latest_document: { id: "d1", title: "Notes" } };
+  const step = (over: Record<string, unknown> = {}) => ({
+    topic_id: "t1", name: "Recursion", position: 1, status: "needs_revision" as const, level: "beginner" as const, accuracy_percent: 40, questions_attempted: 5,
+    sources: [], next_action: { kind: "revise" as const, message: "Revise this topic with the tutor, then take a quiz at your level." }, is_current: true, ...over,
+  });
+
+  it("shows the current step and the latest route update", async () => {
+    vi.mocked(progressApi.summary).mockResolvedValue(studying);
+    vi.mocked(pathApi.get).mockResolvedValue({
+      steps: [step()], current_topic_id: "t1", events: [],
+      latest_event: { id: "e1", topic_id: "t1", topic: "Recursion", old_status: "practicing", new_status: "needs_revision", reason: "Recursion moved up because you scored 2/5.", created_at: "2026-11-22T10:00:00Z" },
+    });
+    render(<DashboardView />);
+    const card = await screen.findByRole("region", { name: "Your Course Map" });
+    expect(within(card).getByText("Recursion")).toBeInTheDocument();
+    expect(within(card).getByText("Beginner")).toBeInTheDocument();
+    expect(within(card).getByText("Recursion moved up because you scored 2/5.")).toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "Quiz on this topic" }).getAttribute("href")).toContain("q=Recursion");
+    expect(within(card).getByRole("link", { name: "Open Course Map" })).toHaveAttribute("href", "/course-map");
+  });
+
+  it("says so when every topic is doing well", async () => {
+    vi.mocked(progressApi.summary).mockResolvedValue(studying);
+    vi.mocked(pathApi.get).mockResolvedValue({ steps: [step({ status: "doing_well", is_current: false })], current_topic_id: null, events: [], latest_event: null });
+    render(<DashboardView />);
+    expect(await screen.findByText(/doing well on every topic/)).toBeInTheDocument();
+  });
+
+  it("is left out when there are no topics or the path cannot be read", async () => {
+    vi.mocked(progressApi.summary).mockResolvedValue(studying);
+    vi.mocked(pathApi.get).mockResolvedValue({ steps: [], current_topic_id: null, events: [], latest_event: null });
+    render(<DashboardView />);
+    await screen.findByText("Recommended next step");
+    expect(screen.queryByRole("region", { name: "Your Course Map" })).not.toBeInTheDocument();
   });
 });

@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.document import STATUS_READY, Document
-from app.models.quiz import Quiz, QuizAttempt, Topic, TopicProgress
+from app.models.quiz import PathEvent, Quiz, QuizAttempt, Topic, TopicProgress
 from app.schemas.progress import (
     ActivityItem,
     LatestDocument,
@@ -82,11 +82,29 @@ def record_attempt(
             progress.failed_streak, difficulty, correct, total, rule
         )
         progress.needs_support = rules.needs_support(progress.failed_streak, rule)
+    new_status = rules.classify(progress.correct_count, progress.attempt_count)
+    reason = rules.route_change_reason(
+        db.scalar(select(Topic.name).where(Topic.id == topic_id)) or "This topic",
+        old_status,
+        new_status,
+        correct,
+        total,
+    )
+    if reason:
+        db.add(
+            PathEvent(
+                user_id=user_id,
+                topic_id=topic_id,
+                old_status=old_status,
+                new_status=new_status,
+                reason=reason,
+            )
+        )
     return AttemptOutcome(
         previous_difficulty=difficulty,
         next_difficulty=following,
         old_status=old_status,
-        new_status=rules.classify(progress.correct_count, progress.attempt_count),
+        new_status=new_status,
         needs_support=progress.needs_support,
     )
 

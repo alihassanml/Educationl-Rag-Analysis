@@ -78,6 +78,35 @@ def recommend(
     )
 
 
+# Where a topic sits on the study path: needs revision first, doing well last, the rest between
+ROUTE_FRONT = 0
+ROUTE_MIDDLE = 1
+ROUTE_END = 2
+
+
+def route_group(status: str) -> int:
+    if status == NEEDS_REVISION:
+        return ROUTE_FRONT
+    if status == DOING_WELL:
+        return ROUTE_END
+    return ROUTE_MIDDLE
+
+
+def route_change_reason(topic: str, old: str, new: str, correct: int, total: int) -> str | None:
+    """Plain words for a topic that moved on the path, or None when it stayed in its place."""
+    before, after = route_group(old), route_group(new)
+    if before == after:
+        return None
+    score = f"{correct}/{total}"
+    if after == ROUTE_FRONT:
+        return f"{topic} moved up because you scored {score}."
+    if after == ROUTE_END:
+        return f"{topic} moved to review later: you scored {score}."
+    if before == ROUTE_FRONT:
+        return f"{topic} moved down because you scored {score}, so it no longer needs revision."
+    return f"{topic} moved back into your path after you scored {score}."
+
+
 LEVELS = ("beginner", "intermediate", "advanced")
 
 

@@ -9,14 +9,15 @@ import { ScoreChart, MIN_POINTS_FOR_CHART } from "@/components/progress/score-ch
 import { TopicRow } from "@/components/progress/topic-row";
 import { ButtonLink } from "@/components/ui/button";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
+import { CurrentStepCard } from "@/components/course-map/current-step-card";
 import { DiagnosticCard } from "@/components/diagnostic/diagnostic-card";
-import { diagnosticApi, progressApi, tutorApi } from "@/lib/api";
+import { diagnosticApi, pathApi, progressApi, tutorApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/formatters";
 import { useGreeting } from "@/lib/greeting";
 import { formatRelative } from "@/lib/relative-time";
 import { useApi } from "@/lib/use-api";
-import type { DiagnosticStatus, ProgressSummary, StudyInsights, ThreadSummary } from "@/types/api";
+import type { DiagnosticStatus, LearningPath, ProgressSummary, StudyInsights, ThreadSummary } from "@/types/api";
 import { cardLinkClass, DashCard } from "./dash-card";
 import { LibraryCard, MAX_ROWS, TopPagesCard } from "./library-insights";
 import { ActivityCard, streakStatus } from "./study-activity";
@@ -269,7 +270,7 @@ function RecentQuizzes({ data }: { data: ProgressSummary }) {
   );
 }
 
-function Dashboard({ data, threads, insights, diagnostic }: { data: ProgressSummary; threads: ThreadSummary[]; insights: StudyInsights | null; diagnostic: DiagnosticStatus | null }) {
+function Dashboard({ data, threads, insights, diagnostic, path }: { data: ProgressSummary; threads: ThreadSummary[]; insights: StudyInsights | null; diagnostic: DiagnosticStatus | null; path: LearningPath | null }) {
   const isNew = data.documents_total === 0 && data.quizzes_completed === 0;
   if (isNew) return <Checklist data={data} threads={threads} />;
 
@@ -296,6 +297,7 @@ function Dashboard({ data, threads, insights, diagnostic }: { data: ProgressSumm
     <div className="flex flex-col gap-6">
       <NextStep data={data} />
       {diagnostic?.suggested ? <DiagnosticCard status={diagnostic} /> : null}
+      {path ? <CurrentStepCard path={path} /> : null}
       {stats.length > 0 ? <StatStrip stats={stats} /> : null}
       <div className={cn("grid grid-cols-1 gap-6", columns ? "lg:grid-cols-3" : "lg:grid-cols-2")}>
         {columns ? (
@@ -326,6 +328,7 @@ export function DashboardView() {
   const threads = useApi(tutorApi.threads);
   const insights = useApi(progressApi.insights);
   const diagnostic = useApi(diagnosticApi.status);
+  const path = useApi(pathApi.get);
   const returning = data !== null && (data.documents_total > 0 || data.quizzes_completed > 0);
   return (
     <PageContainer>
@@ -343,7 +346,7 @@ export function DashboardView() {
       />
       {loading ? <LoadingBlock label="Loading your dashboard" /> : null}
       {error ? <ErrorBlock message={error.message} onRetry={reload} /> : null}
-      {data ? <Dashboard data={data} threads={threads.data ?? []} insights={insights.data} diagnostic={diagnostic.data} /> : null}
+      {data ? <Dashboard data={data} threads={threads.data ?? []} insights={insights.data} diagnostic={diagnostic.data} path={path.data} /> : null}
     </PageContainer>
   );
 }

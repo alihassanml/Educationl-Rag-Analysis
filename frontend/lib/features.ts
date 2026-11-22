@@ -4,6 +4,7 @@ import {
   FlaskConical,
   LayoutDashboard,
   MessageCircleQuestion,
+  Route,
   type LucideIcon,
 } from "lucide-react";
 
@@ -51,6 +52,18 @@ export const FEATURES: Feature[] = [
     status: "live",
     label: "My library",
     nav: { href: "/library", group: "learn", icon: BookOpen },
+  },
+  {
+    id: "course-map",
+    status: "live",
+    label: "Course Map",
+    nav: { href: "/course-map", group: "learn", icon: Route },
+    landing: {
+      overline: "Course Map",
+      title: "A study path that follows your results",
+      body: "Your topics are laid out in order, with your level and accuracy on each. When a quiz shows a topic needs work it moves up the path, and the map tells you why it moved.",
+      bullets: ["Topics found in your own documents, in document order", "Weak topics move to the front, strong ones to the end", "Every change to the route is explained"],
+    },
   },
   {
     id: "quizzes",

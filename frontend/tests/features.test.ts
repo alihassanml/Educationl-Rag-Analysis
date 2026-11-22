@@ -13,7 +13,7 @@ describe("feature registry", () => {
       expect(feature.nav, `${feature.id} is planned and must not have a nav entry`).toBeUndefined();
     }
     // No Quizzes entry: quizzes are taken inside the chat
-    expect(hrefs).toEqual(["/tutor", "/dashboard", "/library", "/progress", "/evaluation"]);
+    expect(hrefs).toEqual(["/tutor", "/dashboard", "/library", "/course-map", "/progress", "/evaluation"]);
   });
 
   it("keeps the Evaluation Lab admin only", () => {

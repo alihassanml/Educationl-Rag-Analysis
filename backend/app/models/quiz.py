@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import (
@@ -48,6 +48,28 @@ class DocumentTopic(Base):
     last_page: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Section title shared by the topic's chunks (documents with no pages, such as pasted text)
     heading: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    topic: Mapped[Topic] = relationship()
+
+
+class PathEvent(Base):
+    """A change to the student's study route: a topic's status moved it between the front of the
+    path (needs revision), the middle, and the end (doing well)."""
+
+    __tablename__ = "path_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    topic_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("topics.id", ondelete="CASCADE"))
+    old_status: Mapped[str] = mapped_column(String(20))
+    new_status: Mapped[str] = mapped_column(String(20))
+    reason: Mapped[str] = mapped_column(String(300))
+    # Set by the application so events of one transaction still have distinct, ordered times
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), server_default=func.now()
+    )
 
     topic: Mapped[Topic] = relationship()
 

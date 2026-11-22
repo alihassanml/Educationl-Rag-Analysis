@@ -331,3 +331,31 @@ export type FeedbackItem = {
   abstained: boolean;
   created_at: string;
 };
+
+// --- Course Map (learning path)
+
+export type PathSource = { document_id: string; document_title: string; first_page: number | null; last_page: number | null };
+export type NextActionKind = "start" | "practice" | "revise" | "review_later";
+
+export type PathStep = {
+  topic_id: string;
+  name: string;
+  position: number;
+  status: TopicStatus;
+  /** Null until the topic has a diagnostic or a quiz result */
+  level: Difficulty | null;
+  accuracy_percent: number | null;
+  questions_attempted: number;
+  sources: PathSource[];
+  next_action: { kind: NextActionKind; message: string };
+  is_current: boolean;
+};
+
+export type PathEvent = { id: string; topic_id: string; topic: string; old_status: TopicStatus; new_status: TopicStatus; reason: string; created_at: string };
+
+export type LearningPath = {
+  steps: PathStep[];
+  current_topic_id: string | null;
+  latest_event: PathEvent | null;
+  events: PathEvent[];
+};

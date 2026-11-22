@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useRef, useState, type ReactNode } from "react";
 import { useUser } from "@/components/auth/session-provider";
-import { LogoMark } from "@/components/ui/logo";
 import { authApi } from "@/lib/api";
 import { NEW_CHAT_EVENT } from "@/lib/chat-events";
 import { cn } from "@/lib/cn";
@@ -75,15 +74,10 @@ export function Rail({ expanded }: { expanded: boolean }) {
 
   return (
     <nav aria-label="Main" className="flex h-full flex-col gap-2 px-4 py-4">
-      <Link href="/dashboard" aria-label="EduRAG home" className={cn(row, "mb-2 text-ink")}>
-        <span className="inline-flex size-11 shrink-0 items-center justify-center">
-          <LogoMark className="size-8" />
-        </span>
-        <Label expanded={expanded} className="text-base font-semibold tracking-tight">
-          EduRAG
-        </Label>
+      {/* The product name, centred over the icon column so it reads the same narrow or wide */}
+      <Link href="/dashboard" className="mb-2 flex h-9 w-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
+        <span className="whitespace-nowrap text-[15px] font-semibold tracking-tight text-ink">EduRAG</span>
       </Link>
-
       <button type="button" aria-label="New chat" onClick={newChat} className={cn(row, "text-ink")}>
         <span className={cn(circle, "bg-ink text-paper group-hover/row:bg-clay-stronger")}>
           <Plus size={20} strokeWidth={1.75} aria-hidden="true" />

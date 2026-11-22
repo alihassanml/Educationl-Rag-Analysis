@@ -35,10 +35,20 @@ def test_empty_and_tiny_pages_are_skipped() -> None:
     assert [c.page_number for c in chunk_pages(pages, 100, 10)] == [3]
 
 
-def test_tail_fully_inside_previous_chunk_is_not_emitted() -> None:
+def test_a_short_leftover_joins_the_chunk_before_it() -> None:
+    # 5 words left over would be a scrap that matches nothing; they join the previous chunk
     chunks = chunk_pages([PageText(1, _words(105))], size_words=100, overlap_words=20)
-    assert len(chunks) == 2
+    assert len(chunks) == 1
     assert chunks[-1].content.split()[-1] == "w104"
+
+
+def test_chunks_end_at_a_sentence_end_when_one_is_near() -> None:
+    sentence = "Paging maps pages to frames in memory."  # 7 words
+    text = " ".join([sentence] * 30)  # 210 words
+    chunks = chunk_pages([PageText(1, text)], size_words=100, overlap_words=20)
+    assert len(chunks) >= 2
+    assert all(c.content.endswith("memory.") for c in chunks)
+    assert all(c.content.startswith("Paging") for c in chunks)
 
 
 def test_invalid_overlap_rejected() -> None:

@@ -55,6 +55,8 @@ export type GenerateQuizInput = {
   document_ids?: string[];
   difficulty: Difficulty;
   num_questions: number;
+  /** "Give me 10 more": a quiz whose questions must not be repeated */
+  exclude_quiz_id?: string;
 };
 
 export type Recommendation = { action: string; message: string };

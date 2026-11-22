@@ -12,6 +12,7 @@ import httpx
 
 from app.core.config import get_settings
 from app.core.errors import AppError
+from app.services.pdf_service import HEADING_MARK
 
 MAX_PAGE_BYTES = 2 * 1024 * 1024
 MAX_REDIRECTS = 3
@@ -28,6 +29,7 @@ _BLOCK_TAGS = {
     "p", "div", "section", "article", "main", "li", "ul", "ol", "br", "tr", "table", "blockquote",
     "pre", "h1", "h2", "h3", "h4", "h5", "h6",
 }  # fmt: skip
+_HEADING_TAGS = {"h1", "h2", "h3", "h4"}
 
 
 class _TextExtractor(HTMLParser):
@@ -43,6 +45,9 @@ class _TextExtractor(HTMLParser):
             self._skip_depth += 1
         elif tag == "title":
             self._in_title = True
+        elif tag in _HEADING_TAGS and not self._skip_depth:
+            # Marked like a PDF heading, so each passage keeps the title of its section
+            self._parts.append(f"\n{HEADING_MARK}")
         elif tag in _BLOCK_TAGS:
             self._parts.append("\n")
 
@@ -63,7 +68,8 @@ class _TextExtractor(HTMLParser):
     def text(self) -> str:
         joined = "".join(self._parts)
         lines = (re.sub(r"[ \t ]+", " ", line).strip() for line in joined.split("\n"))
-        return "\n".join(line for line in lines if line)
+        # A heading tag with no text in it leaves a bare mark behind
+        return "\n".join(line for line in lines if line and line != HEADING_MARK.strip())
 
 
 def html_to_text(html: str) -> tuple[str, str]:

@@ -21,7 +21,8 @@ _BROAD = re.compile(
     r"(?:each|every|any)\s+(?:topic|chapter|section|concept)|the\s+topics?|"
     r"main\s+(?:ideas?|points?|topics?|concepts?)|"
     r"key\s+(?:ideas?|points?|topics?|concepts?|definitions?|terms?)|"
-    r"hardest|most\s+(?:important|difficult|confusing|complex))\b",
+    r"hardest|most\s+(?:important|difficult|confusing|complex)|"
+    r"(?:this|these|the|my)\s+(?:documents?|pdfs?|files?|notes|materials?))\b",
     re.IGNORECASE,
 )
 
@@ -66,10 +67,85 @@ def mentioned_documents(
     ]
 
 
-def has_specific_topic(question: str) -> bool:
+# Words before a title that make it the place to look: "the hardest topic IN OS Notes",
+# "examples FROM Biology", "summarise OS Notes". Without one, a title that is also a subject
+# ("What is recursion?" with a document called "Recursion") is just the subject.
+_LOCATING = (
+    r"(?:\b(?:in|from|within|inside|using|across|throughout)|"
+    r"\b(?:summari[sz]e|outline|overview|review|revise))"
+    r"\s+(?:(?:the|my|this|our)\s+)?(?:(?:document|pdf|file|notes|chapter)\s+)?(?:called\s+)?"
+)
+
+
+def located_documents(
+    question: str, documents: Sequence[tuple[uuid.UUID, str]]
+) -> list[tuple[uuid.UUID, str]]:
+    """Documents the student names as where to look ("in OS Notes"), as (id, title)."""
+    text = _normalise(question)
+    found = []
+    for document_id, title in documents:
+        name = _normalise(title)
+        if len(name) >= 4 and re.search(_LOCATING + re.escape(name) + r"(?![a-z0-9])", text):
+            found.append((document_id, title))
+    return found
+
+
+# Words of a question about the material as a whole ("what does this document cover?"), which
+# name no subject either
+_WHOLE_MATERIAL_WORDS = {
+    "are", "be", "covered", "describe", "difficult", "document", "documents", "does", "file",
+    "files", "hard", "here", "important", "main", "material", "materials", "notes", "pdf", "pdfs",
+    "source", "sources", "teach", "tell", "there", "these", "this", "those", "uploaded", "what",
+    "which",
+}  # fmt: skip
+
+
+def has_specific_topic(question: str, ignore: set[str] | frozenset[str] = frozenset()) -> bool:
     """True when something besides instructions is left ("recursion" in "quiz me on recursion")."""
     words = re.findall(r"[a-z][a-z'-]*", question.lower())
-    return any(word not in _COMMAND_WORDS for word in words)
+    return any(word not in _COMMAND_WORDS and word not in ignore for word in words)
+
+
+def without_titles(question: str, documents: Sequence[tuple[uuid.UUID, str]]) -> str:
+    """The question without the phrases that name these documents as the place to look ("in OS
+    Notes"). Such a phrase says where to search, not what for: its words match every passage of
+    that document alike. Other mentions of the same words stay ("recursion examples from Recursion"
+    keeps the first "recursion")."""
+    text = _normalise(question)
+    for _, title in documents:
+        name = _normalise(title)
+        if len(name) >= 4:
+            text = re.sub(_LOCATING + re.escape(name) + r"(?![a-z0-9])", " ", text, count=1)
+    return " ".join(text.split())
+
+
+def search_query(question: str, located: Sequence[tuple[uuid.UUID, str]]) -> str:
+    """What to search for: the question without the titles of the documents it names as the place
+    to look, unless nothing would be left to search for."""
+    if not located:
+        return question
+    rest = without_titles(question, located)
+    return rest if has_specific_topic(rest, _WHOLE_MATERIAL_WORDS) else question
+
+
+def wants_whole_material(
+    question: str,
+    *,
+    mode: str = "ask",
+    documents: Sequence[tuple[uuid.UUID, str]] = (),
+) -> bool:
+    """A broad request with no subject of its own: "explain the hardest topic in <document>",
+    "summarise my notes", "what are the key ideas?". Searching for its words can only match the
+    wrong passages (an introduction, a contents page), so it is answered from a sample across the
+    material without searching first. "Key ideas of recursion" still has a subject, so it is
+    searched."""
+    located = located_documents(question, documents)
+    named = bool(located)
+    text = without_titles(question, located)
+    broad = bool(_BROAD.search(text))
+    if not (broad or named or mode in ("quiz", "summary", "simple")):
+        return False
+    return not has_specific_topic(_BROAD.sub(" ", text), _WHOLE_MATERIAL_WORDS)
 
 
 def is_broad_request(

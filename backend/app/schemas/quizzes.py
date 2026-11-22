@@ -12,6 +12,8 @@ class GenerateQuizRequest(BaseModel):
     document_ids: list[uuid.UUID] | None = Field(default=None, max_length=50)
     difficulty: Difficulty = "beginner"
     num_questions: int = Field(default=5, ge=3, le=10)
+    # "Give me 10 more": a quiz whose questions the new one must not repeat
+    exclude_quiz_id: uuid.UUID | None = None
 
     @field_validator("topic")
     @classmethod

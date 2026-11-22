@@ -25,11 +25,13 @@ type Props = {
   documentIds: string[];
   /** Start another quiz on the same request. */
   onAgain: () => void;
+  /** The saved quiz's id, so a follow-up ("10 more") can avoid repeating its questions */
+  onCreated?: (quizId: string) => void;
 };
 
 /** A real quiz, inside the conversation. It is created, answered and scored by the same quiz service
  *  as the Quizzes pages, so results, study notes and progress all still count. */
-export function QuizCard({ request, documentIds, onAgain }: Props) {
+export function QuizCard({ request, documentIds, onAgain, onCreated }: Props) {
   const [state, setState] = useState<State>({ step: "writing" });
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -40,10 +42,19 @@ export function QuizCard({ request, documentIds, onAgain }: Props) {
     if (started.current) return; // strict mode runs effects twice; one quiz is enough
     started.current = true;
     quizzesApi
-      .generate({ topic: request.topic ?? undefined, document_ids: documentIds.length > 0 ? documentIds : undefined, difficulty: "intermediate", num_questions: request.count })
-      .then((quiz) => setState({ step: "answering", quiz }))
+      .generate({
+        topic: request.topic ?? undefined,
+        document_ids: documentIds.length > 0 ? documentIds : undefined,
+        difficulty: "intermediate",
+        num_questions: request.count,
+        ...(request.excludeQuizId ? { exclude_quiz_id: request.excludeQuizId } : {}),
+      })
+      .then((quiz) => {
+        onCreated?.(quiz.id);
+        setState({ step: "answering", quiz });
+      })
       .catch((e) => setState({ step: "failed", message: e instanceof ApiError ? e.message : "The quiz could not be written. Please try again." }));
-  }, [request, documentIds]);
+  }, [request, documentIds, onCreated]);
 
   async function submit(quiz: QuizDetail) {
     setSubmitting(true);

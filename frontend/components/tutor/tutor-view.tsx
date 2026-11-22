@@ -143,6 +143,8 @@ export function TutorView({ threadId }: { threadId?: string }) {
   const [showJump, setShowJump] = useState(false);
 
   const nextKey = useRef(1);
+  // The quiz each quiz turn created, so "give me 10 more" can avoid repeating its questions
+  const quizIds = useRef(new Map<string, string>());
   const threadRef = useRef<string | null>(threadId ?? null);
   const abortRef = useRef<AbortController | null>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -200,7 +202,10 @@ export function TutorView({ threadId }: { threadId?: string }) {
       const key = `turn-${nextKey.current++}`;
       atBottom.current = true;
       setQuestion("");
-      setTurns((all) => [...all, { key, question: text, documentIds, mode: "quiz", quiz: parseQuizRequest(text), searchedFor: null, answer: null }]);
+      // "Give me 10 more" continues the last quiz: same subject, new questions
+      const last = [...turns].reverse().find((t) => t.quiz);
+      const previous = last?.quiz ? { request: last.quiz, quizId: quizIds.current.get(last.key) ?? null } : null;
+      setTurns((all) => [...all, { key, question: text, documentIds, mode: "quiz", quiz: parseQuizRequest(text, previous), searchedFor: null, answer: null }]);
       setActiveKey(key);
       return;
     }
@@ -445,7 +450,12 @@ export function TutorView({ threadId }: { threadId?: string }) {
                       {turn.searchedFor ? <p className="text-small text-ink-2">Searched your material for: {turn.searchedFor}</p> : null}
                     </div>
                     {turn.quiz ? (
-                      <QuizCard request={turn.quiz} documentIds={turn.documentIds} onAgain={() => void send(turn.question, turn.documentIds, "quiz")} />
+                      <QuizCard
+                        request={turn.quiz}
+                        documentIds={turn.documentIds}
+                        onCreated={(quizId) => quizIds.current.set(turn.key, quizId)}
+                        onAgain={() => void send(turn.question, turn.documentIds, "quiz")}
+                      />
                     ) : null}
                     {turn.answer ? (
                       <AnswerBlock

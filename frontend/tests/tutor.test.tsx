@@ -232,10 +232,10 @@ describe("TutorView: sending", () => {
     });
     render(<TutorView />);
     await userEvent.click(await screen.findByRole("button", { name: "Quiz me" }));
-    await ask("quiz me on recursion, 2 questions");
+    await ask("quiz me on recursion, 2 questions"); // the quiz service writes at least 3
 
     expect(tutorApi.streamMessage).not.toHaveBeenCalled(); // a quiz is not a streamed answer
-    await waitFor(() => expect(quizzesApi.generate).toHaveBeenCalledWith({ topic: "recursion", document_ids: undefined, difficulty: "intermediate", num_questions: 2 }));
+    await waitFor(() => expect(quizzesApi.generate).toHaveBeenCalledWith({ topic: "recursion", document_ids: undefined, difficulty: "intermediate", num_questions: 3 }));
     const submit = await screen.findByRole("button", { name: "Submit answers" });
     expect(submit).toBeDisabled();
     await userEvent.click(screen.getByRole("radio", { name: "A base case" }));
@@ -249,6 +249,22 @@ describe("TutorView: sending", () => {
     expect(screen.getByText("Incorrect")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Quiz me again" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Open full page/ })).toHaveAttribute("href", "/quizzes/q1");
+  });
+
+  it("continues the last quiz on 'give me 10 more' instead of looking for a topic called 'more'", async () => {
+    const quiz = {
+      id: "q1", title: "Quiz on whatsap agent", topic: "whatsap agent", difficulty: "intermediate" as const, question_count: 1, source_documents: ["Phynxa"], created_at: "2026-11-18T10:00:00Z", attempt: null,
+      questions: [{ id: "a", position: 1, question_text: "How is a number linked?", options: ["QR code", "OAuth", "API key", "Email"] }],
+    };
+    vi.mocked(quizzesApi.generate).mockResolvedValue(quiz);
+    render(<TutorView />);
+    await userEvent.click(await screen.findByRole("button", { name: "Quiz me" }));
+    await ask("whatsap agent");
+    await screen.findByText("How is a number linked?");
+    await ask("give me 10 more");
+    await waitFor(() =>
+      expect(quizzesApi.generate).toHaveBeenLastCalledWith({ topic: "whatsap agent", document_ids: undefined, difficulty: "intermediate", num_questions: 10, exclude_quiz_id: "q1" }),
+    );
   });
 
   it("quizzes the whole material when no topic is given, and says so when the quiz cannot be made", async () => {

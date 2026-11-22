@@ -25,11 +25,13 @@ from app.services.embedding_service import Embedder
 from app.services.groq_service import GroqService, LLMUnavailableError
 from app.services.intent_service import (
     is_broad_request,
-    mentioned_documents,
+    located_documents,
     reformat_instruction,
     requested_question_count,
+    search_query,
     smalltalk_kind,
     smalltalk_reply,
+    wants_whole_material,
 )
 from app.services.rag_service import NOT_FOUND_ANSWER
 from app.services.retrieval_service import (
@@ -85,8 +87,10 @@ MODE_INSTRUCTIONS = {
 
 # Added when the passages were sampled from across the material, not matched to the question
 COVERAGE_INSTRUCTION = (
-    "The passages are a sample from across the student's material. Base the answer on them and "
-    "say which document it comes from."
+    "The passages are a sample from across the student's material, not matched to the question. "
+    "Answer from them: if the student asks which topic is hardest, most important or similar, "
+    "choose one of the topics in these passages, say briefly why, and explain it. Name the "
+    "document it comes from. Reply NOT_FOUND only if the passages are empty or unreadable."
 )
 
 
@@ -275,15 +279,24 @@ def run_stream(
 
         yield "status", {"stage": "searching"}
         started = time.perf_counter()
-        chunks = retrieve(db, embedder, prepared.user_id, rewrite.query, prepared.document_ids)
+        titles = document_titles(db, prepared.user_id, prepared.document_ids)
+        # A document named as the place to look ("in OS Notes") limits the search to it
+        located = located_documents(prepared.question, titles)
+        scope = [document_id for document_id, _ in located] or prepared.document_ids
         covering = False
-        if not chunks:
-            # Nothing matched. A broad request ("quiz me on all topics", "the hardest topic in
-            # <document>") matches no single passage, so sample across the material instead.
-            titles = document_titles(db, prepared.user_id, prepared.document_ids)
-            if is_broad_request(prepared.question, mode=prepared.mode, documents=titles):
-                named = mentioned_documents(prepared.question, titles)
-                chunks = retrieve_coverage(db, prepared.user_id, named or prepared.document_ids)
+        if wants_whole_material(prepared.question, mode=prepared.mode, documents=titles):
+            # "The hardest topic in <document>", "summarise my notes": no single passage is about
+            # that, so searching only finds an introduction or a contents page. Sample instead.
+            chunks = retrieve_coverage(db, prepared.user_id, scope)
+            covering = bool(chunks)
+        else:
+            query = search_query(rewrite.query, located)
+            chunks = retrieve(db, embedder, prepared.user_id, query, scope)
+            if not chunks and is_broad_request(
+                prepared.question, mode=prepared.mode, documents=titles
+            ):
+                # Nothing matched a broad request that still has a subject: sample across instead
+                chunks = retrieve_coverage(db, prepared.user_id, scope)
                 covering = bool(chunks)
         latency["retrieve"] = _ms(started)
         yield "sources", _source_event(chunks)

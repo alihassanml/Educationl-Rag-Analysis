@@ -2,7 +2,7 @@ import logging
 import uuid
 from pathlib import Path
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -172,6 +172,27 @@ def create_from_website(
     page_title, text = source_service.extract_text(fetched)
     chosen = (title or "").strip() or page_title or source_service.title_from_url(url)
     return create_from_text(db, embedder, user_id, title=chosen, text=text, source_url=url)
+
+
+def reindex(db: Session, embedder: Embedder, document: Document) -> None:
+    """Rebuild a document's passages from its stored file, after a change to how text is read or
+    chunked. Saved chats keep their citation snapshots (title, page, snippet)."""
+    path = Path(document.storage_path)
+    db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document.id))
+    document.status = STATUS_PROCESSING
+    db.commit()
+    if document.mime_type in (SOURCE_TEXT_MIME, SOURCE_WEBSITE_MIME):
+        text = path.read_text(encoding="utf-8")
+        _process(
+            db,
+            embedder,
+            document,
+            path,
+            pages=[pdf_service.PageText(page_number=None, text=text)],
+            no_text_message="Not enough readable text was found to index.",
+        )
+    else:
+        _process(db, embedder, document, path)
 
 
 def _fail(db: Session, document: Document, message: str) -> None:

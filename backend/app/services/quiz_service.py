@@ -38,10 +38,16 @@ from app.services import (
 )
 from app.services.embedding_service import Embedder
 from app.services.groq_service import GroqService, LLMOutputError, LLMUnavailableError
+from app.services.intent_service import has_specific_topic
 
 logger = logging.getLogger("app.quizzes")
 
 _CONTEXT_CHUNKS = 8
+# Words of a follow-up ("10 more", "another one") that name no subject
+_FOLLOW_UP = frozenset(
+    {"more", "another", "again", "next", "extra", "additional", "different", "new", "same", "one",
+     "ones", "round", "set", "batch", "harder", "easier"}
+)  # fmt: skip
 _OPTION_COUNT = 4
 
 SYSTEM_PROMPT = """You write multiple-choice study questions from numbered passages of a \
@@ -57,6 +63,8 @@ plausible but clearly wrong according to the passages.
 - "source_passages" lists the numbers of the passages the question is based on.
 - Never use outside knowledge: every question and its correct answer must be stated or directly \
 implied by the passages, even at advanced difficulty.
+- Ask about the subject itself, as a teacher would. Never mention "the passages", "the text" \
+or "the document" in a question or option.
 - Match the requested difficulty: beginner = recall of key terms and definitions; \
 intermediate = understanding and comparison; advanced = application and reasoning.
 
@@ -122,8 +130,25 @@ def validate_generated(
     return valid, rejected
 
 
+def _earlier_questions(db: Session, user_id: uuid.UUID, quiz_id: uuid.UUID | None) -> list[str]:
+    """Question texts of the student's earlier quiz, so a follow-up quiz asks about other facts."""
+    if quiz_id is None:
+        return []
+    return list(
+        db.scalars(
+            select(Question.question_text)
+            .join(Quiz, Quiz.id == Question.quiz_id)
+            .where(Quiz.id == quiz_id, Quiz.user_id == user_id)
+            .order_by(Question.position)
+        )
+    )
+
+
 def _sample_context(
-    db: Session, user_id: uuid.UUID, document_ids: list[uuid.UUID] | None
+    db: Session,
+    user_id: uuid.UUID,
+    document_ids: list[uuid.UUID] | None,
+    count: int = _CONTEXT_CHUNKS,
 ) -> list[retrieval_service.RetrievedChunk]:
     stmt = (
         select(DocumentChunk, Document.title)
@@ -139,7 +164,7 @@ def _sample_context(
     rows = [r for r in db.execute(stmt) if len(r[0].content.split()) >= 30] or list(
         db.execute(stmt)
     )
-    picked = random.sample(rows, min(_CONTEXT_CHUNKS, len(rows)))
+    picked = random.sample(rows, min(count, len(rows)))
     return [
         retrieval_service.RetrievedChunk(
             chunk_id=c.id,
@@ -175,10 +200,15 @@ def generate_quiz(
     settings = get_settings()
     if request.document_ids:
         retrieval_service.check_document_scope(db, user_id, request.document_ids)
+    # "more", "another one", "give me 10 more" name no subject: quiz on the whole selection
+    topic = request.topic if has_specific_topic(request.topic or "", _FOLLOW_UP) else None
+    earlier = _earlier_questions(db, user_id, request.exclude_quiz_id)
+    # New questions need passages the earlier quiz did not use up
+    context = _CONTEXT_CHUNKS * 2 if earlier else _CONTEXT_CHUNKS
 
-    if request.topic:
+    if topic:
         chunks = retrieval_service.retrieve(
-            db, embedder, user_id, request.topic, request.document_ids, top_k=_CONTEXT_CHUNKS
+            db, embedder, user_id, topic, request.document_ids, top_k=context
         )
         if not chunks:
             raise AppError(
@@ -188,7 +218,7 @@ def generate_quiz(
                 "or leave it blank.",
             )
     else:
-        chunks = _sample_context(db, user_id, request.document_ids)
+        chunks = _sample_context(db, user_id, request.document_ids, context)
         if not chunks:
             raise AppError(
                 422,
@@ -198,7 +228,13 @@ def generate_quiz(
 
     passages = "\n\n".join(f"[{i}]\n{c.content}" for i, c in enumerate(chunks, start=1))
     questions: list[GeneratedQuestion] = []
-    seen: set[str] = set()
+    seen: set[str] = {q.lower() for q in earlier}
+    avoid = (
+        "\n\nThe student has already answered these questions. Do not repeat or reword them; "
+        "ask about other facts:\n" + "\n".join(f"- {q}" for q in earlier)
+        if earlier
+        else ""
+    )
     model_topic: str | None = None
     rejected_total = 0
 
@@ -207,7 +243,8 @@ def generate_quiz(
         user_message = (
             f"<passages>\n{passages}\n</passages>\n\n"
             f"Write {needed} {request.difficulty}-level questions."
-            + (f" Focus on the topic: {request.topic}." if request.topic else "")
+            + (f" Focus on the topic: {topic}." if topic else "")
+            + avoid
         )
         try:
             reply = llm.complete_json(SYSTEM_PROMPT, user_message, temperature=0.3, max_tokens=4000)
@@ -237,12 +274,12 @@ def generate_quiz(
             "Could not create a reliable quiz from this material. Please try again.",
         )
 
-    topic = _get_or_create_topic(db, user_id, request.topic or model_topic or "General")
+    topic_row = _get_or_create_topic(db, user_id, topic or model_topic or "General")
     doc_ids = sorted({str(c.document_id) for c in chunks})
     quiz = Quiz(
         user_id=user_id,
-        title=f"{topic.name} ({request.difficulty})",
-        topic_id=topic.id,
+        title=f"{topic_row.name} ({request.difficulty})",
+        topic_id=topic_row.id,
         difficulty=request.difficulty,
         source_document_ids=doc_ids,
     )

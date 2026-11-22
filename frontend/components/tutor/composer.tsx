@@ -51,24 +51,51 @@ export function Composer({ value, onChange, onSubmit, streaming, onStop, documen
 
   const scopeLabel = scope.length === 0 ? "All my documents" : `${scope.length} ${scope.length === 1 ? "document" : "documents"}`;
 
+  const scopeSentence = scope.length === 0 ? "Searching all your documents" : `Searching ${scopeLabel}`;
+
   return (
-    <form onSubmit={submit} className="rounded-composer border border-stone bg-paper p-3 shadow-md">
-      <label htmlFor="question" className="sr-only">
-        Your question
-      </label>
-      <textarea
-        ref={inputRef}
-        id="question"
-        rows={1}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={onKeyDown}
-        maxLength={1000}
-        placeholder="Ask a question about your material"
-        className="max-h-36 w-full resize-none bg-transparent px-2 py-1 text-base text-ink placeholder:text-ink-3 focus-visible:outline-none"
-      />
-      <div className="mt-2 flex items-center justify-between gap-3">
-        <div ref={scopeRoot} className="relative">
+    <div className="rounded-composer bg-stone-100 p-2">
+      <div className="flex items-center justify-between gap-3 px-3 py-1.5 text-small text-ink-2">
+        <span>{scopeSentence}</span>
+        <span className="hidden sm:inline">Answers come only from your uploaded material</span>
+      </div>
+      <form onSubmit={submit} className="rounded-composer border border-stone bg-paper p-3 shadow-md">
+        <div className="flex items-end gap-3">
+          <label htmlFor="question" className="sr-only">
+            Your question
+          </label>
+          <textarea
+            ref={inputRef}
+            id="question"
+            rows={1}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={onKeyDown}
+            maxLength={1000}
+            placeholder="Ask a question about your material"
+            className="max-h-36 min-h-10 w-full resize-none bg-transparent px-2 py-2 text-base text-ink placeholder:text-ink-3 focus-visible:outline-none"
+          />
+          {streaming ? (
+            <button
+              type="button"
+              onClick={onStop}
+              aria-label="Stop answer"
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-stone-strong bg-paper text-ink transition-colors duration-[120ms] hover:bg-stone-100"
+            >
+              <Square size={14} strokeWidth={1.75} fill="currentColor" aria-hidden="true" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!canSend}
+              aria-label="Send question"
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-clay-strong text-paper transition-colors duration-[120ms] hover:bg-clay-stronger disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ArrowUp size={18} strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+        <div ref={scopeRoot} className="relative mt-2 flex items-center">
           <button
             type="button"
             aria-expanded={scopeOpen}
@@ -89,26 +116,7 @@ export function Composer({ value, onChange, onSubmit, streaming, onStop, documen
             </div>
           ) : null}
         </div>
-        {streaming ? (
-          <button
-            type="button"
-            onClick={onStop}
-            aria-label="Stop answer"
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-stone-strong bg-paper text-ink transition-colors duration-[120ms] hover:bg-stone-100 max-sm:size-10"
-          >
-            <Square size={14} strokeWidth={1.75} fill="currentColor" aria-hidden="true" />
-          </button>
-        ) : (
-          <button
-            type="submit"
-            disabled={!canSend}
-            aria-label="Send question"
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-clay-strong text-paper transition-colors duration-[120ms] hover:bg-clay-stronger disabled:cursor-not-allowed disabled:opacity-50 max-sm:size-10"
-          >
-            <ArrowUp size={18} strokeWidth={1.75} aria-hidden="true" />
-          </button>
-        )}
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
+@import "../styles/theme-sky.css";
 
 @theme inline {
   /* Colours (names match docs/UI_REDESIGN.md section 3) */

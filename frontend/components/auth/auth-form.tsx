@@ -59,7 +59,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     try {
       const action = mode === "login" ? authApi.login : authApi.register;
       await action(parsed.data.email, parsed.data.password);
-      router.replace("/dashboard");
+      router.replace("/tutor"); // the chat is the first screen
     } catch (error) {
       // Entered values are kept so the student can correct them
       if (error instanceof ApiError && error.fields.length > 0) setErrors(serverFieldErrors(error.fields));

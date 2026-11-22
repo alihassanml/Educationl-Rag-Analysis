@@ -1,6 +1,7 @@
 import { CheckCircle2, XCircle } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
+import { DownloadNotesButton } from "./download-notes-button";
 import { ButtonLink } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { TopicStatusLabel } from "@/components/ui/status-label";
@@ -39,6 +40,7 @@ export function QuizResult({ result }: { result: AttemptResult }) {
                 Try another quiz
               </ButtonLink>
             ) : null}
+            <DownloadNotesButton quizId={result.quiz_id} />
             <ButtonLink variant="ghost" href="/progress">
               View progress
             </ButtonLink>

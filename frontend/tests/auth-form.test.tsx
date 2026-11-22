@@ -26,14 +26,14 @@ describe("AuthForm", () => {
     expect(screen.getByLabelText("Email")).toHaveValue("not-an-email");
   });
 
-  it("signs in and goes to the dashboard", async () => {
+  it("signs in and goes to the chat", async () => {
     vi.mocked(authApi.login).mockResolvedValue({ id: "1", email: "a@b.com", is_admin: false, created_at: "" });
     render(<AuthForm mode="login" />);
     await userEvent.type(screen.getByLabelText("Email"), "a@b.com");
     await userEvent.type(screen.getByLabelText("Password"), "password123");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(authApi.login).toHaveBeenCalledWith("a@b.com", "password123");
-    expect(replace).toHaveBeenCalledWith("/dashboard");
+    expect(replace).toHaveBeenCalledWith("/tutor");
   });
 
   it("shows the server message and keeps the typed values after a failure", async () => {

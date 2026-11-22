@@ -34,7 +34,6 @@ export const NAV_GROUP_LABELS: Record<NavGroup, string> = {
 };
 
 export const FEATURES: Feature[] = [
-  { id: "dashboard", status: "live", label: "Dashboard", nav: { href: "/dashboard", group: "learn", icon: LayoutDashboard } },
   {
     id: "tutor",
     status: "live",
@@ -47,6 +46,7 @@ export const FEATURES: Feature[] = [
       bullets: ["Ask follow-up questions, see sources before the answer", "Says “Not found in your material” when unsure", "Chats are saved, and you can stop an answer at any time"],
     },
   },
+  { id: "dashboard", status: "live", label: "Dashboard", nav: { href: "/dashboard", group: "learn", icon: LayoutDashboard } },
   {
     id: "library",
     status: "live",

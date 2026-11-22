@@ -42,7 +42,10 @@ test("sweep every screen", async ({ browser }) => {
   await page.getByLabel("Email").fill(`shots-${Date.now()}@example.com`);
   await page.getByLabel("Password", { exact: true }).fill("password123");
   await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL(/dashboard/);
+  await page.waitForURL(/tutor/); // the chat is the first screen
+  await page.getByText("Upload a document first").waitFor();
+  await page.screenshot({ path: path.join(sweep, "tutor-new-student-1280.png"), fullPage: true, scale: "css" });
+  await page.getByRole("link", { name: "Dashboard" }).first().click();
   await page.getByText("Get started in three steps").waitFor();
   await page.screenshot({ path: path.join(sweep, "dashboard-new-student-1280.png"), fullPage: true, scale: "css" });
 
@@ -51,6 +54,8 @@ test("sweep every screen", async ({ browser }) => {
   await page.getByRole("row").filter({ hasText: "recursion-notes" }).getByText("Ready").waitFor();
 
   await page.getByRole("link", { name: "Study tutor" }).first().click();
+  await page.getByRole("button", { name: /Summarise the key ideas/ }).waitFor();
+  await page.screenshot({ path: path.join(sweep, "tutor-empty-1280.png"), fullPage: true, scale: "css" });
   await page.getByLabel("Your question").fill("What does a recursive function need to stop calling itself?");
   await page.getByRole("button", { name: "Send question" }).click();
   await page.getByRole("button", { name: "Copy answer" }).waitFor(); // the answer has finished
@@ -84,6 +89,8 @@ test("sweep every screen", async ({ browser }) => {
   fs.writeFileSync(path.join(sweep, "left-edges-1440.json"), JSON.stringify(edges, null, 2));
   console.log("left edge of the page heading at 1440px:", JSON.stringify(edges));
 
-  // The app pages share one left edge
-  for (const route of APP_ROUTES) expect(edges[route], `${route} left edge`).toBe(edges.dashboard);
+  // The pages inside the 1200px container share one left edge. The dashboard and the tutor are full width
+  // by owner request (2026-11-22), so they are not compared.
+  const CONTAINED = APP_ROUTES.filter((route) => route !== "dashboard" && route !== "tutor");
+  for (const route of CONTAINED) expect(edges[route], `${route} left edge`).toBe(edges[CONTAINED[0]]);
 });

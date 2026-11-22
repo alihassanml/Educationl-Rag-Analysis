@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
 
@@ -37,6 +38,8 @@ test("a new student registers and sees the getting started steps", async () => {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page).toHaveURL(/\/tutor/); // the chat is the first screen
+  await page.getByRole("link", { name: "Dashboard" }).first().click();
   await expect(page).toHaveURL(/\/dashboard/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Good (morning|afternoon|evening)/);
   await expect(page.getByRole("heading", { name: "Get started in three steps" })).toBeVisible();
@@ -61,10 +64,11 @@ test("uploading a PDF indexes it and rejects non-PDFs", async () => {
 const FIRST_QUESTION = "What does a recursive function need to stop calling itself?";
 
 async function openHistory() {
-  // The history panel sits inline from 1536px; below that it opens as a drawer
-  const drawer = page.getByRole("dialog", { name: "History" });
-  if (!(await drawer.isVisible())) await page.getByRole("button", { name: "History" }).click();
-  return drawer;
+  // The history rail sits inline from 1280px; below that it opens as a drawer
+  const rail = page.getByRole("complementary", { name: "Chats" });
+  if (await rail.isVisible()) return rail;
+  await page.getByRole("button", { name: "History" }).click();
+  return page.getByRole("dialog", { name: "History" });
 }
 
 test("a new chat streams an answer with a citation that opens the source", async () => {
@@ -79,11 +83,12 @@ test("a new chat streams an answer with a citation that opens the source", async
   await expect(page.getByRole("button", { name: "Copy answer" })).toBeVisible(); // the answer has finished
   await expect(page).toHaveURL(/\/tutor\/[0-9a-f-]{36}$/);
 
-  // Opening the citation shows the passage in the sources panel
+  // Opening the citation shows the passage in the sources panel (a sheet below 1536px, a column above)
   await page.getByRole("button", { name: /^Source 1/ }).first().click();
-  const panel = page.getByRole("complementary", { name: "Sources" });
+  const panel = page.getByRole("dialog", { name: "Sources" });
   await expect(panel.getByText("recursion-notes")).toBeVisible();
   await expect(panel.getByText("Page 1")).toBeVisible();
+  await page.keyboard.press("Escape"); // close the sheet so the page is usable again
 });
 
 test("a follow-up shows what was searched, and the chat survives a reload, rename and delete", async () => {
@@ -149,6 +154,15 @@ test("a quiz can be created, taken once, and scored", async () => {
   await page.reload(); // the saved result is shown again, not the quiz form
   await expect(page.getByText("3 of 3 correct").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Submit quiz" })).toHaveCount(0);
+
+  // The study notes download as a real PDF containing the questions and explanations
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download notes (PDF)" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/-notes\.pdf$/);
+  const file = await download.path();
+  expect(fs.readFileSync(file).subarray(0, 4).toString()).toBe("%PDF");
 });
 
 test("progress and dashboard reflect the completed quiz", async () => {
@@ -191,7 +205,7 @@ test("signing back in works and wrong passwords are refused", async () => {
   await expect(page.getByRole("alert").filter({ hasText: "Invalid email or password" })).toBeVisible();
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/dashboard/);
+  await expect(page).toHaveURL(/\/tutor/);
 });
 
 test.describe("mobile layout", () => {

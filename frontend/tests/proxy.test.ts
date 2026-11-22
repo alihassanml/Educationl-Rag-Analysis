@@ -22,8 +22,8 @@ describe("proxy", () => {
     expect(location(proxy(request("/tutor", false)))).toBe("http://localhost:3000/login");
   });
 
-  it("sends signed-in users from auth pages to the dashboard, unless their session expired", () => {
-    expect(location(proxy(request("/login", true)))).toBe("http://localhost:3000/dashboard");
+  it("sends signed-in users from auth pages to the chat, unless their session expired", () => {
+    expect(location(proxy(request("/login", true)))).toBe("http://localhost:3000/tutor");
     expect(location(proxy(request("/login?expired=1", true)))).toBeNull();
   });
 

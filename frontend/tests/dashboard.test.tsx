@@ -1,10 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
-import { progressApi } from "@/lib/api";
+import { progressApi, tutorApi } from "@/lib/api";
 import type { ProgressSummary, TopicProgress } from "@/types/api";
 
-vi.mock("@/lib/api", () => ({ progressApi: { summary: vi.fn() } }));
+vi.mock("@/lib/api", () => ({ progressApi: { summary: vi.fn() }, tutorApi: { threads: vi.fn() } }));
 vi.mock("@/components/progress/score-chart", () => ({ ScoreChart: () => <div>chart</div>, MIN_POINTS_FOR_CHART: 3 }));
 
 const topic: TopicProgress = {
@@ -17,7 +17,12 @@ const empty: ProgressSummary = {
   topics_needing_revision: 0, needs_revision: [], next_step: null, recent_activity: [], score_history: [], latest_document: null,
 };
 
-beforeEach(() => vi.clearAllMocks());
+const chat = (id: string, title: string) => ({ id, title, created_at: "2026-11-18T10:00:00Z", updated_at: new Date().toISOString() });
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(tutorApi.threads).mockResolvedValue([]);
+});
 
 describe("DashboardView", () => {
   it("shows a three-step checklist for a new student, with one primary action and no zero-filled stats", async () => {
@@ -32,10 +37,35 @@ describe("DashboardView", () => {
     expect(screen.queryByText("Recommended next step")).not.toBeInTheDocument();
   });
 
-  it("never reports 'Ask your first question' as done, because the API does not record questions", async () => {
+  it("marks 'Ask your first question' done only when the student has a saved chat", async () => {
+    vi.mocked(progressApi.summary).mockResolvedValue({ ...empty, documents_total: 0 });
+    vi.mocked(tutorApi.threads).mockResolvedValue([chat("c1", "What is recursion?")]);
+    render(<DashboardView />);
+    await screen.findByText("Get started in three steps");
+    await screen.findByText("1 of 3 done");
+    expect(screen.queryByRole("link", { name: "Ask a question" })).not.toBeInTheDocument();
+  });
+
+  it("shows the returning layout once a document exists", async () => {
     vi.mocked(progressApi.summary).mockResolvedValue({ ...empty, documents_total: 1, documents_ready: 1, quizzes_completed: 0 });
     render(<DashboardView />);
-    expect(await screen.findByText("Recommended next step")).toBeInTheDocument(); // returning layout once a document exists
+    expect(await screen.findByText("Recommended next step")).toBeInTheDocument();
+  });
+
+  it("lets the student continue the latest chat and lists recent chats", async () => {
+    vi.mocked(progressApi.summary).mockResolvedValue({ ...empty, documents_total: 1, documents_ready: 1 });
+    vi.mocked(tutorApi.threads).mockResolvedValue([chat("c1", "What is recursion?"), chat("c2", "Explain deadlock")]);
+    render(<DashboardView />);
+    expect(await screen.findByRole("link", { name: "Continue chat" })).toHaveAttribute("href", "/tutor/c1");
+    expect(screen.getByRole("link", { name: /Explain deadlock/ })).toHaveAttribute("href", "/tutor/c2");
+  });
+
+  it("still shows the dashboard when the chat list cannot be loaded", async () => {
+    vi.mocked(progressApi.summary).mockResolvedValue({ ...empty, documents_total: 1, documents_ready: 1 });
+    vi.mocked(tutorApi.threads).mockRejectedValue(new Error("down"));
+    render(<DashboardView />);
+    expect(await screen.findByText("Recommended next step")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ask a question" })).toHaveAttribute("href", "/tutor");
   });
 
   it("recommends the next step from the backend message and links to a quiz and the tutor for that topic", async () => {

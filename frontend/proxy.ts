@@ -17,7 +17,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   if (hasSession && isAuthPage && !request.nextUrl.searchParams.has("expired")) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/tutor", request.url));
   }
   return NextResponse.next();
 }

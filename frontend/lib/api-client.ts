@@ -88,3 +88,17 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (!response.ok) return failFromResponse(response, path);
   return (await response.json().catch(() => null)) as T;
 }
+
+/** GET a file and return it with the name the server suggested. Errors become ApiError, like any request. */
+export async function apiDownload(path: string): Promise<{ blob: Blob; filename: string }> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, { credentials: "include" });
+  } catch {
+    throw networkError();
+  }
+  if (!response.ok) return failFromResponse(response, path);
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const filename = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? "download";
+  return { blob: await response.blob(), filename };
+}

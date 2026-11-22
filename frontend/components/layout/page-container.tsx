@@ -11,12 +11,14 @@ type Props = {
   /** App pages get 24px (mobile) or 32px (desktop) top padding and bottom space. Landing sections turn it off. */
   padded?: boolean;
   as?: "div" | "section" | "header" | "footer" | "nav";
+  /** Fill the whole area beside the sidebar instead of stopping at 1200px. The side padding stays. */
+  full?: boolean;
 };
 
-export function PageContainer({ children, className, padded = true, as: Tag = "div" }: Props) {
+export function PageContainer({ children, className, padded = true, full = false, as: Tag = "div" }: Props) {
   return (
     <Tag className={cn("w-full", PAGE_GUTTER, padded && "py-6 lg:py-8")}>
-      <div className={cn("mx-auto w-full max-w-[1200px]", className)}>{children}</div>
+      <div className={cn("w-full", !full && "mx-auto max-w-[1200px]", className)}>{children}</div>
     </Tag>
   );
 }

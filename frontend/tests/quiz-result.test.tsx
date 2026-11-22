@@ -1,7 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { vi } from "vitest";
 import { QuizResult } from "@/components/quizzes/quiz-result";
 import type { AttemptResult } from "@/types/api";
+
+vi.mock("@/lib/api", () => ({ quizzesApi: { notesPdf: vi.fn() } }));
 
 const result: AttemptResult = {
   attempt_id: "a1", quiz_id: "q1", quiz_title: "Recursion (beginner)", topic: "Recursion", score: 1, total_questions: 2,
@@ -47,5 +50,10 @@ describe("QuizResult", () => {
     render(<QuizResult result={result} />);
     expect(screen.getByRole("link", { name: "Review this topic" }).getAttribute("href")).toContain("/tutor?q=");
     expect(screen.getByRole("link", { name: "Try another quiz" })).toHaveAttribute("href", "/quizzes");
+  });
+
+  it("offers the notes as a PDF download", () => {
+    render(<QuizResult result={result} />);
+    expect(screen.getByRole("button", { name: "Download notes (PDF)" })).toBeInTheDocument();
   });
 });

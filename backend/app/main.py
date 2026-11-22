@@ -17,6 +17,8 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
         allow_headers=["Content-Type"],
+        # The browser can only read the suggested file name of a download if the header is exposed
+        expose_headers=["Content-Disposition"],
     )
     add_request_logging(app)
     register_error_handlers(app)

@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.core.errors import AppError
@@ -12,7 +12,7 @@ from app.schemas.quizzes import (
     QuizDetail,
     QuizList,
 )
-from app.services import quiz_service
+from app.services import quiz_notes_service, quiz_service
 from app.services.embedding_service import Embedder, get_embedder
 from app.services.groq_service import GroqService, get_groq_service
 
@@ -61,3 +61,15 @@ def submit_attempt(
 @router.get("/{quiz_id}/attempt", response_model=AttemptResult)
 def get_attempt(quiz_id: uuid.UUID, user: CurrentUser, db: DbSession) -> AttemptResult:
     return quiz_service.get_attempt_result(db, user.id, quiz_id)
+
+
+@router.get("/{quiz_id}/notes.pdf")
+def download_notes(quiz_id: uuid.UUID, user: CurrentUser, db: DbSession) -> Response:
+    """Study notes PDF. Needs a submitted attempt, so answers are never shown early."""
+    result = quiz_service.get_attempt_result(db, user.id, quiz_id)
+    filename = quiz_notes_service.notes_filename(result.quiz_title)
+    return Response(
+        content=quiz_notes_service.build_notes_pdf(result),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

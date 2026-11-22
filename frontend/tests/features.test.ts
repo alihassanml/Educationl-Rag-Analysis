@@ -12,7 +12,7 @@ describe("feature registry", () => {
     for (const feature of plannedFeatures()) {
       expect(feature.nav, `${feature.id} is planned and must not have a nav entry`).toBeUndefined();
     }
-    expect(hrefs).toEqual(["/dashboard", "/tutor", "/library", "/quizzes", "/progress", "/evaluation"]);
+    expect(hrefs).toEqual(["/tutor", "/dashboard", "/library", "/quizzes", "/progress", "/evaluation"]);
   });
 
   it("keeps the Evaluation Lab admin only", () => {

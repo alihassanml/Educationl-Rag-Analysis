@@ -1,4 +1,4 @@
-import { apiRequest, apiStream } from "./api-client";
+import { apiDownload, apiRequest, apiStream } from "./api-client";
 import { readSse, type SseEvent } from "./sse";
 import type {
   AskResponse,
@@ -89,6 +89,8 @@ export const quizzesApi = {
   submit: (id: string, answers: { question_id: string; selected_index: number }[]) =>
     apiRequest<AttemptResult>(`/quizzes/${id}/attempts`, { method: "POST", json: { answers } }),
   result: (id: string, signal?: AbortSignal) => apiRequest<AttemptResult>(`/quizzes/${id}/attempt`, { signal }),
+  /** Study notes PDF of a finished quiz */
+  notesPdf: (id: string) => apiDownload(`/quizzes/${id}/notes.pdf`),
 };
 
 export const progressApi = {

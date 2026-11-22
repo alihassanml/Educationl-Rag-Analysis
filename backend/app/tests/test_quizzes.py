@@ -229,3 +229,63 @@ def test_list_includes_attempt_state(auth_client, material, fake_groq):
 
 def test_validate_generated_ignores_non_list_input():
     assert validate_generated("nonsense", 3, set()) == ([], 0)
+
+
+def _pdf_text(data: bytes) -> str:
+    import pymupdf
+
+    with pymupdf.open(stream=data, filetype="pdf") as doc:
+        return "\n".join(page.get_text() for page in doc)
+
+
+def test_notes_pdf_has_questions_answers_and_sources(auth_client, material, fake_groq, db):
+    fake_groq.replies.append(reply(count=3))
+    quiz = generate(auth_client, num_questions=3).json()
+    picks = _correct_picks(db, quiz["id"])
+    picks[0] = (picks[0] + 1) % 4
+    auth_client.post(f"/api/v1/quizzes/{quiz['id']}/attempts", json=_answers(quiz, picks))
+
+    response = auth_client.get(f"/api/v1/quizzes/{quiz['id']}/notes.pdf")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert "attachment" in response.headers["content-disposition"]
+    assert response.content.startswith(b"%PDF")
+    text = _pdf_text(response.content)
+    assert "Question number 1 about recursion?" in text
+    assert "Because the notes say so." in text
+    assert "Programming Notes" in text
+    assert "2 of 3" in text
+
+
+def test_notes_pdf_needs_a_submitted_attempt(auth_client, material, fake_groq):
+    fake_groq.replies.append(reply(count=3))
+    quiz = generate(auth_client, num_questions=3).json()
+    # Answers stay hidden until the quiz is submitted, so the notes are not available either
+    assert auth_client.get(f"/api/v1/quizzes/{quiz['id']}/notes.pdf").status_code == 404
+
+
+def test_notes_pdf_of_another_users_quiz_is_404(client_factory, fake_groq, db):
+    alice, bob = client_factory(), client_factory()
+    register(alice, "alice@example.com")
+    register(bob, "bob@example.com")
+    upload(alice, [NOTES])
+    fake_groq.replies.append(reply(count=3))
+    quiz = generate(alice, num_questions=3).json()
+    alice.post(
+        f"/api/v1/quizzes/{quiz['id']}/attempts",
+        json=_answers(quiz, _correct_picks(db, quiz["id"])),
+    )
+    assert bob.get(f"/api/v1/quizzes/{quiz['id']}/notes.pdf").status_code == 404
+
+
+def test_download_file_name_is_readable_by_the_browser(auth_client, material, fake_groq, db):
+    fake_groq.replies.append(reply(count=3))
+    quiz = generate(auth_client, num_questions=3).json()
+    auth_client.post(
+        f"/api/v1/quizzes/{quiz['id']}/attempts",
+        json=_answers(quiz, _correct_picks(db, quiz["id"])),
+    )
+    response = auth_client.get(
+        f"/api/v1/quizzes/{quiz['id']}/notes.pdf", headers={"Origin": "http://localhost:3000"}
+    )
+    assert "content-disposition" in response.headers["access-control-expose-headers"].lower()

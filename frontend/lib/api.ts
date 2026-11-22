@@ -5,6 +5,7 @@ import type {
   AttemptResult,
   DiagnosticStatus,
   DocumentMeta,
+  ExamPrediction,
   DocumentList,
   EvalCompare,
   EvalDatasetList,
@@ -114,6 +115,14 @@ export const quizzesApi = {
   result: (id: string, signal?: AbortSignal) => apiRequest<AttemptResult>(`/quizzes/${id}/attempt`, { signal }),
   /** Study notes PDF of a finished quiz */
   notesPdf: (id: string) => apiDownload(`/quizzes/${id}/notes.pdf`),
+};
+
+export const examApi = {
+  get: (signal?: AbortSignal) => apiRequest<ExamPrediction>("/exam-predictor", { signal }),
+  /** Reads the past papers that have not been read yet, then returns the prediction */
+  analyse: () => apiRequest<ExamPrediction>("/exam-predictor/analyse", { method: "POST" }),
+  setPriority: (topicId: string, pinned: boolean) =>
+    apiRequest<{ topic_id: string; pinned: boolean }>(`/exam-predictor/topics/${topicId}/priority`, { method: "PUT", json: { pinned } }),
 };
 
 export const lightModeApi = {

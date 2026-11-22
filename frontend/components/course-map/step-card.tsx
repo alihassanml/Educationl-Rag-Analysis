@@ -35,6 +35,7 @@ export function StepCard({ step, last }: { step: PathStep; last: boolean }) {
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="mr-auto min-w-0 truncate text-base font-semibold text-ink">{step.name}</h3>
           {step.is_current ? <Chip tone="clay">Current step</Chip> : null}
+          {step.priority_reason ? <Chip tone="warning">{step.priority_reason}</Chip> : null}
           <TopicStatusLabel status={step.status} />
           {step.level ? <LevelChip level={step.level} /> : null}
         </div>

@@ -102,6 +102,44 @@ class LightEpisode(Base):
     topic: Mapped[Topic] = relationship()
 
 
+class PastPaperQuestion(Base):
+    """One question split out of a past paper, kept so the paper is only read once."""
+
+    __tablename__ = "past_paper_questions"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), index=True
+    )
+    position: Mapped[int] = mapped_column(Integer)
+    question_text: Mapped[str] = mapped_column(Text)
+    marks: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    page_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class ExamTopicScore(Base):
+    """The last exam prediction for a topic, and whether the student pinned it to their Course Map.
+    The Course Map reads this instead of recomputing the prediction."""
+
+    __tablename__ = "exam_topic_scores"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    topic_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("topics.id", ondelete="CASCADE"), primary_key=True
+    )
+    score: Mapped[int] = mapped_column(Integer, default=0)
+    label: Mapped[str] = mapped_column(String(10), default="Low")
+    pinned: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), server_default=func.now()
+    )
+
+
 class Quiz(Base):
     __tablename__ = "quizzes"
 

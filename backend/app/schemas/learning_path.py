@@ -34,6 +34,8 @@ class PathStep(BaseModel):
     is_current: bool
     # A running lighter step on this topic (a recap and a confidence quiz), if there is one
     light_episode_id: uuid.UUID | None = None
+    # Why the topic is first on the path when it was moved there for the exam
+    priority_reason: str | None = None
 
 
 class PathEventOut(BaseModel):

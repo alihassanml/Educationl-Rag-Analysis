@@ -3,7 +3,9 @@ from app.models.document import Document, DocumentChunk
 from app.models.evaluation import EvalDataset, EvalItem, EvalResult, EvalRun
 from app.models.quiz import (
     DocumentTopic,
+    ExamTopicScore,
     LightEpisode,
+    PastPaperQuestion,
     PathEvent,
     Question,
     QuestionResponse,
@@ -25,8 +27,10 @@ __all__ = [
     "EvalItem",
     "EvalResult",
     "EvalRun",
+    "ExamTopicScore",
     "LightEpisode",
     "MessageFeedback",
+    "PastPaperQuestion",
     "PathEvent",
     "Question",
     "QuestionResponse",

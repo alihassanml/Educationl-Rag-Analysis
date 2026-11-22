@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   MessageCircleQuestion,
   Route,
+  Target,
   type LucideIcon,
 } from "lucide-react";
 
@@ -90,6 +91,18 @@ export const FEATURES: Feature[] = [
     },
   },
   {
+    id: "exam-predictor",
+    status: "live",
+    label: "Exam predictor",
+    nav: { href: "/exam-predictor", group: "practise", icon: Target },
+    landing: {
+      overline: "Exam predictor",
+      title: "See which topics your past papers ask about",
+      body: "Upload your past papers and the questions are matched to your topics. Each topic is ranked by how many papers asked about it, how recent they are and the marks, and every ranking shows the real questions behind it.",
+      bullets: ["Needs at least two past papers", "The actual past questions are the evidence", "Based only on your uploads, never a guarantee"],
+    },
+  },
+  {
     id: "evaluation",
     status: "live",
     label: "Evaluation Lab",
@@ -142,7 +155,6 @@ export const FEATURES: Feature[] = [
       bullets: ["A recap with an example and a memory tip, cited", "Pass the confidence quiz and you return to your normal level", "Switch it off any time in Settings"],
     },
   },
-  { id: "exam-predictor", status: "planned", label: "Exam predictor", roadmap: "Topic likelihood from past papers, shown with its evidence" },
   { id: "viva", status: "planned", label: "Viva bot", roadmap: "Oral exam practice with follow-up questions and rubric scoring" },
   { id: "peer-match", status: "planned", label: "Peer match", roadmap: "Opt-in quiz duels with students who share weak topics" },
   { id: "reminders", status: "planned", label: "Study reminders", roadmap: "Reminders for topics that are due for review" },

@@ -16,7 +16,7 @@ from app.schemas.learning_path import (
     PathSource,
     PathStep,
 )
-from app.services import mood_service
+from app.services import exam_predictor_service, mood_service
 from app.services import recommendation_service as rules
 
 EVENT_LIMIT = 10
@@ -30,19 +30,26 @@ class Candidate:
     status: str
     accuracy: int | None  # percent
     document_order: int  # place in the documents, from 0
+    boosted: bool = False  # likely in the exam and needs revision, or pinned by the student
 
 
 def order_path(candidates: list[Candidate]) -> list[Candidate]:
     """Document order, except that topics needing revision go first (the weakest first) and topics
-    doing well go last. The rest keep their document order."""
+    doing well go last. The rest keep their document order. A boosted topic (predicted to be in
+    the exam and weak, or pinned by the student) goes before all of those."""
     by_document = sorted(candidates, key=lambda c: c.document_order)
+
+    def weakest_first(c: Candidate) -> tuple[int, int]:
+        return (c.accuracy if c.accuracy is not None else 0, c.document_order)
+
+    boosted = sorted((c for c in by_document if c.boosted), key=weakest_first)
+    rest = [c for c in by_document if not c.boosted]
     front = sorted(
-        (c for c in by_document if rules.route_group(c.status) == rules.ROUTE_FRONT),
-        key=lambda c: (c.accuracy if c.accuracy is not None else 0, c.document_order),
+        (c for c in rest if rules.route_group(c.status) == rules.ROUTE_FRONT), key=weakest_first
     )
-    middle = [c for c in by_document if rules.route_group(c.status) == rules.ROUTE_MIDDLE]
-    end = [c for c in by_document if rules.route_group(c.status) == rules.ROUTE_END]
-    return [*front, *middle, *end]
+    middle = [c for c in rest if rules.route_group(c.status) == rules.ROUTE_MIDDLE]
+    end = [c for c in rest if rules.route_group(c.status) == rules.ROUTE_END]
+    return [*boosted, *front, *middle, *end]
 
 
 def next_action(status: str, has_progress: bool, level: str | None) -> NextAction:
@@ -101,16 +108,25 @@ def build(db: Session, user_id: uuid.UUID) -> LearningPath:
             )
         )
 
+    exam = exam_predictor_service.priority_topics(db, user_id)
     candidates = []
+    priority_reason: dict[uuid.UUID, str] = {}
     for order, topic_id in enumerate(topics):
         p = progress.get(topic_id)
         correct, attempted = (p.correct_count, p.attempt_count) if p else (0, 0)
+        status = rules.classify(correct, attempted)
+        why = exam.get(topic_id)
+        if why == "pinned":
+            priority_reason[topic_id] = "Added to your priority"
+        elif why == "High" and status == rules.NEEDS_REVISION:
+            priority_reason[topic_id] = "Likely in exam"
         candidates.append(
             Candidate(
                 topic_id=topic_id,
-                status=rules.classify(correct, attempted),
+                status=status,
                 accuracy=rules.percent(correct, attempted),
                 document_order=order,
+                boosted=topic_id in priority_reason,
             )
         )
     ordered = order_path(candidates)
@@ -144,6 +160,7 @@ def build(db: Session, user_id: uuid.UUID) -> LearningPath:
                 ),
                 is_current=c.topic_id == current,
                 light_episode_id=light.get(c.topic_id),
+                priority_reason=priority_reason.get(c.topic_id),
             )
         )
 

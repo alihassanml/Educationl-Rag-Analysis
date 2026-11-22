@@ -50,6 +50,10 @@ class Document(Base):
     # notes | textbook | past_paper | teacher_material | lecture
     # Where the material came from, when that is a link worth keeping (a YouTube video)
     source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    # Past papers: when their questions were split out (so a paper is only processed once)
+    questions_extracted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     kind: Mapped[str] = mapped_column(String(20), default="notes", server_default="notes")
     exam_year: Mapped[int | None] = mapped_column(Integer, nullable=True)  # past papers only
     exam_session: Mapped[str | None] = mapped_column(String(50), nullable=True)

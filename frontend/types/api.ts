@@ -375,6 +375,8 @@ export type PathStep = {
   is_current: boolean;
   /** A running lighter step on this topic */
   light_episode_id?: string | null;
+  /** Why the topic is first for the exam: "Likely in exam" or "Added to your priority" */
+  priority_reason?: string | null;
 };
 
 export type PathEvent = { id: string; topic_id: string; topic: string; old_status: TopicStatus; new_status: TopicStatus; reason: string; created_at: string };
@@ -384,4 +386,48 @@ export type LearningPath = {
   current_topic_id: string | null;
   latest_event: PathEvent | null;
   events: PathEvent[];
+};
+
+// --- Exam predictor
+
+export type EvidenceQuestion = {
+  question_id: string;
+  text: string;
+  marks: number | null;
+  page_number: number | null;
+  document_id: string;
+  paper_title: string;
+  paper_year: number | null;
+  paper_session: string | null;
+  similarity: number | null;
+};
+
+export type PredictedTopic = {
+  topic_id: string;
+  name: string;
+  score: number;
+  label: "High" | "Medium" | "Low";
+  explanation: string;
+  papers_with_topic: number;
+  total_papers: number;
+  most_recent_year: number | null;
+  total_marks: number | null;
+  question_count: number;
+  evidence: EvidenceQuestion[];
+  level: Difficulty | null;
+  status: TopicStatus;
+  pinned: boolean;
+};
+
+export type ExamPrediction = {
+  status: "ok" | "need_more_papers" | "no_papers" | "no_topics";
+  message: string | null;
+  min_papers: number;
+  papers: { document_id: string; title: string; year: number | null; session: string | null; question_count: number; processed: boolean }[];
+  pending_papers: number;
+  failed_papers: number;
+  topics: PredictedTopic[];
+  unmatched: EvidenceQuestion[];
+  rule: string;
+  disclaimer: string;
 };

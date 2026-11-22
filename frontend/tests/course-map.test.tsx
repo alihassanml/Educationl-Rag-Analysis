@@ -107,6 +107,13 @@ describe("CourseMapView", () => {
     expect(within(first).getByText(/Let's take a lighter step on Recursion/)).toBeInTheDocument();
   });
 
+  it("says why a topic was moved first for the exam", async () => {
+    vi.mocked(pathApi.get).mockResolvedValue(path({ steps: [step({ priority_reason: "Likely in exam" })] }));
+    render(<CourseMapView />);
+    const first = (await screen.findAllByRole("listitem"))[0];
+    expect(within(first).getByText("Likely in exam")).toBeInTheDocument();
+  });
+
   it("offers to retake the diagnostic", async () => {
     vi.mocked(pathApi.get).mockResolvedValue(path());
     render(<CourseMapView />);

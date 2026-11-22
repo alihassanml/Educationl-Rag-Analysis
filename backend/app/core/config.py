@@ -79,6 +79,22 @@ class Settings(BaseSettings):
     # Failed quizzes in a row at beginner level before the topic is marked as needing support
     support_after_failed_attempts: int = 2
 
+    # Exam predictor: topics ranked by how often the student's past papers asked about them
+    exam_min_papers: int = 2  # papers needed before anything is predicted
+    # A question joins the topic whose passages it is closest to, only above this cosine
+    # similarity; below it the question stays "unmatched" instead of being forced into a topic
+    exam_match_min_similarity: float = 0.5
+    # Weights of the likelihood score (frequency, recency, marks); they are normalised, and the
+    # marks weight is dropped when no past paper gives marks
+    exam_weight_frequency: float = 0.5
+    exam_weight_recency: float = 0.3
+    exam_weight_marks: float = 0.2
+    exam_high_from: int = 70  # likelihood score for the High label
+    exam_medium_from: int = 40  # likelihood score for the Medium label
+    exam_evidence_per_topic: int = 8  # past questions shown as evidence under each topic
+    exam_paper_batch_chars: int = 14000  # paper text sent to the model per call
+    exam_paper_max_batches: int = 6
+
     # Mood-aware pacing ("light mode"): any one of these starts a lighter step on the topic
     mood_wrong_streak: int = 3  # wrong answers in a row across the most recent answers
     mood_low_score_percent: int = 40  # a quiz below this percent counts as a low score

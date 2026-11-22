@@ -283,6 +283,18 @@ def dispatch(
         raise
 
 
+def load_pages(document: Document) -> list[pdf_service.PageText]:
+    """The text of a stored document, page by page (a text source is one block)."""
+    path = Path(document.storage_path)
+    if document.mime_type == SOURCE_YOUTUBE_MIME:
+        return youtube_service.windows(
+            youtube_service.from_stored(path.read_text(encoding="utf-8"))
+        )
+    if document.mime_type in (SOURCE_TEXT_MIME, SOURCE_WEBSITE_MIME):
+        return [pdf_service.PageText(page_number=None, text=path.read_text(encoding="utf-8"))]
+    return pdf_service.extract_pages(path)
+
+
 def process_stored(
     db: Session, embedder: Embedder, document: Document, llm: GroqService | None = None
 ) -> None:

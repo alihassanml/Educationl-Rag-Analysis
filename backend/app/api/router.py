@@ -6,6 +6,7 @@ from app.api.routes import (
     diagnostic,
     documents,
     evaluation,
+    exam_predictor,
     health,
     learning_path,
     light_mode,
@@ -21,6 +22,7 @@ api_router.include_router(documents.router)
 api_router.include_router(tutor.router)
 api_router.include_router(quizzes.router)
 api_router.include_router(diagnostic.router)
+api_router.include_router(exam_predictor.router)
 api_router.include_router(learning_path.router)
 api_router.include_router(light_mode.router)
 api_router.include_router(progress.router)

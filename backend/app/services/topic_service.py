@@ -235,15 +235,16 @@ def prune_unused_topics(db: Session, user_id: uuid.UUID) -> int:
     return db.execute(delete(Topic).where(Topic.id.in_(unused))).rowcount or 0
 
 
-def anchor_chunks(
+def anchor_rows(
     db: Session,
     user_id: uuid.UUID,
     topic_id: uuid.UUID,
-    count: int,
     document_ids: list[uuid.UUID] | None = None,
-) -> list[RetrievedChunk]:
-    """Passages of a topic's anchor: the chunks on its pages, else under its heading. Empty when
-    the topic has no anchor in the documents (the caller then searches by the topic's name)."""
+    exclude_kind: str | None = None,
+) -> list[tuple[DocumentChunk, str]]:
+    """Every chunk in a topic's anchor, with its document's title: the chunks on its pages, else
+    under its heading. `exclude_kind` leaves out one kind of document (past papers, when the
+    predictor wants the topic as the student's study material describes it)."""
     stmt = (
         select(DocumentTopic, Document.title)
         .join(Document, Document.id == DocumentTopic.document_id)
@@ -256,6 +257,8 @@ def anchor_chunks(
     )
     if document_ids:
         stmt = stmt.where(Document.id.in_(document_ids))
+    if exclude_kind:
+        stmt = stmt.where(Document.kind != exclude_kind)
     rows: list[tuple[DocumentChunk, str]] = []
     for link, title in db.execute(stmt):
         chunk_stmt = select(DocumentChunk).where(
@@ -270,6 +273,19 @@ def anchor_chunks(
         else:
             continue
         rows.extend((c, title) for c in db.scalars(chunk_stmt.order_by(DocumentChunk.chunk_index)))
+    return rows
+
+
+def anchor_chunks(
+    db: Session,
+    user_id: uuid.UUID,
+    topic_id: uuid.UUID,
+    count: int,
+    document_ids: list[uuid.UUID] | None = None,
+) -> list[RetrievedChunk]:
+    """A handful of passages from a topic's anchor. Empty when the topic has no anchor in the
+    documents (the caller then searches by the topic's name)."""
+    rows = anchor_rows(db, user_id, topic_id, document_ids)
     # Prefer passages with some substance, then take a random handful so repeat quizzes differ
     solid = [r for r in rows if len(r[0].content.split()) >= 30] or rows
     picked = random.sample(solid, min(count, len(solid)))

@@ -31,7 +31,10 @@ class RegisterIn(Credentials):
 
 
 class PreferencesIn(BaseModel):
-    lighter_steps_enabled: bool
+    lighter_steps_enabled: bool | None = None
+    peer_match_opt_in: bool | None = None
+    reminders_enabled: bool | None = None
+    reminder_hour_utc: int | None = Field(default=None, ge=0, le=23)
 
 
 class UserOut(BaseModel):
@@ -43,4 +46,7 @@ class UserOut(BaseModel):
     role: str = "student"
     display_name: str = ""
     lighter_steps_enabled: bool = True
+    peer_match_opt_in: bool = False
+    reminders_enabled: bool = True
+    reminder_hour_utc: int = 9
     created_at: datetime

@@ -24,6 +24,16 @@ class NotFoundError(AppError):
         super().__init__(404, "not_found", f"{what} not found")
 
 
+class BadRequestError(AppError):
+    def __init__(self, message: str, code: str = "bad_request") -> None:
+        super().__init__(400, code, message)
+
+
+class ForbiddenError(AppError):
+    def __init__(self, message: str = "You do not have access to this") -> None:
+        super().__init__(403, "forbidden", message)
+
+
 def _body(code: str, message: str, details: Any = None) -> dict[str, Any]:
     error: dict[str, Any] = {"code": code, "message": message}
     if details is not None:

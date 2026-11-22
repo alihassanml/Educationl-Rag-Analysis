@@ -16,6 +16,11 @@ type Props = {
   className?: string;
 };
 
+/** Right-aligned action row at the bottom of a dialog's content. */
+export function DialogFooter({ children }: { children: ReactNode }) {
+  return <div className="mt-6 flex justify-end gap-2">{children}</div>;
+}
+
 /** Native <dialog>: focus is trapped, Esc closes (reported through onClose), the backdrop dims the page. */
 export function Dialog({ open, title, onClose, children, variant = "dialog", side = "right", className }: Props) {
   const ref = useRef<HTMLDialogElement>(null);

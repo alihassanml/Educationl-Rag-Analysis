@@ -47,6 +47,8 @@ logger = logging.getLogger("app.quizzes")
 KIND_PRACTICE = "practice"
 KIND_DIAGNOSTIC = "diagnostic"
 KIND_CONFIDENCE = "confidence"
+KIND_SLIP_TEST = "slip_test"
+KIND_PEER_DUEL = "peer_duel"
 
 _CONTEXT_CHUNKS = 8
 # Words of a follow-up ("10 more", "another one") that name no subject
@@ -502,6 +504,12 @@ def _build_result(
                 TopicProgress.user_id == user_id, TopicProgress.topic_id == quiz.topic_id
             )
         )
+        if progress and quiz.kind == KIND_SLIP_TEST:
+            settings = get_settings()
+            if attempt.score >= settings.slip_test_pass_correct:
+                progress.consecutive_slip_passes += 1
+            else:
+                progress.consecutive_slip_passes = 0
         if progress and quiz.topic:
             status = recommendation_service.classify(progress.correct_count, progress.attempt_count)
             rec = recommendation_service.recommend(

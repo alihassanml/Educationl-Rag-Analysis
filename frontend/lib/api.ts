@@ -34,6 +34,14 @@ import type {
   TeacherStyleStatus,
   TopicProgressList,
   User,
+  BlockedUser,
+  ChallengeDetail,
+  DueTopic,
+  Notification,
+  NotificationList,
+  PeerMatchCandidate,
+  VivaSessionDetail,
+  VivaSessionSummary,
 } from "@/types/api";
 
 export const authApi = {
@@ -44,6 +52,8 @@ export const authApi = {
   logout: () => apiRequest<void>("/auth/logout", { method: "POST" }),
   me: (signal?: AbortSignal) => apiRequest<User>("/auth/me", { signal }),
   setLighterSteps: (enabled: boolean) => apiRequest<User>("/auth/me/preferences", { method: "PATCH", json: { lighter_steps_enabled: enabled } }),
+  setPreferences: (prefs: { lighter_steps_enabled?: boolean; peer_match_opt_in?: boolean; reminders_enabled?: boolean; reminder_hour_utc?: number }) =>
+    apiRequest<User>("/auth/me/preferences", { method: "PATCH", json: prefs }),
 };
 
 export const documentsApi = {
@@ -194,4 +204,74 @@ export const classesApi = {
 
 export const teacherApi = {
   insights: (classId: string, signal?: AbortSignal) => apiRequest<ClassInsights>(`/teacher/classes/${classId}/insights`, { signal }),
+};
+
+export const peerMatchApi = {
+  matches: (signal?: AbortSignal) => apiRequest<PeerMatchCandidate[]>("/peer-match/matches", { signal }),
+  challenges: (signal?: AbortSignal) => apiRequest<ChallengeDetail[]>("/peer-match/challenges", { signal }),
+  challenge: (id: string, signal?: AbortSignal) => apiRequest<ChallengeDetail>(`/peer-match/challenges/${id}`, { signal }),
+  createChallenge: (opponentId: string, topicName: string, difficulty?: string) =>
+    apiRequest<ChallengeDetail>("/peer-match/challenges", {
+      method: "POST",
+      json: { opponent_id: opponentId, topic_name: topicName, difficulty },
+    }),
+  accept: (id: string) => apiRequest<ChallengeDetail>(`/peer-match/challenges/${id}/accept`, { method: "POST" }),
+  decline: (id: string) => apiRequest<ChallengeDetail>(`/peer-match/challenges/${id}/decline`, { method: "POST" }),
+  cancel: (id: string) => apiRequest<ChallengeDetail>(`/peer-match/challenges/${id}/cancel`, { method: "POST" }),
+  submit: (id: string, answers: number[], timeSeconds: number) =>
+    apiRequest<ChallengeDetail>(`/peer-match/challenges/${id}/submit`, {
+      method: "POST",
+      json: { answers, time_seconds: timeSeconds },
+    }),
+  block: (blockedUserId: string, reason?: string) =>
+    apiRequest<BlockedUser>("/peer-match/block", {
+      method: "POST",
+      json: { blocked_user_id: blockedUserId, reason },
+    }),
+  unblock: (blockedUserId: string) =>
+    apiRequest<{ status: string }>(`/peer-match/block/${blockedUserId}`, { method: "DELETE" }),
+  blocks: (signal?: AbortSignal) => apiRequest<BlockedUser[]>("/peer-match/blocks", { signal }),
+};
+
+export const vivaApi = {
+  transcribe: (file: Blob, filename = "audio.webm") => {
+    const formData = new FormData();
+    formData.append("file", file, filename);
+    return apiRequest<{ transcript: string }>("/viva/transcribe", {
+      method: "POST",
+      formData,
+    });
+  },
+  start: (topic: string) =>
+    apiRequest<VivaSessionDetail>("/viva/sessions", {
+      method: "POST",
+      json: { topic },
+    }),
+  sessions: (signal?: AbortSignal) => apiRequest<VivaSessionSummary[]>("/viva/sessions", { signal }),
+  session: (id: string, signal?: AbortSignal) => apiRequest<VivaSessionDetail>(`/viva/sessions/${id}`, { signal }),
+  answer: (id: string, turnIndex: number, answer: string, isFollowUp: boolean) =>
+    apiRequest<VivaSessionDetail>(`/viva/sessions/${id}/answer`, {
+      method: "POST",
+      json: { turn_index: turnIndex, answer, is_follow_up: isFollowUp },
+    }),
+  tabSwitch: (id: string, count = 1) =>
+    apiRequest<{ tab_switch_count: number }>(`/viva/sessions/${id}/tab-switch`, {
+      method: "POST",
+      json: { count },
+    }),
+};
+
+export const notificationsApi = {
+  list: (signal?: AbortSignal) => apiRequest<NotificationList>("/notifications", { signal }),
+  markRead: (id: string) => apiRequest<Notification>(`/notifications/${id}/read`, { method: "PATCH" }),
+  markAllRead: () => apiRequest<{ updated: number }>("/notifications/read-all", { method: "POST" }),
+};
+
+export const remindersApi = {
+  dueTopics: (signal?: AbortSignal) => apiRequest<DueTopic[]>("/reminders/due-topics", { signal }),
+  generateSlipTest: (topic: string) =>
+    apiRequest<QuizDetail>("/reminders/slip-tests", {
+      method: "POST",
+      json: { topic },
+    }),
 };

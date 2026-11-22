@@ -4,10 +4,11 @@ import asyncio
 from typing import Any
 
 from arq.connections import RedisSettings
+from arq.cron import cron
 
 from app.core.config import get_settings
 from app.services.embedding_service import get_embedder
-from app.workers.tasks import process_document_job, run_eval_job
+from app.workers.tasks import process_document_job, run_eval_job, send_due_reminders_job
 
 
 async def startup(ctx: dict[str, Any]) -> None:
@@ -17,7 +18,8 @@ async def startup(ctx: dict[str, Any]) -> None:
 
 
 class WorkerSettings:
-    functions = [run_eval_job, process_document_job]
+    functions = [run_eval_job, process_document_job, send_due_reminders_job]
+    cron_jobs = [cron(send_due_reminders_job, minute=0)]
     on_startup = startup
     redis_settings = RedisSettings.from_dsn(get_settings().redis_url)
     job_timeout = 1800  # seconds; far longer than indexing a large PDF or an evaluation run

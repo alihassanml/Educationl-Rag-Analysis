@@ -8,8 +8,12 @@ from app.core.errors import AppError
 from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models.user import ROLE_TEACHER, User
+from app.services.embedding_service import Embedder, get_embedder
+from app.services.groq_service import GroqService, get_groq_service
 
 DbSession = Annotated[Session, Depends(get_db)]
+EmbedderDep = Annotated[Embedder, Depends(get_embedder)]
+LLMDep = Annotated[GroqService, Depends(get_groq_service)]
 
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 

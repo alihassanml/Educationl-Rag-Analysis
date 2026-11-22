@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/cn";
 import { AccountMenu } from "./account-menu";
+import { NotificationsButton } from "./notifications-button";
 import { PAGE_GUTTER } from "./page-container";
 import { Rail } from "./rail";
 import { SidebarNav } from "./sidebar-nav";
@@ -40,6 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className={cn("flex h-14 items-center justify-between", PAGE_GUTTER)}>
             <Brand />
             <div className="flex items-center gap-1">
+              <NotificationsButton />
               <Link href="/history" aria-label="Chat history" className="inline-flex size-10 items-center justify-center rounded-full text-ink hover:bg-stone-100">
                 <History size={20} strokeWidth={1.75} aria-hidden="true" />
               </Link>

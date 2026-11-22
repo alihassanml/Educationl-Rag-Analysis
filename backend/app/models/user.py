@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String, false, func, true
+from sqlalchemy import Boolean, DateTime, Integer, String, false, func, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -31,4 +31,9 @@ class User(Base):
     lighter_steps_enabled: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default=true()
     )
+    # Peer-Match Learning opt-in (off by default)
+    peer_match_opt_in: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    # Spaced repetition study reminders (on by default)
+    reminders_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
+    reminder_hour_utc: Mapped[int] = mapped_column(Integer, default=9, server_default="9")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

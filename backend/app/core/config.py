@@ -117,6 +117,26 @@ class Settings(BaseSettings):
     mastery_needs_revision_below: int = 60
     mastery_doing_well_from: int = 80
 
+    # Peer-Match Learning
+    peer_challenge_expiry_minutes: int = 15
+    peer_challenge_time_limit_seconds: int = 600
+    peer_challenge_max_pending: int = 5
+    peer_challenge_questions: int = 5
+
+    # Cheating-Proof Viva Bot (oral exam)
+    viva_questions_per_session: int = 5
+    viva_time_limit_seconds: int = 90
+    viva_whisper_model: str = "whisper-large-v3"
+    viva_progress_weight: float = 0.5  # Weight of viva score contribution to topic progress
+
+    # Spaced repetition reminders and slip tests
+    spaced_interval_needs_revision_days: int = 1
+    spaced_interval_practicing_days: int = 3
+    spaced_interval_doing_well_days: int = 7
+    spaced_interval_max_days: int = 30
+    slip_test_questions: int = 3
+    slip_test_pass_correct: int = 2
+
     @model_validator(mode="after")
     def reject_default_secret_in_production(self) -> "Settings":
         if self.app_env == "production" and self.secret_key == "dev-only-change-me":

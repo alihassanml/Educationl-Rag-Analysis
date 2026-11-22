@@ -270,6 +270,8 @@ class TopicProgress(Base):
     # Failed quizzes in a row at beginner level; at the configured count `needs_support` is set
     failed_streak: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     needs_support: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    # Spaced repetition slip tests passed in a row; doubles review interval up to 30 days
+    consecutive_slip_passes: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     last_practiced_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

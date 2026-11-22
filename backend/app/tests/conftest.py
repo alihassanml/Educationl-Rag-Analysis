@@ -67,6 +67,24 @@ class FakeGroq(GroqService):
         self.stream_replies: list[Any] = []
         self.stream_calls: list[dict[str, str]] = []
         self.stream_closed = False
+        self.transcribe_replies: list[Any] = []
+        self.transcribe_calls: list[dict[str, Any]] = []
+
+    def transcribe_audio(  # type: ignore[override]
+        self,
+        file_bytes: bytes,
+        filename: str = "audio.webm",
+        model: str = "whisper-large-v3",
+    ) -> str:
+        self.transcribe_calls.append(
+            {"filename": filename, "size": len(file_bytes), "model": model}
+        )
+        if not self.transcribe_replies:
+            return "Recursion is where a solution depends on smaller instances."
+        reply = self.transcribe_replies.pop(0)
+        if isinstance(reply, Exception):
+            raise reply
+        return str(reply)
 
     def complete_json(self, system: str, user: str, *, temperature: float, max_tokens: int):  # type: ignore[override]
         self.calls.append({"system": system, "user": user})

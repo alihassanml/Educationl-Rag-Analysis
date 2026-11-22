@@ -7,6 +7,9 @@ export type User = {
   role?: AccountRole;
   display_name?: string;
   lighter_steps_enabled?: boolean;
+  peer_match_opt_in?: boolean;
+  reminders_enabled?: boolean;
+  reminder_hour_utc?: number;
   created_at: string;
 };
 
@@ -490,4 +493,133 @@ export type ClassInsights = {
   topics: ClassTopic[];
   topics_hidden: number;
   students: { student_id: string; display_name: string; topics: StudentTopic[] }[];
+};
+
+export type PeerMatchCandidate = {
+  user_id: string;
+  display_name: string;
+  topic_name: string;
+  in_same_class: boolean;
+};
+
+export type ChallengeDetail = {
+  id: string;
+  challenger_id: string;
+  challenger_name: string;
+  opponent_id: string;
+  opponent_name: string;
+  topic_name: string;
+  difficulty: Difficulty;
+  status: "pending" | "accepted" | "declined" | "completed" | "expired" | "cancelled";
+  challenger_quiz_id?: string | null;
+  opponent_quiz_id?: string | null;
+  challenger_score?: number | null;
+  challenger_total?: number | null;
+  challenger_time_seconds?: number | null;
+  opponent_score?: number | null;
+  opponent_total?: number | null;
+  opponent_time_seconds?: number | null;
+  winner_id?: string | null;
+  winner_name?: string | null;
+  expires_at: string;
+  created_at: string;
+  completed_at?: string | null;
+  my_role: "challenger" | "opponent";
+  my_quiz_id?: string | null;
+  my_completed: boolean;
+  opponent_completed: boolean;
+};
+
+export type BlockedUser = {
+  id: string;
+  blocked_user_id: string;
+  display_name: string;
+  created_at: string;
+};
+
+export type VivaCitation = {
+  document_title: string;
+  page_number?: number | null;
+  section_title?: string | null;
+  start_seconds?: number | null;
+  source_url?: string | null;
+};
+
+export type VivaTurnPublic = {
+  turn_index: number;
+  question_text: string;
+  follow_up_question?: string | null;
+  student_answer?: string | null;
+  follow_up_answer?: string | null;
+  is_follow_up_pending: boolean;
+  is_completed: boolean;
+};
+
+export type VivaTurnReport = {
+  turn_index: number;
+  question_text: string;
+  follow_up_question?: string | null;
+  student_answer?: string | null;
+  follow_up_answer?: string | null;
+  grade_accuracy: number;
+  grade_completeness: number;
+  grade_own_words: number;
+  grade_score: number;
+  grade_feedback: string;
+  ideal_answer: string;
+  sources: VivaCitation[];
+};
+
+export type VivaSessionDetail = {
+  id: string;
+  topic_name: string;
+  status: "in_progress" | "completed" | "abandoned";
+  tab_switch_count: number;
+  current_turn_index: number;
+  total_turns: number;
+  current_turn?: VivaTurnPublic | null;
+  total_score?: number | null;
+  max_score?: number | null;
+  overall_feedback?: string | null;
+  completed_turns: VivaTurnReport[];
+  created_at: string;
+  completed_at?: string | null;
+};
+
+export type VivaSessionSummary = {
+  id: string;
+  topic_name: string;
+  status: "in_progress" | "completed" | "abandoned";
+  total_score: number;
+  max_score: number;
+  tab_switch_count: number;
+  created_at: string;
+  completed_at?: string | null;
+};
+
+export type Notification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  link?: string | null;
+  read_at?: string | null;
+  created_at: string;
+};
+
+export type NotificationList = {
+  notifications: Notification[];
+  unread_count: number;
+};
+
+export type DueTopic = {
+  topic_id: string;
+  topic_name: string;
+  status: TopicStatus;
+  current_difficulty: Difficulty;
+  interval_days: number;
+  last_practiced_at: string;
+  next_due_at: string;
+  is_due: boolean;
+  days_overdue: number;
 };

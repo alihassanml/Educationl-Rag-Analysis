@@ -8,6 +8,8 @@ import {
   Target,
   Users,
   GraduationCap,
+  Mic,
+  Swords,
   type LucideIcon,
 } from "lucide-react";
 
@@ -186,9 +188,41 @@ export const FEATURES: Feature[] = [
       bullets: ["A recap with an example and a memory tip, cited", "Pass the confidence quiz and you return to your normal level", "Switch it off any time in Settings"],
     },
   },
-  { id: "viva", status: "planned", label: "Viva bot", roadmap: "Oral exam practice with follow-up questions and rubric scoring" },
-  { id: "peer-match", status: "planned", label: "Peer match", roadmap: "Opt-in quiz duels with students who share weak topics" },
-  { id: "reminders", status: "planned", label: "Study reminders", roadmap: "Reminders for topics that are due for review" },
+  {
+    id: "peer-match",
+    status: "live",
+    label: "Peer match",
+    nav: { href: "/peer-match", group: "practise", icon: Swords, role: "student" },
+    landing: {
+      overline: "Peer match",
+      title: "Friendly quiz duels on shared weak topics",
+      body: "Opt in to find classmates and fellow students who struggle with the same concepts. Challenge them to a timed duel on that topic where both answer questions from their own course material.",
+      bullets: ["Privacy first: only your display name is shared", "Questions generated from your own material", "Live scoring and friendly competition"],
+    },
+  },
+  {
+    id: "viva",
+    status: "live",
+    label: "Viva bot",
+    nav: { href: "/viva", group: "practise", icon: Mic, role: "student" },
+    landing: {
+      overline: "Oral exam viva",
+      title: "Speaking and thinking on your feet",
+      body: "Practise verbal exams with an oral AI tutor. Questions are read aloud, answers can be spoken or typed, and follow-up probes test true conceptual mastery with rubric scoring.",
+      bullets: ["Speech synthesis and Whisper voice transcription", "Anti-cheating time limits and tab switch detection", "Detailed rubric report on accuracy, completeness and own words"],
+    },
+  },
+  {
+    id: "reminders",
+    status: "live",
+    label: "Study reminders",
+    landing: {
+      overline: "Spaced repetition",
+      title: "Slip tests and timely reminders",
+      body: "Topics automatically become due based on memory retention intervals. Quick 2-minute slip tests maintain consistency and keep past concepts fresh.",
+      bullets: ["Spaced intervals: 1 day, 3 days, 7 days up to 30 days", "Quick 3-question slip tests", "Gentle daily in-app reminders"],
+    },
+  },
 ];
 
 export const liveFeatures = (): Feature[] => FEATURES.filter((f) => f.status === "live");

@@ -129,6 +129,28 @@ class GroqService:
         content = response.choices[0].message.content or ""
         return _extract_json(content)
 
+    def transcribe_audio(
+        self,
+        file_bytes: bytes,
+        filename: str = "audio.webm",
+        model: str = "whisper-large-v3",
+    ) -> str:
+        if self._client is None:
+            raise LLMUnavailableError("The AI service is not configured yet")
+        started = time.perf_counter()
+        try:
+            transcription = self._client.audio.transcriptions.create(
+                file=(filename, file_bytes),
+                model=model,
+            )
+            return str(getattr(transcription, "text", "")).strip()
+        except groq.GroqError as exc:
+            raise _unavailable(exc) from exc
+        finally:
+            logger.info(
+                "Groq transcription finished in %.0fms", (time.perf_counter() - started) * 1000
+            )
+
 
 @lru_cache
 def get_groq_service() -> GroqService:

@@ -56,3 +56,16 @@ async def process_document_job(ctx: dict[str, Any], document_id: str) -> None:
         logger.warning("process_document_job received a malformed document id")
         return
     await asyncio.to_thread(_process_document, parsed)
+
+
+def _send_due_reminders() -> int:
+    from app.services import reminder_service
+
+    with sessionmaker(bind=get_engine(), expire_on_commit=False)() as db:
+        return reminder_service.send_due_reminders_job(db)
+
+
+async def send_due_reminders_job(ctx: dict[str, Any]) -> None:
+    """Hourly cron: find students with due spaced repetition reviews and notify them."""
+    sent = await asyncio.to_thread(_send_due_reminders)
+    logger.info("send_due_reminders_job sent %d reminder(s)", sent)

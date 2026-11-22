@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Check, Circle, Plus } from "lucide-react";
+import { ArrowRight, Check, Circle, Clock, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { PageContainer } from "@/components/layout/page-container";
@@ -11,13 +11,13 @@ import { ButtonLink } from "@/components/ui/button";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import { CurrentStepCard } from "@/components/course-map/current-step-card";
 import { DiagnosticCard } from "@/components/diagnostic/diagnostic-card";
-import { diagnosticApi, pathApi, progressApi, tutorApi } from "@/lib/api";
+import { diagnosticApi, pathApi, progressApi, remindersApi, tutorApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/formatters";
 import { useGreeting } from "@/lib/greeting";
 import { formatRelative } from "@/lib/relative-time";
 import { useApi } from "@/lib/use-api";
-import type { DiagnosticStatus, LearningPath, ProgressSummary, StudyInsights, ThreadSummary } from "@/types/api";
+import type { DiagnosticStatus, DueTopic, LearningPath, ProgressSummary, StudyInsights, ThreadSummary } from "@/types/api";
 import { cardLinkClass, DashCard } from "./dash-card";
 import { LibraryCard, MAX_ROWS, TopPagesCard } from "./library-insights";
 import { ActivityCard, streakStatus } from "./study-activity";
@@ -270,7 +270,30 @@ function RecentQuizzes({ data }: { data: ProgressSummary }) {
   );
 }
 
-function Dashboard({ data, threads, insights, diagnostic, path }: { data: ProgressSummary; threads: ThreadSummary[]; insights: StudyInsights | null; diagnostic: DiagnosticStatus | null; path: LearningPath | null }) {
+function DueTodayCard({ dueTopics }: { dueTopics: DueTopic[] }) {
+  if (dueTopics.length === 0) return null;
+  const first = dueTopics[0];
+  return (
+    <section aria-label="Due for review" className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-accent/20 bg-accent/5 p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <Clock size={20} className="mt-0.5 text-accent shrink-0" aria-hidden="true" />
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent">Spaced Review Due</p>
+          <h2 className="mt-0.5 text-base font-semibold text-ink">Slip test due: {first.topic_name}</h2>
+          <p className="mt-0.5 text-xs text-ink-2">
+            3 quick questions (~2 min) to keep this topic fresh in memory.
+            {dueTopics.length > 1 ? ` (${dueTopics.length - 1} other topic${dueTopics.length > 2 ? "s" : ""} also due)` : ""}
+          </p>
+        </div>
+      </div>
+      <ButtonLink href={`/tutor?mode=quiz&q=${encodeURIComponent(first.topic_name)}`} size="sm" variant="primary">
+        Start slip test
+      </ButtonLink>
+    </section>
+  );
+}
+
+function Dashboard({ data, threads, insights, diagnostic, path, dueTopics }: { data: ProgressSummary; threads: ThreadSummary[]; insights: StudyInsights | null; diagnostic: DiagnosticStatus | null; path: LearningPath | null; dueTopics: DueTopic[] }) {
   const isNew = data.documents_total === 0 && data.quizzes_completed === 0;
   if (isNew) return <Checklist data={data} threads={threads} />;
 
@@ -295,6 +318,7 @@ function Dashboard({ data, threads, insights, diagnostic, path }: { data: Progre
 
   return (
     <div className="flex flex-col gap-6">
+      <DueTodayCard dueTopics={dueTopics} />
       <NextStep data={data} />
       {diagnostic?.suggested ? <DiagnosticCard status={diagnostic} /> : null}
       {path ? <CurrentStepCard path={path} /> : null}
@@ -329,6 +353,7 @@ export function DashboardView() {
   const insights = useApi(progressApi.insights);
   const diagnostic = useApi(diagnosticApi.status);
   const path = useApi(pathApi.get);
+  const due = useApi(remindersApi.dueTopics);
   const returning = data !== null && (data.documents_total > 0 || data.quizzes_completed > 0);
   return (
     <PageContainer>
@@ -346,7 +371,7 @@ export function DashboardView() {
       />
       {loading ? <LoadingBlock label="Loading your dashboard" /> : null}
       {error ? <ErrorBlock message={error.message} onRetry={reload} /> : null}
-      {data ? <Dashboard data={data} threads={threads.data ?? []} insights={insights.data} diagnostic={diagnostic.data} path={path.data} /> : null}
+      {data ? <Dashboard data={data} threads={threads.data ?? []} insights={insights.data} diagnostic={diagnostic.data} path={path.data} dueTopics={due.data ?? []} /> : null}
     </PageContainer>
   );
 }

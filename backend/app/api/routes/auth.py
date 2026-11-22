@@ -49,6 +49,13 @@ def me(user: CurrentUser) -> User:
 
 @router.patch("/me/preferences", response_model=UserOut)
 def update_preferences(body: PreferencesIn, user: CurrentUser, db: DbSession) -> User:
-    user.lighter_steps_enabled = body.lighter_steps_enabled
+    if body.lighter_steps_enabled is not None:
+        user.lighter_steps_enabled = body.lighter_steps_enabled
+    if body.peer_match_opt_in is not None:
+        user.peer_match_opt_in = body.peer_match_opt_in
+    if body.reminders_enabled is not None:
+        user.reminders_enabled = body.reminders_enabled
+    if body.reminder_hour_utc is not None:
+        user.reminder_hour_utc = body.reminder_hour_utc
     db.commit()
     return user

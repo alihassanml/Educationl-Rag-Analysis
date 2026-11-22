@@ -2,6 +2,8 @@ from app.models.chat import ChatCitation, ChatMessage, ChatThread, MessageFeedba
 from app.models.classroom import ClassDocument, ClassMember, Classroom
 from app.models.document import Document, DocumentChunk
 from app.models.evaluation import EvalDataset, EvalItem, EvalResult, EvalRun
+from app.models.notification import Notification
+from app.models.peer_match import PeerBlock, PeerChallenge
 from app.models.quiz import (
     DocumentTopic,
     ExamTopicScore,
@@ -17,6 +19,7 @@ from app.models.quiz import (
     TopicProgress,
 )
 from app.models.user import User
+from app.models.viva import VivaSession, VivaTurn
 
 __all__ = [
     "ChatCitation",
@@ -35,8 +38,11 @@ __all__ = [
     "ExamTopicScore",
     "LightEpisode",
     "MessageFeedback",
+    "Notification",
     "PastPaperQuestion",
     "PathEvent",
+    "PeerBlock",
+    "PeerChallenge",
     "Question",
     "QuestionResponse",
     "Quiz",
@@ -45,4 +51,6 @@ __all__ = [
     "Topic",
     "TopicProgress",
     "User",
+    "VivaSession",
+    "VivaTurn",
 ]

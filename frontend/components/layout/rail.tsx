@@ -10,6 +10,7 @@ import { NEW_CHAT_EVENT } from "@/lib/chat-events";
 import { cn } from "@/lib/cn";
 import { navItemsFor } from "@/lib/features";
 import { useDismiss } from "@/lib/use-dismiss";
+import { NotificationsButton } from "./notifications-button";
 
 const circle = "relative inline-flex size-11 shrink-0 items-center justify-center rounded-full transition-colors duration-[120ms]";
 
@@ -90,6 +91,8 @@ export function Rail({ expanded }: { expanded: boolean }) {
       ))}
 
       <PageRow label="Chat history" href="/history" icon={History} active={isActive("/history")} expanded={expanded} />
+
+      <NotificationsButton expanded={expanded} />
 
       <div className="flex-1" />
 

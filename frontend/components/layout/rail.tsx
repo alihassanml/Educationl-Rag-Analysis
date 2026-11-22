@@ -208,9 +208,10 @@ export function Rail({ expanded, onToggle, onExpand }: Props) {
           aria-label="Chat history"
           aria-expanded={expanded}
           onClick={onToggle}
-          className={cn(row, "group/row", expanded ? "text-ink" : "text-ink-2 hover:text-ink")}
+          className={cn(row, "group/row text-ink-2 hover:text-ink")}
         >
-          <span className={cn(circle, expanded ? "bg-paper text-ink ring-2 ring-ink" : "bg-paper/70 group-hover/row:bg-paper")}>
+          {/* Opens and folds the sidebar; it is not a page, so it never takes the current-page ring */}
+          <span className={cn(circle, expanded ? "bg-paper text-ink" : "bg-paper/70 group-hover/row:bg-paper")}>
             <History size={20} strokeWidth={1.75} aria-hidden="true" />
           </span>
           <Label expanded={expanded}>Chat history</Label>

@@ -18,7 +18,7 @@ Frontend: `BACKEND_URL` (where the Next.js server reaches the API; used at build
 
 ## 1. Docker Compose (local or any VM)
 ```bash
-cp backend/.env.example .env      # set SECRET_KEY, FILE_ENCRYPTION_KEY, GROQ_API_KEY
+cp .env.example .env              # then fill in SECRET_KEY, FILE_ENCRYPTION_KEY, GROQ_API_KEY
 docker compose up --build
 ```
 Open http://localhost:3000. Services: `db` (pgvector/pgvector:pg16), `redis:7`, `backend` (runs `alembic upgrade head`, then uvicorn), `worker` (ARQ: indexing jobs and the hourly reminder cron), `frontend`. Volumes: `pgdata`, `uploads`. The embedding model is baked into the backend image at build time.

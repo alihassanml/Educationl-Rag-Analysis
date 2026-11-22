@@ -24,4 +24,3 @@ Measured by hand during development on three labelled sets (the extra sets are n
 - Chunk text and embeddings are not application-encrypted (search needs them); see `security.md`.
 - On Render the API indexes uploads itself because a disk cannot be shared with the worker.
 - The CSP allows inline scripts (Next.js requirement); a nonce policy is future work.
-- Screenshots in `docs/wireframes/` were not regenerated.

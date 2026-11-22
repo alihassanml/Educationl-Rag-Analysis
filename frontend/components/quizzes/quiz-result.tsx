@@ -6,7 +6,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { TopicStatusLabel } from "@/components/ui/status-label";
 import { cn } from "@/lib/cn";
-import { pageLabel } from "@/lib/formatters";
+import { sourceLabel } from "@/lib/formatters";
 import type { AttemptResult } from "@/types/api";
 
 export function QuizResult({ result }: { result: AttemptResult }) {
@@ -73,7 +73,7 @@ export function QuizResult({ result }: { result: AttemptResult }) {
               </dl>
               <p className="mt-3 text-sm text-ink">{r.explanation}</p>
               {r.sources.length > 0 ? (
-                <p className="mt-2 text-small text-ink-2">Source: {r.sources.map((s) => `${s.document_title}, ${pageLabel(s.page_number)}`).join("; ")}</p>
+                <p className="mt-2 text-small text-ink-2">Source: {r.sources.map(sourceLabel).join("; ")}</p>
               ) : null}
             </li>
           ))}

@@ -88,7 +88,7 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
   const blocks = parseAnswer(writing ? hideOpenMarkup(shown) : shown, validMarkers);
 
   async function copy() {
-    const list = answer.sources.map((s) => `- ${s.title}, ${pageText(s.page).toLowerCase()}`).join("\n");
+    const list = answer.sources.map((s) => `- ${s.title}, ${pageText(s.page, s.section)}`).join("\n");
     try {
       await navigator.clipboard.writeText(answer.sources.length > 0 ? `${answer.text}\n\nSources:\n${list}` : answer.text);
       toast.show("Answer copied");
@@ -130,7 +130,7 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
                   >
                     <span className="font-medium text-accent-ink">[{source.marker}]</span>
                     <span className="truncate">{source.title}</span>
-                    <span className="ml-auto shrink-0 text-ink-2">{source.deleted ? "Source deleted" : pageText(source.page)}</span>
+                    <span className="ml-auto shrink-0 text-ink-2">{source.deleted ? "Source deleted" : pageText(source.page, source.section)}</span>
                   </button>
                 </li>
               ))}
@@ -147,7 +147,7 @@ export function AnswerBlock({ answer, onRephrase, onOpenSource, onRetry, onAskAg
               key={key}
               marker={marker}
               title={byMarker.get(marker)?.title}
-              page={pageText(byMarker.get(marker)?.page ?? null)}
+              page={pageText(byMarker.get(marker)?.page ?? null, byMarker.get(marker)?.section)}
               snippet={byMarker.get(marker)?.snippet}
               onClick={() => {
                 const source = byMarker.get(marker);

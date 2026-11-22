@@ -7,6 +7,8 @@ export type Source = {
   documentId: string | null;
   title: string;
   page: number | null;
+  /** Chapter or heading the passage sits under, when the document has one */
+  section: string | null;
   snippet: string;
   deleted: boolean;
 };
@@ -49,6 +51,7 @@ function toSource(raw: unknown): Source | null {
     documentId: typeof raw.document_id === "string" ? raw.document_id : null,
     title: typeof raw.document_title === "string" ? raw.document_title : "Document",
     page: typeof raw.page_number === "number" ? raw.page_number : null,
+    section: typeof raw.section_title === "string" && raw.section_title ? raw.section_title : null,
     snippet: typeof raw.snippet === "string" ? raw.snippet : "",
     deleted: false,
   };

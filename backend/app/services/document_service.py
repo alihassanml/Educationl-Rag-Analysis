@@ -214,11 +214,13 @@ def _process(
     """Index a document. PDFs are read from `path`; other sources pass their text as `pages`."""
     settings = get_settings()
     try:
+        outline: list[pdf_service.OutlineEntry] = []
         if pages is None:
             pages = pdf_service.extract_pages(path)
             document.page_count = len(pages)
+            outline = pdf_service.extract_outline(path)
         chunks = chunking_service.chunk_pages(
-            pages, settings.chunk_size_words, settings.chunk_overlap_words
+            pages, settings.chunk_size_words, settings.chunk_overlap_words, outline
         )
         if not chunks:
             _fail(db, document, no_text_message)
@@ -231,6 +233,7 @@ def _process(
                 chunk_index=chunk.chunk_index,
                 content=chunk.content,
                 page_number=chunk.page_number,
+                section_title=chunk.section_title,
                 embedding=vector,
             )
             for chunk, vector in zip(chunks, vectors, strict=True)

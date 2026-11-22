@@ -25,3 +25,19 @@ describe("formatRelative", () => {
     expect(formatRelative(ago(3 * 24 * 3600), now)).toBe("3 days ago");
   });
 });
+
+describe("chapter-aware citations", () => {
+  it("puts the chapter before the page, and keeps the old format without one", async () => {
+    const { pageText } = await import("@/components/tutor/sources");
+    expect(pageText(45, "Chapter 3: Recursion")).toBe("Chapter 3: Recursion · Page 45");
+    expect(pageText(45)).toBe("Page 45");
+    expect(pageText(45, null)).toBe("Page 45");
+    expect(pageText(null, "Chapter 3")).toBe("Chapter 3 · Page not available");
+  });
+
+  it("labels quiz sources with the chapter when there is one", async () => {
+    const { sourceLabel } = await import("@/lib/formatters");
+    expect(sourceLabel({ document_title: "Notes", page_number: 4, section_title: "Chapter 2" })).toBe("Notes, Chapter 2, page 4");
+    expect(sourceLabel({ document_title: "Notes", page_number: 4 })).toBe("Notes, page 4");
+  });
+});

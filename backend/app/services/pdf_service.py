@@ -34,6 +34,15 @@ class PageText:
 
 
 @dataclass(frozen=True)
+class OutlineEntry:
+    """One line of the PDF's own table of contents (bookmarks)."""
+
+    level: int  # 1 = top level (a chapter)
+    title: str
+    page: int  # 1-based
+
+
+@dataclass(frozen=True)
 class _Line:
     text: str
     size: float
@@ -232,3 +241,20 @@ def _heading_flags(lines: list[_Line], body: float) -> list[bool]:
             flags[start:end] = [False] * (end - start)
         start = end
     return flags
+
+
+def extract_outline(path: Path) -> list[OutlineEntry]:
+    """The PDF's table of contents, in order. Empty when the file has none or it cannot be read;
+    a missing outline is normal, so this never raises."""
+    try:
+        with pymupdf.open(path) as pdf:
+            if pdf.needs_pass:
+                return []
+            entries = []
+            for level, title, page in pdf.get_toc(simple=True):
+                title = _clean(str(title))[:255]
+                if title and page >= 1 and level >= 1:
+                    entries.append(OutlineEntry(level, title, int(page)))
+            return entries
+    except Exception:
+        return []

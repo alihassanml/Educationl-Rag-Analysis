@@ -10,7 +10,7 @@ from html import escape
 
 import pymupdf
 
-from app.schemas.quizzes import AttemptResult, QuestionResult
+from app.schemas.quizzes import AttemptResult, QuestionResult, SourceRef
 
 _CSS = """
 body { font-family: sans-serif; font-size: 10pt; color: #1C1B1A; }
@@ -37,6 +37,16 @@ def notes_filename(title: str) -> str:
     return f"{slug}-notes.pdf"
 
 
+def _source_label(s: SourceRef) -> str:
+    """ "Notes, Chapter 3: Recursion, page 45": the chapter is left out when there is none."""
+    parts = [s.document_title]
+    if s.section_title:
+        parts.append(s.section_title)
+    if s.page_number:
+        parts.append(f"page {s.page_number}")
+    return ", ".join(parts)
+
+
 def _question_html(number: int, r: QuestionResult) -> str:
     options = []
     for i, option in enumerate(r.options):
@@ -51,10 +61,7 @@ def _question_html(number: int, r: QuestionResult) -> str:
     verdict = (
         '<span class="ok">Correct</span>' if r.is_correct else '<span class="bad">Incorrect</span>'
     )
-    sources = "; ".join(
-        f"{s.document_title}, page {s.page_number}" if s.page_number else s.document_title
-        for s in r.sources
-    )
+    sources = "; ".join(_source_label(s) for s in r.sources)
     source_html = f'<p class="src">Source: {escape(sources)}</p>' if sources else ""
     return (
         f'<p class="q">{number}. {escape(r.question_text)} &nbsp; {verdict}</p>'

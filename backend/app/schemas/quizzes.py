@@ -67,6 +67,7 @@ class AttemptRequest(BaseModel):
 class SourceRef(BaseModel):
     document_title: str
     page_number: int | None
+    section_title: str | None = None
 
 
 class QuestionResult(BaseModel):

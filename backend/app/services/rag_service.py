@@ -47,6 +47,7 @@ def _citations(chunks: list[RetrievedChunk], used: object) -> list[Citation]:
             document_id=c.document_id,
             document_title=c.document_title,
             page_number=c.page_number,
+            section_title=c.section_title,
             chunk_id=c.chunk_id,
         )
         for c in selected

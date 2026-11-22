@@ -36,6 +36,7 @@ class CitationOut(BaseModel):
     document_id: uuid.UUID | None
     document_title: str
     page_number: int | None
+    section_title: str | None = None
     snippet: str
     source_deleted: bool
 

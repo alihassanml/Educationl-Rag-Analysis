@@ -10,7 +10,7 @@ describe("live answer state", () => {
     expect(live.stage).toBe("rewriting");
     live = applyEvent(live, { event: "status", data: { stage: "searching" } });
     live = applyEvent(live, { event: "sources", data: [source] });
-    expect(live.sources).toEqual([{ marker: 1, chunkId: "c1", documentId: "d1", title: "Notes", page: 2, snippet: "Recursion is", deleted: false }]);
+    expect(live.sources).toEqual([{ marker: 1, chunkId: "c1", documentId: "d1", title: "Notes", page: 2, section: null, snippet: "Recursion is", deleted: false }]);
     expect(live.text).toBe("");
     live = applyEvent(live, { event: "status", data: { stage: "writing" } });
     live = applyEvent(live, { event: "token", data: { text: "A method " } });

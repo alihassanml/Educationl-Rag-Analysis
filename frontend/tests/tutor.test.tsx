@@ -72,7 +72,7 @@ async function ask(text: string) {
 }
 
 const view = (over: Partial<AnswerView> = {}): AnswerView => ({ text: "", status: "complete", stage: null, sources: [], abstained: false, ...over });
-const src = (marker: number) => ({ marker, chunkId: `c${marker}`, documentId: "d1", title: "Programming Notes", page: marker + 1, snippet: "Recursion is a method", deleted: false });
+const src = (marker: number) => ({ marker, chunkId: `c${marker}`, documentId: "d1", title: "Programming Notes", page: marker + 1, section: null, snippet: "Recursion is a method", deleted: false });
 
 describe("AnswerBlock", () => {
   it("shows citation pills only for markers that are among the sources", () => {

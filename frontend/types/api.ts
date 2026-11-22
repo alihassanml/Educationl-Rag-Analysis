@@ -23,6 +23,7 @@ export type Citation = {
   document_id: string;
   document_title: string;
   page_number: number | null;
+  section_title?: string | null;
   chunk_id: string;
 };
 
@@ -69,7 +70,7 @@ export type QuestionResult = {
   correct_index: number;
   is_correct: boolean;
   explanation: string;
-  sources: { document_title: string; page_number: number | null }[];
+  sources: { document_title: string; page_number: number | null; section_title?: string | null }[];
 };
 
 export type AttemptResult = {
@@ -267,6 +268,7 @@ export type ChatCitation = {
   document_id: string | null;
   document_title: string;
   page_number: number | null;
+  section_title?: string | null;
   snippet: string;
   source_deleted: boolean;
 };

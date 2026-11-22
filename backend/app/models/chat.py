@@ -111,6 +111,7 @@ class ChatCitation(Base):
     )
     document_title: Mapped[str] = mapped_column(String(255))
     page_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    section_title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     marker: Mapped[int] = mapped_column(Integer)
     snippet: Mapped[str] = mapped_column(Text, default="")
 

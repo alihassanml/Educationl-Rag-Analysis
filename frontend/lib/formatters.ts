@@ -21,3 +21,8 @@ export function formatBytes(bytes: number): string {
 export function pageLabel(page: number | null): string {
   return page === null ? "page not available" : `page ${page}`;
 }
+
+/** "Notes, Chapter 3: Recursion, page 45". The chapter is left out when there is none. */
+export function sourceLabel(s: { document_title: string; page_number: number | null; section_title?: string | null }): string {
+  return [s.document_title, s.section_title, pageLabel(s.page_number)].filter(Boolean).join(", ");
+}

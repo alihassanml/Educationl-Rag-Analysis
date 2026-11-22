@@ -15,7 +15,7 @@ export function SourcesList({ sources, activeMarker }: { sources: Source[]; acti
           <SourceCard
             marker={source.marker}
             title={source.title}
-            page={source.deleted ? `${pageText(source.page)} · Source deleted` : pageText(source.page)}
+            page={source.deleted ? `${pageText(source.page, source.section)} · Source deleted` : pageText(source.page, source.section)}
             snippet={source.snippet || undefined}
             active={source.marker === activeMarker}
             flat

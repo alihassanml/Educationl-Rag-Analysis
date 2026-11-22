@@ -25,6 +25,7 @@ class RetrievedChunk:
     page_number: int | None
     content: str
     similarity: float
+    section_title: str | None = None
     rrf_score: float | None = None  # only set by hybrid retrieval
 
 
@@ -211,6 +212,7 @@ def retrieve(
                 page_number=candidate.chunk.page_number,
                 content=candidate.chunk.content,
                 similarity=candidate.similarity,
+                section_title=candidate.chunk.section_title,
                 rrf_score=rrf_score,
             )
         )
@@ -290,6 +292,7 @@ def retrieve_coverage(
             page_number=chunk.page_number,
             content=chunk.content,
             similarity=0.0,  # chosen for coverage, not matched to a query
+            section_title=chunk.section_title,
         )
         for chunk in rows
     ]

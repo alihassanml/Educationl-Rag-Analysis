@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 
-from app.services.pdf_service import PageText
+from app.services.pdf_service import OutlineEntry, PageText
 
 _MIN_WORDS = 5
 # "# Title" (also "## Title" in pasted Markdown). "#include" or "#define" in pasted code is not one.
@@ -16,6 +16,7 @@ class TextChunk:
     chunk_index: int
     page_number: int | None
     content: str
+    section_title: str | None = None  # the chapter (PDF outline) or heading the passage sits under
 
 
 @dataclass
@@ -102,10 +103,29 @@ def _windows(words: list[str], size: int, overlap: int) -> list[tuple[int, int]]
     return windows
 
 
-def chunk_pages(pages: list[PageText], size_words: int, overlap_words: int) -> list[TextChunk]:
+def chapter_at(outline: list[OutlineEntry], page: int | None) -> str | None:
+    """The chapter of a page: the last top-level outline entry that starts on or before it.
+    The top level is the shallowest level the outline uses."""
+    if page is None or not outline:
+        return None
+    top = min(e.level for e in outline)
+    title = None
+    for entry in outline:
+        if entry.level == top and entry.page <= page:
+            title = entry.title
+    return title
+
+
+def chunk_pages(
+    pages: list[PageText],
+    size_words: int,
+    overlap_words: int,
+    outline: list[OutlineEntry] | None = None,
+) -> list[TextChunk]:
     """Split the text into overlapping windows inside each section, each starting with the
     section's heading so the passage says what it is about. A chunk never crosses a page
-    boundary."""
+    boundary. Each chunk also records its section title: the chapter from the PDF outline that
+    covers its page, else the nearest heading above it."""
     if overlap_words >= size_words:
         raise ValueError("overlap must be smaller than chunk size")
     chunks: list[TextChunk] = []
@@ -116,5 +136,8 @@ def chunk_pages(pages: list[PageText], size_words: int, overlap_words: int) -> l
         for start, end in _windows(words, size_words, overlap_words):
             body = " ".join(words[start:end])
             content = f"{section.heading}\n{body}" if section.heading else body
-            chunks.append(TextChunk(len(chunks), section.page_number, content))
+            title = chapter_at(outline or [], section.page_number) or section.heading or None
+            chunks.append(
+                TextChunk(len(chunks), section.page_number, content, title[:255] if title else None)
+            )
     return chunks

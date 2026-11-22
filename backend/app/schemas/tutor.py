@@ -12,6 +12,7 @@ class Citation(BaseModel):
     document_id: uuid.UUID
     document_title: str
     page_number: int | None
+    section_title: str | None = None
     chunk_id: uuid.UUID
 
 

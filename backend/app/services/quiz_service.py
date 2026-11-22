@@ -173,6 +173,7 @@ def _sample_context(
             page_number=c.page_number,
             content=c.content,
             similarity=1.0,
+            section_title=c.section_title,
         )
         for c, title in picked
     ]
@@ -299,6 +300,7 @@ def generate_quiz(
                         "document_id": str(chunks[n - 1].document_id),
                         "document_title": chunks[n - 1].document_title,
                         "page_number": chunks[n - 1].page_number,
+                        "section_title": chunks[n - 1].section_title,
                     }
                     for n in sorted(set(q.source_passages))
                 ],
@@ -401,7 +403,13 @@ def _build_result(
             key = (s["document_title"], s["page_number"])
             if key not in seen:
                 seen.add(key)
-                sources.append(SourceRef(document_title=key[0], page_number=key[1]))
+                sources.append(
+                    SourceRef(
+                        document_title=key[0],
+                        page_number=key[1],
+                        section_title=s.get("section_title"),  # older quizzes have none
+                    )
+                )
         results.append(
             QuestionResult(
                 question_id=q.id,

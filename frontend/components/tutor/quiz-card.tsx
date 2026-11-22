@@ -10,7 +10,7 @@ import { TopicStatusLabel } from "@/components/ui/status-label";
 import { ApiError } from "@/lib/api-client";
 import { quizzesApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { pageLabel } from "@/lib/formatters";
+import { sourceLabel } from "@/lib/formatters";
 import type { QuizRequest } from "@/lib/quiz-request";
 import type { AttemptResult, QuizDetail } from "@/types/api";
 
@@ -187,7 +187,7 @@ export function QuizCard({ request, documentIds, onAgain, onCreated }: Props) {
               </p>
             ) : null}
             <p className="mt-2 text-sm text-ink">{r.explanation}</p>
-            {r.sources.length > 0 ? <p className="mt-1 text-small text-ink-2">Source: {r.sources.map((s) => `${s.document_title}, ${pageLabel(s.page_number)}`).join("; ")}</p> : null}
+            {r.sources.length > 0 ? <p className="mt-1 text-small text-ink-2">Source: {r.sources.map(sourceLabel).join("; ")}</p> : null}
           </li>
         ))}
       </ol>

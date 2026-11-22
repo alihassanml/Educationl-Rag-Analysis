@@ -1,6 +1,8 @@
 """Rebuild the passages of every ready document from its stored file.
 
 Run after changing how text is read or chunked, so old uploads get the same quality as new ones.
+This also fills in the chapter / section title of every passage (used in citations) for documents
+uploaded before section titles existed.
 Usage (from backend/): .venv/bin/python -m app.scripts.reindex_documents [--email you@example.com]
 """
 

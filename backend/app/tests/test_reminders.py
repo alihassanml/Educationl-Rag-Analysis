@@ -29,7 +29,7 @@ def test_spaced_repetition_interval_calculation():
     assert reminder_service.calculate_interval_days("doing_well", 3) == 30
 
 
-def test_due_topics_listing_and_slip_test_lifecycle(client_factory, db_session):
+def test_due_topics_listing_and_slip_test_lifecycle(client_factory, db):
     client = client_factory()
     user = register(client, "student@example.com", display_name="Spaced Student")
 
@@ -42,8 +42,8 @@ def test_due_topics_listing_and_slip_test_lifecycle(client_factory, db_session):
     )
 
     topic = Topic(user_id=user.id, name="Binary Search")
-    db_session.add(topic)
-    db_session.flush()
+    db.add(topic)
+    db.flush()
 
     # Practiced 2 days ago, needs_revision (interval = 1 day) -> DUE!
     practiced_at = datetime.now(UTC) - timedelta(days=2)
@@ -56,8 +56,8 @@ def test_due_topics_listing_and_slip_test_lifecycle(client_factory, db_session):
         consecutive_slip_passes=0,
         last_practiced_at=practiced_at,
     )
-    db_session.add(progress)
-    db_session.commit()
+    db.add(progress)
+    db.commit()
 
     # 1. Query due topics
     due_res = client.get("/api/v1/reminders/due-topics")
@@ -102,20 +102,20 @@ def test_due_topics_listing_and_slip_test_lifecycle(client_factory, db_session):
         assert attempt_res.status_code == 200
 
         # Progress should now have consecutive_slip_passes = 1
-        db_session.expire_all()
-        updated_prog = db_session.get(TopicProgress, progress.id)
+        db.expire_all()
+        updated_prog = db.get(TopicProgress, progress.id)
         assert updated_prog.consecutive_slip_passes == 1
     finally:
         app.dependency_overrides.pop(get_groq_service, None)
 
 
-def test_notifications_and_daily_reminder_limits(client_factory, db_session):
+def test_notifications_and_daily_reminder_limits(client_factory, db):
     client = client_factory()
     user = register(client, "notif@example.com", display_name="Notification Student")
 
     topic = Topic(user_id=user.id, name="QuickSort")
-    db_session.add(topic)
-    db_session.flush()
+    db.add(topic)
+    db.flush()
 
     # Topic due 3 days ago
     practiced_at = datetime.now(UTC) - timedelta(days=3)
@@ -128,12 +128,12 @@ def test_notifications_and_daily_reminder_limits(client_factory, db_session):
         consecutive_slip_passes=0,
         last_practiced_at=practiced_at,
     )
-    db_session.add(progress)
-    db_session.commit()
+    db.add(progress)
+    db.commit()
 
     # Run reminder job
     now = datetime.now(UTC)
-    sent_count = reminder_service.send_due_reminders_job(db_session, now=now)
+    sent_count = reminder_service.send_due_reminders_job(db, now=now)
     assert sent_count == 1
 
     # Check notification API
@@ -144,7 +144,7 @@ def test_notifications_and_daily_reminder_limits(client_factory, db_session):
     notif_id = data["notifications"][0]["id"]
 
     # Running job again within 24h should NOT send a duplicate
-    sent_count_2 = reminder_service.send_due_reminders_job(db_session, now=now + timedelta(hours=2))
+    sent_count_2 = reminder_service.send_due_reminders_job(db, now=now + timedelta(hours=2))
     assert sent_count_2 == 0
 
     # Mark as read

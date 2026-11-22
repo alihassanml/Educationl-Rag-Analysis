@@ -50,7 +50,7 @@ def find_matches(db: Session, user: User) -> list[PeerMatchCandidate]:
         if not p.topic:
             continue
         status = recommendation_service.classify(p.correct_count, p.attempt_count)
-        if status == recommendation_service.STATUS_NEEDS_REVISION:
+        if status == recommendation_service.NEEDS_REVISION:
             my_weak_topics[p.topic.name.strip().lower()] = p.topic
 
     if not my_weak_topics:
@@ -104,7 +104,7 @@ def find_matches(db: Session, user: User) -> list[PeerMatchCandidate]:
         if not p.topic:
             continue
         status = recommendation_service.classify(p.correct_count, p.attempt_count)
-        if status != recommendation_service.STATUS_NEEDS_REVISION:
+        if status != recommendation_service.NEEDS_REVISION:
             continue
         tname_norm = p.topic.name.strip().lower()
         if tname_norm in my_weak_topics:

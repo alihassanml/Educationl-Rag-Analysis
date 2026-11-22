@@ -26,17 +26,15 @@ def _seed_weak_topic(db, user_id, topic_name: str = "Recursion"):
     return topic
 
 
-def test_peer_match_only_shows_opted_in_students_with_matching_weak_topics(
-    client_factory, db_session
-):
+def test_peer_match_only_shows_opted_in_students_with_matching_weak_topics(client_factory, db):
     c1, c2, c3 = client_factory(), client_factory(), client_factory()
     u1 = register(c1, "alice@example.com", display_name="Alice")
     u2 = register(c2, "bob@example.com", display_name="Bob")
     u3 = register(c3, "charlie@example.com", display_name="Charlie")
 
-    _seed_weak_topic(db_session, u1.id, "Recursion")
-    _seed_weak_topic(db_session, u2.id, "Recursion")
-    _seed_weak_topic(db_session, u3.id, "Recursion")
+    _seed_weak_topic(db, u1.id, "Recursion")
+    _seed_weak_topic(db, u2.id, "Recursion")
+    _seed_weak_topic(db, u3.id, "Recursion")
 
     # None opted in yet
     res = c1.get("/api/v1/peer-match/matches")
@@ -57,7 +55,7 @@ def test_peer_match_only_shows_opted_in_students_with_matching_weak_topics(
     assert "email" not in matches[0]
 
 
-def test_peer_match_prefers_students_in_the_same_class(client_factory, db_session):
+def test_peer_match_prefers_students_in_the_same_class(client_factory, db):
     c1, c2, c3 = client_factory(), client_factory(), client_factory()
     u1 = register(c1, "u1@example.com", display_name="Student 1")
     u2 = register(c2, "u2@example.com", display_name="Classmate")
@@ -67,17 +65,17 @@ def test_peer_match_prefers_students_in_the_same_class(client_factory, db_sessio
     c2.patch("/api/v1/auth/me/preferences", json={"peer_match_opt_in": True})
     c3.patch("/api/v1/auth/me/preferences", json={"peer_match_opt_in": True})
 
-    _seed_weak_topic(db_session, u1.id, "Recursion")
-    _seed_weak_topic(db_session, u2.id, "Recursion")
-    _seed_weak_topic(db_session, u3.id, "Recursion")
+    _seed_weak_topic(db, u1.id, "Recursion")
+    _seed_weak_topic(db, u2.id, "Recursion")
+    _seed_weak_topic(db, u3.id, "Recursion")
 
     # Add u1 and u2 to the same class
     cls = Classroom(teacher_id=u1.id, name="Algorithms", join_code="ALGO1234")
-    db_session.add(cls)
-    db_session.flush()
-    db_session.add(ClassMember(class_id=cls.id, student_id=u1.id))
-    db_session.add(ClassMember(class_id=cls.id, student_id=u2.id))
-    db_session.commit()
+    db.add(cls)
+    db.flush()
+    db.add(ClassMember(class_id=cls.id, student_id=u1.id))
+    db.add(ClassMember(class_id=cls.id, student_id=u2.id))
+    db.commit()
 
     res = c1.get("/api/v1/peer-match/matches")
     assert res.status_code == 200
@@ -90,7 +88,7 @@ def test_peer_match_prefers_students_in_the_same_class(client_factory, db_sessio
     assert matches[1]["in_same_class"] is False
 
 
-def test_peer_challenge_duel_flow_and_scoring(client_factory, db_session):
+def test_peer_challenge_duel_flow_and_scoring(client_factory, db):
     c1, c2 = client_factory(), client_factory()
     u1 = register(c1, "p1@example.com", display_name="Player One")
     u2 = register(c2, "p2@example.com", display_name="Player Two")
@@ -111,8 +109,8 @@ def test_peer_challenge_duel_flow_and_scoring(client_factory, db_session):
         data={"title": "Slides"},
     )
 
-    _seed_weak_topic(db_session, u1.id, "Recursion")
-    _seed_weak_topic(db_session, u2.id, "Recursion")
+    _seed_weak_topic(db, u1.id, "Recursion")
+    _seed_weak_topic(db, u2.id, "Recursion")
 
     # 1. Player One challenges Player Two
     res = c1.post(
@@ -187,7 +185,7 @@ def test_peer_challenge_duel_flow_and_scoring(client_factory, db_session):
         app.dependency_overrides.pop(get_groq_service, None)
 
 
-def test_blocking_prevents_matching_and_challenging(client_factory, db_session):
+def test_blocking_prevents_matching_and_challenging(client_factory, db):
     c1, c2 = client_factory(), client_factory()
     u1 = register(c1, "b1@example.com", display_name="User B1")
     u2 = register(c2, "b2@example.com", display_name="User B2")
@@ -195,8 +193,8 @@ def test_blocking_prevents_matching_and_challenging(client_factory, db_session):
     c1.patch("/api/v1/auth/me/preferences", json={"peer_match_opt_in": True})
     c2.patch("/api/v1/auth/me/preferences", json={"peer_match_opt_in": True})
 
-    _seed_weak_topic(db_session, u1.id, "Recursion")
-    _seed_weak_topic(db_session, u2.id, "Recursion")
+    _seed_weak_topic(db, u1.id, "Recursion")
+    _seed_weak_topic(db, u2.id, "Recursion")
 
     # Block u2
     block_res = c1.post("/api/v1/peer-match/block", json={"blocked_user_id": str(u2.id)})

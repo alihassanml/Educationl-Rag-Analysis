@@ -22,9 +22,9 @@ def calculate_interval_days(status: str, consecutive_passes: int) -> int:
     """Spaced repetition interval: base interval depends on mastery status,
     and doubles with each passed slip test up to the max configured days."""
     settings = get_settings()
-    if status == recommendation_service.STATUS_NEEDS_REVISION:
+    if status == recommendation_service.NEEDS_REVISION:
         base = settings.spaced_interval_needs_revision_days
-    elif status == recommendation_service.STATUS_DOING_WELL:
+    elif status == recommendation_service.DOING_WELL:
         base = settings.spaced_interval_doing_well_days
     else:
         base = settings.spaced_interval_practicing_days
@@ -87,7 +87,7 @@ def get_due_topics(
     # Sort most overdue and weakest status first
     due_list.sort(
         key=lambda d: (
-            0 if d.status == recommendation_service.STATUS_NEEDS_REVISION else 1,
+            0 if d.status == recommendation_service.NEEDS_REVISION else 1,
             -d.days_overdue,
         )
     )

@@ -73,7 +73,7 @@ def test_viva_session_generation_conceals_future_questions(client_factory):
         app.dependency_overrides.pop(get_groq_service, None)
 
 
-def test_viva_turn_flow_followup_and_rubric_grading(client_factory, db_session):
+def test_viva_turn_flow_followup_and_rubric_grading(client_factory, db):
     client = client_factory()
     register(client, "student3@example.com", display_name="Student Three")
     _seed_topic_and_doc(client)

@@ -504,12 +504,6 @@ def _build_result(
                 TopicProgress.user_id == user_id, TopicProgress.topic_id == quiz.topic_id
             )
         )
-        if progress and quiz.kind == KIND_SLIP_TEST:
-            settings = get_settings()
-            if attempt.score >= settings.slip_test_pass_correct:
-                progress.consecutive_slip_passes += 1
-            else:
-                progress.consecutive_slip_passes = 0
         if progress and quiz.topic:
             status = recommendation_service.classify(progress.correct_count, progress.attempt_count)
             rec = recommendation_service.recommend(
@@ -594,6 +588,18 @@ def submit_attempt(
         )
         if quiz.kind == KIND_PRACTICE:
             mood_service.maybe_start(db, user_id, quiz.topic_id, outcome.needs_support)
+    if quiz.kind == KIND_SLIP_TEST and quiz.topic_id:
+        # Passing in a row stretches the review interval; one miss starts over
+        slip_progress = db.scalar(
+            select(TopicProgress).where(
+                TopicProgress.user_id == user_id, TopicProgress.topic_id == quiz.topic_id
+            )
+        )
+        if slip_progress:
+            if score >= get_settings().slip_test_pass_correct:
+                slip_progress.consecutive_slip_passes += 1
+            else:
+                slip_progress.consecutive_slip_passes = 0
     try:
         db.commit()
     except IntegrityError as exc:  # a concurrent double submit hit the unique constraint

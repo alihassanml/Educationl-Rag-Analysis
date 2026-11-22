@@ -23,6 +23,8 @@ os.environ["UPLOAD_DIR"] = tempfile.mkdtemp(prefix="edurag-test-uploads-")
 os.environ["EXAM_MATCH_MIN_SIMILARITY"] = "0.2"  # same reason as the line below
 os.environ["RETRIEVAL_MIN_SIMILARITY"] = "0.2"  # fake bag-of-words vectors score lower than bge
 os.environ["MAX_UPLOAD_MB"] = "1"
+# Uploads are encrypted in tests too (a fixed key, only ever used here)
+os.environ["FILE_ENCRYPTION_KEY"] = "dGVzdC1rZXktMzItYnl0ZXMtbm90LWZvci1wcm9kISE="
 os.environ["PROCESS_DOCUMENTS_INLINE"] = "true"  # tests index inside the request
 # Topic naming by the LLM is opt-in per test, so an upload never uses up queued FakeGroq replies
 os.environ["TOPICS_LLM_FALLBACK"] = "false"

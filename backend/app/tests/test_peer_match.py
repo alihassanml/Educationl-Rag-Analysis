@@ -1,3 +1,5 @@
+import uuid
+
 from app.models.classroom import ClassMember, Classroom
 from app.models.peer_match import STATUS_ACCEPTED, STATUS_COMPLETED, STATUS_PENDING
 from app.models.quiz import Topic, TopicProgress
@@ -32,9 +34,9 @@ def test_peer_match_only_shows_opted_in_students_with_matching_weak_topics(clien
     u2 = register(c2, "bob@example.com", display_name="Bob")
     u3 = register(c3, "charlie@example.com", display_name="Charlie")
 
-    _seed_weak_topic(db, u1.id, "Recursion")
-    _seed_weak_topic(db, u2.id, "Recursion")
-    _seed_weak_topic(db, u3.id, "Recursion")
+    _seed_weak_topic(db, uuid.UUID(u1["id"]), "Recursion")
+    _seed_weak_topic(db, uuid.UUID(u2["id"]), "Recursion")
+    _seed_weak_topic(db, uuid.UUID(u3["id"]), "Recursion")
 
     # None opted in yet
     res = c1.get("/api/v1/peer-match/matches")
@@ -65,16 +67,16 @@ def test_peer_match_prefers_students_in_the_same_class(client_factory, db):
     c2.patch("/api/v1/auth/me/preferences", json={"peer_match_opt_in": True})
     c3.patch("/api/v1/auth/me/preferences", json={"peer_match_opt_in": True})
 
-    _seed_weak_topic(db, u1.id, "Recursion")
-    _seed_weak_topic(db, u2.id, "Recursion")
-    _seed_weak_topic(db, u3.id, "Recursion")
+    _seed_weak_topic(db, uuid.UUID(u1["id"]), "Recursion")
+    _seed_weak_topic(db, uuid.UUID(u2["id"]), "Recursion")
+    _seed_weak_topic(db, uuid.UUID(u3["id"]), "Recursion")
 
     # Add u1 and u2 to the same class
-    cls = Classroom(teacher_id=u1.id, name="Algorithms", join_code="ALGO1234")
+    cls = Classroom(teacher_id=uuid.UUID(u1["id"]), name="Algorithms", join_code="ALGO1234")
     db.add(cls)
     db.flush()
-    db.add(ClassMember(class_id=cls.id, student_id=u1.id))
-    db.add(ClassMember(class_id=cls.id, student_id=u2.id))
+    db.add(ClassMember(class_id=cls.id, student_id=uuid.UUID(u1["id"])))
+    db.add(ClassMember(class_id=cls.id, student_id=uuid.UUID(u2["id"])))
     db.commit()
 
     res = c1.get("/api/v1/peer-match/matches")
@@ -109,13 +111,13 @@ def test_peer_challenge_duel_flow_and_scoring(client_factory, db):
         data={"title": "Slides"},
     )
 
-    _seed_weak_topic(db, u1.id, "Recursion")
-    _seed_weak_topic(db, u2.id, "Recursion")
+    _seed_weak_topic(db, uuid.UUID(u1["id"]), "Recursion")
+    _seed_weak_topic(db, uuid.UUID(u2["id"]), "Recursion")
 
     # 1. Player One challenges Player Two
     res = c1.post(
         "/api/v1/peer-match/challenges",
-        json={"opponent_id": str(u2.id), "topic_name": "Recursion", "difficulty": "intermediate"},
+        json={"opponent_id": u2["id"], "topic_name": "Recursion", "difficulty": "intermediate"},
     )
     assert res.status_code == 200, res.text
     challenge = res.json()
@@ -134,7 +136,7 @@ def test_peer_challenge_duel_flow_and_scoring(client_factory, db):
     q_resp = {
         "questions": [
             {
-                "question": "What is recursion?",
+                "question": f"What is recursion? (variant {i})",
                 "options": [
                     "A function calling itself",
                     "A loop",
@@ -145,6 +147,7 @@ def test_peer_challenge_duel_flow_and_scoring(client_factory, db):
                 "explanation": "Recursion calls itself.",
                 "source_passages": [1],
             }
+            for i in range(1, 6)
         ]
     }
     fake_groq.replies = [q_resp, q_resp]  # For challenger quiz, then opponent quiz
@@ -160,26 +163,26 @@ def test_peer_challenge_duel_flow_and_scoring(client_factory, db):
         assert accepted_data["status"] == STATUS_ACCEPTED
         assert accepted_data["my_quiz_id"] is not None
 
-        # 3. Challenger submits quiz attempt (score 1/1, took 45s)
+        # 3. Challenger submits quiz attempt (score 3/3, took 45s)
         sub1 = c1.post(
             f"/api/v1/peer-match/challenges/{challenge_id}/submit",
-            json={"answers": [0], "time_seconds": 45},
+            json={"answers": [0, 0, 0, 0, 0], "time_seconds": 45},
         )
         assert sub1.status_code == 200
         assert sub1.json()["my_completed"] is True
         assert sub1.json()["opponent_completed"] is False
         assert sub1.json()["status"] == STATUS_ACCEPTED
 
-        # 4. Opponent submits quiz attempt (score 1/1, took 60s)
+        # 4. Opponent submits quiz attempt (score 3/3, took 60s)
         sub2 = c2.post(
             f"/api/v1/peer-match/challenges/{challenge_id}/submit",
-            json={"answers": [0], "time_seconds": 60},
+            json={"answers": [0, 0, 0, 0, 0], "time_seconds": 60},
         )
         assert sub2.status_code == 200
         data2 = sub2.json()
         assert data2["status"] == STATUS_COMPLETED
         # Score tied: Player One had faster time (45s < 60s) -> Player One wins!
-        assert data2["winner_id"] == str(u1.id)
+        assert data2["winner_id"] == u1["id"]
         assert data2["winner_name"] == "Player One"
     finally:
         app.dependency_overrides.pop(get_groq_service, None)
@@ -193,11 +196,11 @@ def test_blocking_prevents_matching_and_challenging(client_factory, db):
     c1.patch("/api/v1/auth/me/preferences", json={"peer_match_opt_in": True})
     c2.patch("/api/v1/auth/me/preferences", json={"peer_match_opt_in": True})
 
-    _seed_weak_topic(db, u1.id, "Recursion")
-    _seed_weak_topic(db, u2.id, "Recursion")
+    _seed_weak_topic(db, uuid.UUID(u1["id"]), "Recursion")
+    _seed_weak_topic(db, uuid.UUID(u2["id"]), "Recursion")
 
     # Block u2
-    block_res = c1.post("/api/v1/peer-match/block", json={"blocked_user_id": str(u2.id)})
+    block_res = c1.post("/api/v1/peer-match/block", json={"blocked_user_id": u2["id"]})
     assert block_res.status_code == 200
 
     # User B2 should no longer appear in matches
@@ -207,6 +210,6 @@ def test_blocking_prevents_matching_and_challenging(client_factory, db):
     # Trying to challenge blocked user fails
     chal = c1.post(
         "/api/v1/peer-match/challenges",
-        json={"opponent_id": str(u2.id), "topic_name": "Recursion"},
+        json={"opponent_id": u2["id"], "topic_name": "Recursion"},
     )
     assert chal.status_code == 400

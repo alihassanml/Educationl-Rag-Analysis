@@ -186,7 +186,14 @@ def _body_size(pages: list[list[_Line]]) -> float:
     return sizes.most_common(1)[0][0] if sizes else 0.0
 
 
-def extract_pages(path: Path) -> list[PageText]:
+def _open(source: Path | bytes) -> pymupdf.Document:
+    """A PDF from a path, or from bytes already in memory (a decrypted upload)."""
+    if isinstance(source, bytes):
+        return pymupdf.open(stream=source, filetype="pdf")
+    return pymupdf.open(source)
+
+
+def extract_pages(path: Path | bytes) -> list[PageText]:
     """Extract text page by page. Pages without text are kept with empty text.
 
     Running headers and footers (the same line on most pages, such as the document title or
@@ -194,7 +201,7 @@ def extract_pages(path: Path) -> list[PageText]:
     like a match for a question that names the document. Headings, told apart by font size, are
     marked with HEADING_MARK so chunks keep the title of their section."""
     try:
-        with pymupdf.open(path) as pdf:
+        with _open(path) as pdf:
             if pdf.needs_pass:
                 raise PdfError("The PDF is password protected")
             pages: list[list[_Line]] = []
@@ -244,11 +251,11 @@ def _heading_flags(lines: list[_Line], body: float) -> list[bool]:
     return flags
 
 
-def extract_outline(path: Path) -> list[OutlineEntry]:
+def extract_outline(path: Path | bytes) -> list[OutlineEntry]:
     """The PDF's table of contents, in order. Empty when the file has none or it cannot be read;
     a missing outline is normal, so this never raises."""
     try:
-        with pymupdf.open(path) as pdf:
+        with _open(path) as pdf:
             if pdf.needs_pass:
                 return []
             entries = []

@@ -42,6 +42,9 @@ class Document(Base):
     title: Mapped[str] = mapped_column(String(255))
     original_filename: Mapped[str] = mapped_column(String(255))
     storage_path: Mapped[str] = mapped_column(String(512))
+    # Id of the AES-256 key that encrypted the stored file (services/file_store.py); NULL = the
+    # file is stored as plain bytes
+    encryption_key_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     mime_type: Mapped[str] = mapped_column(String(100))
     file_size: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(20), default=STATUS_UPLOADED)

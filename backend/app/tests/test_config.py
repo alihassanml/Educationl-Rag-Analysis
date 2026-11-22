@@ -19,5 +19,8 @@ def test_default_secret_key_is_refused_in_production() -> None:
             secret_key="dev-only-change-me",
         )
     Settings(
-        database_url="postgresql+psycopg://x", app_env="production", secret_key="a-private-value"
+        database_url="postgresql+psycopg://x",
+        app_env="production",
+        secret_key="a-private-value",
+        file_encryption_key="MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
     )

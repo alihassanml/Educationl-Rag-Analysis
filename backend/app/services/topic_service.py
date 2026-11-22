@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.models.document import STATUS_READY, Document, DocumentChunk
 from app.models.quiz import DocumentTopic, Quiz, Topic, TopicProgress
-from app.services import pdf_service
+from app.services import file_store, pdf_service
 from app.services.groq_service import GroqService, LLMOutputError, LLMUnavailableError
 from app.services.retrieval_service import RetrievedChunk, attach_source_urls
 
@@ -171,6 +171,14 @@ def get_or_create_topic(db: Session, user_id: uuid.UUID, name: str) -> Topic:
     return topic
 
 
+def _stored_bytes(document: Document) -> bytes:
+    """The decrypted file, or nothing when it cannot be read (a missing outline is normal)."""
+    try:
+        return file_store.read_decrypted(Path(document.storage_path), document.encryption_key_id)
+    except (OSError, file_store.FileStoreError):
+        return b""
+
+
 def extract_for_document(db: Session, llm: GroqService | None, document: Document) -> int:
     """Find the document's topics and save them in document order, replacing earlier links.
     Returns how many were saved (0 when no source gave a usable list)."""
@@ -181,7 +189,7 @@ def extract_for_document(db: Session, llm: GroqService | None, document: Documen
     ).all()
     candidates: list[TopicCandidate] = []
     if document.mime_type == _PDF_MIME:
-        outline = pdf_service.extract_outline(Path(document.storage_path))
+        outline = pdf_service.extract_outline(_stored_bytes(document))
         candidates = from_outline(
             outline, document.page_count or max((c.page_number or 0 for c in chunks), default=0)
         )

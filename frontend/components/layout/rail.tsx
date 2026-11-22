@@ -44,7 +44,7 @@ function PageRow({ label, href, icon: Icon, active, expanded }: { label: string;
   );
 }
 
-/** The sidebar: a slim rail of icons that widens to show their names while the cursor is over it.
+/** The sidebar: icons with their names beside them, always open.
  *  Chat history is its own page, so the rail holds no chat list or search. */
 export function Rail({ expanded }: { expanded: boolean }) {
   const pathname = usePathname();

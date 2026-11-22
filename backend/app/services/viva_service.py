@@ -70,13 +70,13 @@ Grade according to this strict rubric:
 - ideal_answer: 2-3 sentences showing a model answer.
 
 Return JSON:
-{
+{{
   "accuracy": 2,
   "completeness": 2,
   "own_words": 2,
   "feedback": "...",
   "ideal_answer": "..."
-}
+}}
 """
 
 

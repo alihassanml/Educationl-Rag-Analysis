@@ -29,6 +29,23 @@ class Settings(BaseSettings):
     upload_dir: Path = Path("uploads")
     max_upload_mb: int = 20
 
+    # AES-256-GCM encryption of stored uploads (services/file_store.py). The key is 32 random
+    # bytes, base64 encoded:
+    #   python -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
+    # Required in production. Empty in development keeps files as plain bytes.
+    file_encryption_key: str = ""
+    # Recorded on every document, so the key can be rotated later: add the new key under a new
+    # id, keep the old one in FILE_ENCRYPTION_PREVIOUS_KEYS ("id:base64key,id:base64key").
+    file_encryption_key_id: str = "v1"
+    file_encryption_previous_keys: str = ""
+
+    # Rate limits (requests per window, per client, counted in Redis). 0 turns a limit off.
+    rate_limit_enabled: bool = True
+    rate_limit_login: int = 10  # login attempts per minute, per IP
+    rate_limit_register: int = 5  # accounts created per hour, per IP
+    rate_limit_llm: int = 30  # model-backed requests (chat, quizzes, viva...) per minute, per user
+    rate_limit_peer: int = 20  # peer challenges and answers per hour, per user
+
     # Chunking. Chunks are cut at headings and stay well below bge-small's 512-token limit; on a
     # labelled set, 180-word chunks found the right page more often than whole pages
     # (27 of 30 questions, against 23)
@@ -141,6 +158,16 @@ class Settings(BaseSettings):
     def reject_default_secret_in_production(self) -> "Settings":
         if self.app_env == "production" and self.secret_key == "dev-only-change-me":
             raise ValueError("SECRET_KEY must be set to a private random value in production")
+        if self.app_env == "production" and not self.file_encryption_key.strip():
+            raise ValueError("FILE_ENCRYPTION_KEY must be set in production (base64, 32 bytes)")
+        if self.file_encryption_key.strip():
+            from app.services.file_store import parse_keyring
+
+            parse_keyring(
+                self.file_encryption_key_id,
+                self.file_encryption_key,
+                self.file_encryption_previous_keys,
+            )
         return self
 
     @field_validator("cors_origins", mode="before")

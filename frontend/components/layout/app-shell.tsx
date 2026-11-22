@@ -17,22 +17,13 @@ export function Brand() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false); // the sidebar from lg, wide while the cursor is over it
 
   return (
     <div className="min-h-screen bg-linear-to-b from-clay-300 to-clay-soft lg:flex">
-      {/* Widens in place on hover (or keyboard focus) to show the names; the page beside it narrows with it, nothing slides over it */}
-      <aside
-        onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
-        onFocus={() => setExpanded(true)}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget)) setExpanded(false);
-        }}
-        className={cn("hidden shrink-0 transition-[width] duration-300 ease-standard lg:block", expanded ? "w-[240px]" : "w-[76px]")}
-      >
+      {/* The sidebar is always open, showing the names beside the icons */}
+      <aside className="hidden w-[240px] shrink-0 lg:block">
         <div className="sticky top-0 z-50 h-screen">
-          <Rail expanded={expanded} />
+          <Rail expanded />
         </div>
       </aside>
 

@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from app.main import app
@@ -41,14 +42,14 @@ def test_due_topics_listing_and_slip_test_lifecycle(client_factory, db):
         data={"title": "Algorithms"},
     )
 
-    topic = Topic(user_id=user.id, name="Binary Search")
+    topic = Topic(user_id=uuid.UUID(user["id"]), name="Binary Search")
     db.add(topic)
     db.flush()
 
     # Practiced 2 days ago, needs_revision (interval = 1 day) -> DUE!
     practiced_at = datetime.now(UTC) - timedelta(days=2)
     progress = TopicProgress(
-        user_id=user.id,
+        user_id=uuid.UUID(user["id"]),
         topic_id=topic.id,
         attempt_count=4,
         correct_count=1,
@@ -96,10 +97,14 @@ def test_due_topics_listing_and_slip_test_lifecycle(client_factory, db):
 
         # 3. Submit passing attempt (score 3/3 >= 2)
         attempt_res = client.post(
-            f"/api/v1/quizzes/{quiz_id}/attempt",
-            json={"answers": [0, 0, 0]},
+            f"/api/v1/quizzes/{quiz_id}/attempts",
+            json={
+                "answers": [
+                    {"question_id": q["id"], "selected_index": 0} for q in slip_data["questions"]
+                ]
+            },
         )
-        assert attempt_res.status_code == 200
+        assert attempt_res.status_code == 201, attempt_res.text
 
         # Progress should now have consecutive_slip_passes = 1
         db.expire_all()
@@ -113,14 +118,14 @@ def test_notifications_and_daily_reminder_limits(client_factory, db):
     client = client_factory()
     user = register(client, "notif@example.com", display_name="Notification Student")
 
-    topic = Topic(user_id=user.id, name="QuickSort")
+    topic = Topic(user_id=uuid.UUID(user["id"]), name="QuickSort")
     db.add(topic)
     db.flush()
 
     # Topic due 3 days ago
     practiced_at = datetime.now(UTC) - timedelta(days=3)
     progress = TopicProgress(
-        user_id=user.id,
+        user_id=uuid.UUID(user["id"]),
         topic_id=topic.id,
         attempt_count=3,
         correct_count=1,

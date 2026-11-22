@@ -118,7 +118,8 @@ def generate_slip_test(
         quiz.kind = quiz_service.KIND_SLIP_TEST
         quiz.title = f"Slip test: {topic_name}"
         db.commit()
-        db.refresh(quiz)
+        # Rebuild the detail so it reflects the new kind and title
+        return quiz_service.get_quiz_detail(db, user_id, quiz.id)
     return detail
 
 

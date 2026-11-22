@@ -46,7 +46,7 @@ def upload_document(
     exam_year: Annotated[int | None, Form(ge=1900, le=2100)] = None,
     exam_session: Annotated[str | None, Form(max_length=50)] = None,
 ) -> Document:
-    path, size = document_service.validate_and_store(
+    path, size, key_id = document_service.validate_and_store(
         user.id, file.filename or "", file.content_type or "", file.file
     )
     return document_service.create_and_process(
@@ -57,6 +57,7 @@ def upload_document(
         title=title,
         path=path,
         size=size,
+        key_id=key_id,
         llm=llm,
         meta=DocumentMeta(kind, exam_year, exam_session),
     )

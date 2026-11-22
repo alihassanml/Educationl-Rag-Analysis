@@ -20,6 +20,7 @@ from app.models.document import (
 )
 from app.services import (
     chunking_service,
+    file_store,
     pdf_service,
     source_service,
     topic_service,
@@ -68,8 +69,10 @@ def _safe_title(filename: str, title: str | None) -> str:
 
 def validate_and_store(
     user_id: uuid.UUID, filename: str, content_type: str, stream
-) -> tuple[Path, int]:  # type: ignore[no-untyped-def]
-    """Check extension, size, and PDF signature, then save under a server-chosen name."""
+) -> tuple[Path, int, str | None]:  # type: ignore[no-untyped-def]
+    """Check extension, size and PDF signature, then save (encrypted) under a server-chosen name.
+    Returns the path, the size and the id of the key used (None when encryption is off). Nothing
+    is written until the whole file has passed the checks, so a rejected upload leaves no file."""
     settings = get_settings()
     if not filename.lower().endswith(".pdf"):
         raise AppError(400, "invalid_file_type", "Only PDF files are supported")
@@ -77,30 +80,31 @@ def validate_and_store(
         raise AppError(400, "invalid_file_type", "Only PDF files are supported")
 
     limit = settings.max_upload_mb * 1024 * 1024
-    directory = _storage_dir(user_id)
-    directory.mkdir(parents=True, exist_ok=True)
-    path = directory / f"{uuid.uuid4().hex}.pdf"
+    data = bytearray()
+    while block := stream.read(_READ_BLOCK):
+        if not data and not block.startswith(_PDF_MAGIC):
+            raise AppError(400, "invalid_file_type", "The file is not a valid PDF")
+        data += block
+        if len(data) > limit:
+            raise AppError(
+                413, "file_too_large", f"Files must be {settings.max_upload_mb} MB or smaller"
+            )
+    if not data:
+        raise AppError(400, "empty_file", "The file is empty")
+    path = _new_path(user_id, "pdf")
+    return path, len(data), file_store.save_encrypted(path, bytes(data))
 
-    size = 0
-    try:
-        with path.open("wb") as out:
-            while block := stream.read(_READ_BLOCK):
-                if size == 0 and not block.startswith(_PDF_MAGIC):
-                    raise AppError(400, "invalid_file_type", "The file is not a valid PDF")
-                size += len(block)
-                if size > limit:
-                    raise AppError(
-                        413,
-                        "file_too_large",
-                        f"Files must be {settings.max_upload_mb} MB or smaller",
-                    )
-                out.write(block)
-        if size == 0:
-            raise AppError(400, "empty_file", "The file is empty")
-    except AppError:
-        path.unlink(missing_ok=True)
-        raise
-    return path, size
+
+def _new_path(user_id: uuid.UUID, extension: str) -> Path:
+    return _storage_dir(user_id) / f"{uuid.uuid4().hex}.{extension}"
+
+
+def _read(document: Document) -> bytes:
+    return file_store.read_decrypted(Path(document.storage_path), document.encryption_key_id)
+
+
+def _read_text(document: Document) -> str:
+    return _read(document).decode("utf-8")
 
 
 def create_and_process(
@@ -112,6 +116,7 @@ def create_and_process(
     title: str | None,
     path: Path,
     size: int,
+    key_id: str | None = None,
     llm: GroqService | None = None,
     meta: DocumentMeta | None = None,
 ) -> Document:
@@ -120,6 +125,7 @@ def create_and_process(
         title=_safe_title(filename, title),
         original_filename=Path(filename).name[:255],
         storage_path=str(path),
+        encryption_key_id=key_id,
         mime_type="application/pdf",
         file_size=size,
         status=STATUS_PROCESSING,
@@ -155,11 +161,9 @@ def create_from_text(
             "text_too_long",
             f"Text must be {source_service.MAX_TEXT_CHARS:,} characters or fewer",
         )
-    directory = _storage_dir(user_id)
-    directory.mkdir(parents=True, exist_ok=True)
-    path = directory / f"{uuid.uuid4().hex}.txt"
+    path = _new_path(user_id, "txt")
     data = text.encode("utf-8")
-    path.write_bytes(data)
+    key_id = file_store.save_encrypted(path, data)
 
     label = _safe_title(source_url or "", title)
     document = Document(
@@ -167,6 +171,7 @@ def create_from_text(
         title=label,
         original_filename=(source_url or f"{label}.txt")[:255],
         storage_path=str(path),
+        encryption_key_id=key_id,
         mime_type=SOURCE_WEBSITE_MIME if source_url else SOURCE_TEXT_MIME,
         file_size=len(data),
         status=STATUS_PROCESSING,
@@ -191,10 +196,8 @@ def create_from_website(
     """Add a web address: a page is read as text, a link to a PDF is downloaded as a PDF."""
     fetched = source_service.fetch(url)
     if fetched.kind == "pdf":
-        directory = _storage_dir(user_id)
-        directory.mkdir(parents=True, exist_ok=True)
-        path = directory / f"{uuid.uuid4().hex}.pdf"
-        path.write_bytes(fetched.body)
+        path = _new_path(user_id, "pdf")
+        key_id = file_store.save_encrypted(path, fetched.body)
         return create_and_process(
             db,
             embedder,
@@ -203,6 +206,7 @@ def create_from_website(
             title=title,
             path=path,
             size=len(fetched.body),
+            key_id=key_id,
             llm=llm,
             meta=meta,
         )
@@ -239,11 +243,9 @@ def create_from_youtube(
     if len(text) > source_service.MAX_TEXT_CHARS * 2:
         raise AppError(413, "text_too_long", "This video's transcript is too long to add")
 
-    directory = _storage_dir(user_id)
-    directory.mkdir(parents=True, exist_ok=True)
-    path = directory / f"{uuid.uuid4().hex}.txt"
+    path = _new_path(user_id, "txt")
     data = text.encode("utf-8")
-    path.write_bytes(data)
+    key_id = file_store.save_encrypted(path, data)
     chosen = (title or "").strip() or youtube_service.video_title(video_id)
     label = _safe_title(f"YouTube lecture {video_id}", chosen)
     link = youtube_service.canonical_url(video_id)
@@ -252,6 +254,7 @@ def create_from_youtube(
         title=label,
         original_filename=link,
         storage_path=str(path),
+        encryption_key_id=key_id,
         mime_type=SOURCE_YOUTUBE_MIME,
         source_url=link,
         file_size=len(data),
@@ -280,20 +283,17 @@ def dispatch(
         path = Path(document.storage_path)
         db.delete(document)
         db.commit()
-        path.unlink(missing_ok=True)
+        file_store.delete(path)
         raise
 
 
 def load_pages(document: Document) -> list[pdf_service.PageText]:
     """The text of a stored document, page by page (a text source is one block)."""
-    path = Path(document.storage_path)
     if document.mime_type == SOURCE_YOUTUBE_MIME:
-        return youtube_service.windows(
-            youtube_service.from_stored(path.read_text(encoding="utf-8"))
-        )
+        return youtube_service.windows(youtube_service.from_stored(_read_text(document)))
     if document.mime_type in (SOURCE_TEXT_MIME, SOURCE_WEBSITE_MIME):
-        return [pdf_service.PageText(page_number=None, text=path.read_text(encoding="utf-8"))]
-    return pdf_service.extract_pages(path)
+        return [pdf_service.PageText(page_number=None, text=_read_text(document))]
+    return pdf_service.extract_pages(_read(document))
 
 
 def process_stored(
@@ -302,21 +302,21 @@ def process_stored(
     """Index a document from its stored file. What the file holds depends on where it came from: a
     PDF is read page by page, text and web pages are one block, a YouTube transcript is cut into
     timed passages. This is what the worker runs, and what re-indexing runs too."""
-    path = Path(document.storage_path)
     no_text = "Not enough readable text was found to index."
     try:
+        data = _read(document)
         if document.mime_type == SOURCE_YOUTUBE_MIME:
-            snippets = youtube_service.from_stored(path.read_text(encoding="utf-8"))
+            snippets = youtube_service.from_stored(data.decode("utf-8"))
             pages = youtube_service.windows(snippets)
         elif document.mime_type in (SOURCE_TEXT_MIME, SOURCE_WEBSITE_MIME):
-            pages = [pdf_service.PageText(page_number=None, text=path.read_text(encoding="utf-8"))]
+            pages = [pdf_service.PageText(page_number=None, text=data.decode("utf-8"))]
         else:
-            _process(db, embedder, document, path, llm=llm)
+            _process(db, embedder, document, data, llm=llm)
             return
-    except OSError:
+    except (OSError, file_store.FileStoreError, UnicodeDecodeError):
         _fail(db, document, "The stored file could not be read. Please add the material again.")
         return
-    _process(db, embedder, document, path, pages=pages, no_text_message=no_text, llm=llm)
+    _process(db, embedder, document, data, pages=pages, no_text_message=no_text, llm=llm)
 
 
 def reindex(
@@ -341,20 +341,21 @@ def _process(
     db: Session,
     embedder: Embedder,
     document: Document,
-    path: Path,
+    data: bytes,
     *,
     pages: list[pdf_service.PageText] | None = None,
     no_text_message: str = _NO_TEXT_MESSAGE,
     llm: GroqService | None = None,
 ) -> None:
-    """Index a document. PDFs are read from `path`; other sources pass their text as `pages`."""
+    """Index a document. PDFs are read from `data` (the decrypted file, in memory); other sources
+    pass their text as `pages`."""
     settings = get_settings()
     try:
         outline: list[pdf_service.OutlineEntry] = []
         if pages is None:
-            pages = pdf_service.extract_pages(path)
+            pages = pdf_service.extract_pages(data)
             document.page_count = len(pages)
-            outline = pdf_service.extract_outline(path)
+            outline = pdf_service.extract_outline(data)
         chunks = chunking_service.chunk_pages(
             pages, settings.chunk_size_words, settings.chunk_overlap_words, outline
         )
@@ -424,7 +425,7 @@ def delete_document(db: Session, user_id: uuid.UUID, document_id: uuid.UUID) -> 
     db.flush()
     topic_service.prune_unused_topics(db, user_id)  # a topic stays while progress or a quiz uses it
     db.commit()
-    path.unlink(missing_ok=True)
+    file_store.delete(path)
 
 
 def update_document(

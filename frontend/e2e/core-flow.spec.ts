@@ -64,10 +64,10 @@ test("uploading a PDF indexes it and rejects non-PDFs", async () => {
 const FIRST_QUESTION = "What does a recursive function need to stop calling itself?";
 
 async function openHistory() {
-  // History is a floating panel opened from the rail's clock button (the top bar's on small screens)
-  const open = page.getByRole("dialog", { name: "Chat history" });
-  if (!(await open.isVisible())) await page.getByRole("button", { name: "Chat history" }).first().click();
-  return open;
+  // History is its own page, opened from the rail's clock icon (the top bar's on small screens)
+  await page.getByRole("link", { name: "Chat history" }).first().click();
+  await expect(page).toHaveURL(/\/history$/);
+  return page.locator("main");
 }
 
 /** The answer's sources sit behind a "N sources" dropdown */
@@ -110,7 +110,7 @@ test("a follow-up shows what was searched, and the chat survives a reload, renam
   await expect(await openSources()).toBeVisible();
   await expect(page.getByText("According to your notes").first()).toBeVisible();
 
-  let drawer = await openHistory();
+  const drawer = await openHistory();
   await drawer.getByRole("button", { name: /^Options for / }).click();
   await drawer.getByRole("menuitem", { name: "Rename" }).click();
   await drawer.getByRole("textbox", { name: "Chat title" }).fill("Recursion revision");
@@ -120,10 +120,7 @@ test("a follow-up shows what was searched, and the chat survives a reload, renam
   await drawer.getByRole("button", { name: "Options for Recursion revision" }).click();
   await drawer.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("button", { name: "Delete chat" }).click();
-  await expect(page).toHaveURL(/\/tutor$/);
-  drawer = await openHistory();
   await expect(drawer.getByRole("link", { name: "Recursion revision" })).toHaveCount(0);
-  await page.keyboard.press("Escape");
 });
 
 test("a question the material cannot answer is declined in a new chat", async () => {

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { AccountMenu } from "./account-menu";
-import { HistoryPage } from "./history-page";
 import { PAGE_GUTTER } from "./page-container";
 import { Rail } from "./rail";
 import { SidebarNav } from "./sidebar-nav";
@@ -21,15 +20,22 @@ export function Brand() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false); // the full-page history on small screens
-  const [expanded, setExpanded] = useState(false); // the sidebar from lg
+  const [expanded, setExpanded] = useState(false); // the sidebar from lg, wide while the cursor is over it
 
   return (
     <div className="min-h-screen bg-linear-to-b from-clay-300 to-clay-soft lg:flex">
-      {/* Widens in place to show names and recent chats; the page beside it narrows with it, nothing slides over it */}
-      <aside className={cn("hidden shrink-0 transition-[width] duration-300 ease-standard lg:block", expanded ? "w-[280px]" : "w-[76px]")}>
+      {/* Widens in place on hover (or keyboard focus) to show the names; the page beside it narrows with it, nothing slides over it */}
+      <aside
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={() => setExpanded(false)}
+        onFocus={() => setExpanded(true)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) setExpanded(false);
+        }}
+        className={cn("hidden shrink-0 transition-[width] duration-300 ease-standard lg:block", expanded ? "w-[240px]" : "w-[76px]")}
+      >
         <div className="sticky top-0 z-50 h-screen">
-          <Rail expanded={expanded} onToggle={() => setExpanded((open) => !open)} onExpand={() => setExpanded(true)} />
+          <Rail expanded={expanded} />
         </div>
       </aside>
 
@@ -38,16 +44,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className={cn("flex h-14 items-center justify-between", PAGE_GUTTER)}>
             <Brand />
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label="Chat history"
-                aria-expanded={historyOpen}
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => setHistoryOpen((open) => !open)}
-                className="inline-flex size-10 items-center justify-center rounded-full text-ink hover:bg-stone-100"
-              >
+              <Link href="/history" aria-label="Chat history" className="inline-flex size-10 items-center justify-center rounded-full text-ink hover:bg-stone-100">
                 <History size={20} strokeWidth={1.75} aria-hidden="true" />
-              </button>
+              </Link>
               <button
                 type="button"
                 aria-expanded={menuOpen}
@@ -71,8 +70,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         <main className="min-w-0 flex-1">{children}</main>
       </div>
-
-      <HistoryPage open={historyOpen} onClose={() => setHistoryOpen(false)} />
     </div>
   );
 }

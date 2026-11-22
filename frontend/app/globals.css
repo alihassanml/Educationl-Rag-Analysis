@@ -57,9 +57,9 @@
   --text-display-lg--line-height: 64px;
 
   /* Shape */
-  --radius-control: 8px;
-  --radius-panel: 12px;
-  --radius-composer: 16px;
+  --radius-control: 12px;
+  --radius-panel: 16px;
+  --radius-composer: 24px;
 
   /* Elevation */
   --shadow-sm: var(--elevation-sm);
@@ -115,34 +115,6 @@ h3 {
 }
 .msg-in {
   animation: msg-in 320ms var(--ease) both;
-}
-
-/* The history page slides in from the rail and back out. Reduced motion is handled by the global rule above. */
-@keyframes drawer-in {
-  from {
-    opacity: 0;
-    transform: translateX(-56px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes drawer-out {
-  from {
-    opacity: 1;
-    transform: none;
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-56px);
-  }
-}
-.drawer-in {
-  animation: drawer-in 260ms var(--ease) both;
-}
-.drawer-out {
-  animation: drawer-out 160ms var(--ease) both;
 }
 
 /* Dotted panel background used behind landing screenshots */

@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -19,7 +19,7 @@ export function openChatId(): string | null {
   return /^\/tutor\/([^/]+)/.exec(window.location.pathname)?.[1] ?? null;
 }
 
-function RenameInput({ thread, compact, onDone }: { thread: ThreadSummary; compact: boolean; onDone: (title: string | null) => void }) {
+function RenameInput({ thread, onDone }: { thread: ThreadSummary; onDone: (title: string | null) => void }) {
   const [value, setValue] = useState(thread.title);
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => ref.current?.select(), []);
@@ -38,27 +38,23 @@ function RenameInput({ thread, compact, onDone }: { thread: ThreadSummary; compa
         }
       }}
       onBlur={() => onDone(null)}
-      className={cn("w-full rounded-lg border border-stone-strong bg-paper px-3 text-ink", compact ? "h-9 text-sm" : "h-10 text-base")}
+      className="h-10 w-full rounded-control border border-stone-strong bg-paper px-3 text-base text-ink"
     />
   );
 }
 
 type Props = {
   threads: ThreadSummary[];
-  /** "page": the full history page with dates; "rail": compact rows with an icon, inside the sidebar */
-  variant: "page" | "rail";
-  onOpen?: () => void;
   onChanged: () => void;
 };
 
 /** Chat rows with Rename and Delete in a small menu that shows on hover. */
-export function ChatList({ threads, variant, onOpen, onChanged }: Props) {
+export function ChatList({ threads, onChanged }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<ThreadSummary | null>(null);
   const [pending, setPending] = useState(false);
   const active = openChatId();
-  const rail = variant === "rail";
 
   async function rename(thread: ThreadSummary, title: string | null) {
     setRenaming(null);
@@ -89,44 +85,33 @@ export function ChatList({ threads, variant, onOpen, onChanged }: Props) {
   return (
     <>
       {notice ? (
-        <p role="alert" className={cn("text-small text-danger", rail ? "px-3 py-2" : "mt-4")}>
+        <p role="alert" className="mt-4 text-small text-danger">
           {notice}
         </p>
       ) : null}
 
-      <ul className={rail ? "flex flex-col gap-0.5" : "mt-4 divide-y divide-stone"}>
+      <ul className="mt-4 divide-y divide-stone">
         {threads.map((thread) => {
           const current = thread.id === active;
           return (
             <li key={thread.id} className="group relative flex items-center gap-1">
               {renaming === thread.id ? (
-                <div className={cn("w-full", rail ? "py-0.5" : "py-2")}>
-                  <RenameInput thread={thread} compact={rail} onDone={(title) => void rename(thread, title)} />
+                <div className="w-full py-2">
+                  <RenameInput thread={thread} onDone={(title) => void rename(thread, title)} />
                 </div>
               ) : (
                 <>
                   <Link
                     href={`/tutor/${thread.id}`}
                     aria-current={current ? "page" : undefined}
-                    onClick={onOpen}
-                    className={
-                      rail
-                        ? cn(
-                            "flex h-9 min-w-0 flex-1 items-center gap-3 rounded-lg pl-3 pr-9 text-sm transition-colors duration-[120ms]",
-                            current ? "bg-paper font-medium text-ink" : "text-ink-2 hover:bg-paper/60 hover:text-ink",
-                          )
-                        : "flex min-w-0 flex-1 items-center justify-between gap-6 rounded-lg py-4 pr-1 hover:text-accent-ink"
-                    }
+                    className="flex min-w-0 flex-1 items-center justify-between gap-6 rounded-lg py-4 pr-1 hover:text-accent-ink"
                   >
-                    {rail ? <MessageSquare size={16} strokeWidth={1.75} className="shrink-0" aria-hidden="true" /> : null}
-                    <span className={cn("truncate", !rail && "text-base text-ink", !rail && current && "font-medium")}>{thread.title}</span>
-                    {rail ? null : (
-                      <span className="shrink-0 text-sm text-ink-2" title={new Date(thread.updated_at).toLocaleString("en")}>
-                        {formatChatDate(thread.updated_at)}
-                      </span>
-                    )}
+                    <span className={cn("truncate text-base text-ink", current && "font-medium")}>{thread.title}</span>
+                    <span className="shrink-0 text-sm text-ink-2" title={new Date(thread.updated_at).toLocaleString("en")}>
+                      {formatChatDate(thread.updated_at)}
+                    </span>
                   </Link>
-                  <div className={rail ? "absolute right-1 top-1/2 -translate-y-1/2" : undefined}>
+                  <div>
                     <Menu
                       label={`Options for ${thread.title}`}
                       items={[

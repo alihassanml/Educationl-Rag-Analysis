@@ -16,7 +16,7 @@ export function IconButton({ label, active, className, type = "button", children
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex size-8 items-center justify-center rounded-lg text-ink-2 transition-colors duration-[120ms]",
+        "inline-flex size-8 items-center justify-center rounded-xl text-ink-2 transition-colors duration-[120ms]",
         "hover:bg-stone-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50",
         active && "bg-clay-soft text-accent-ink hover:bg-clay-soft hover:text-accent-ink",
         className,

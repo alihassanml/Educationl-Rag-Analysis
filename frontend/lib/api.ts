@@ -2,6 +2,9 @@ import { apiDownload, apiRequest, apiStream } from "./api-client";
 import { readSse, type SseEvent } from "./sse";
 import type {
   AccountRole,
+  ClassDetail,
+  ClassInsights,
+  ClassSummary,
   AskResponse,
   AttemptResult,
   DiagnosticStatus,
@@ -175,4 +178,20 @@ export const evalApi = {
     ),
   compare: (ids: string[], signal?: AbortSignal) =>
     apiRequest<EvalCompare>(`/eval/compare?${ids.map((id) => `runs=${id}`).join("&")}`, { signal }),
+};
+
+export const classesApi = {
+  list: (signal?: AbortSignal) => apiRequest<ClassSummary[]>("/classes", { signal }),
+  get: (id: string, signal?: AbortSignal) => apiRequest<ClassDetail>(`/classes/${id}`, { signal }),
+  create: (name: string) => apiRequest<ClassSummary>("/classes", { method: "POST", json: { name } }),
+  join: (joinCode: string) => apiRequest<ClassSummary>("/classes/join", { method: "POST", json: { join_code: joinCode } }),
+  leave: (id: string) => apiRequest<void>(`/classes/${id}/membership`, { method: "DELETE" }),
+  remove: (id: string) => apiRequest<void>(`/classes/${id}`, { method: "DELETE" }),
+  removeMember: (id: string, studentId: string) => apiRequest<void>(`/classes/${id}/members/${studentId}`, { method: "DELETE" }),
+  share: (id: string, documentId: string) => apiRequest<void>(`/classes/${id}/documents`, { method: "POST", json: { document_id: documentId } }),
+  unshare: (id: string, documentId: string) => apiRequest<void>(`/classes/${id}/documents/${documentId}`, { method: "DELETE" }),
+};
+
+export const teacherApi = {
+  insights: (classId: string, signal?: AbortSignal) => apiRequest<ClassInsights>(`/teacher/classes/${classId}/insights`, { signal }),
 };

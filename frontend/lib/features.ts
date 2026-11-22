@@ -6,6 +6,8 @@ import {
   MessageCircleQuestion,
   Route,
   Target,
+  Users,
+  GraduationCap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -21,7 +23,7 @@ export type Feature = {
   id: string;
   status: FeatureStatus;
   label: string;
-  nav?: { href: string; group: NavGroup; icon: LucideIcon; adminOnly?: boolean };
+  nav?: { href: string; group: NavGroup; icon: LucideIcon; adminOnly?: boolean; role?: "student" | "teacher" };
   /** Landing feature section (live features only) */
   landing?: { overline: string; title: string; body: string; bullets: string[] };
   /** One line for the roadmap list (planned features only) */
@@ -53,6 +55,24 @@ export const FEATURES: Feature[] = [
     status: "live",
     label: "My library",
     nav: { href: "/library", group: "learn", icon: BookOpen },
+  },
+  {
+    id: "classes",
+    status: "live",
+    label: "My classes",
+    nav: { href: "/classes", group: "learn", icon: Users, role: "student" },
+    landing: {
+      overline: "Classes",
+      title: "Join your teacher's class",
+      body: "A teacher shares slides and notes with a class. Join with the class code and your questions and quizzes can use that material too, with its page cited. Shared material is read-only, and your own uploads stay private.",
+      bullets: ["Join with an 8-character code", "Shared material is searched with your own and marked as teacher material", "Teachers see topic progress, never your documents or chats"],
+    },
+  },
+  {
+    id: "teacher-classes",
+    status: "live",
+    label: "Teacher area",
+    nav: { href: "/teacher", group: "learn", icon: GraduationCap, role: "teacher" },
   },
   {
     id: "course-map",
@@ -174,11 +194,24 @@ export const FEATURES: Feature[] = [
 export const liveFeatures = (): Feature[] => FEATURES.filter((f) => f.status === "live");
 export const plannedFeatures = (): Feature[] => FEATURES.filter((f) => f.status === "planned");
 
-export type NavItem = { label: string; href: string; icon: LucideIcon; group: NavGroup; adminOnly: boolean };
+export type NavItem = { label: string; href: string; icon: LucideIcon; group: NavGroup; adminOnly: boolean; role?: "student" | "teacher" };
 
 /** Nav items for live features only, in registry order. */
 export function navItems(): NavItem[] {
   return liveFeatures().flatMap((f) =>
-    f.nav ? [{ label: f.label, href: f.nav.href, icon: f.nav.icon, group: f.nav.group, adminOnly: Boolean(f.nav.adminOnly) }] : [],
+    f.nav ? [{ label: f.label, href: f.nav.href, icon: f.nav.icon, group: f.nav.group, adminOnly: Boolean(f.nav.adminOnly), role: f.nav.role }] : [],
   );
+}
+
+/** What a signed-in user sees in the nav: admin items for admins, and student or teacher items by role.
+ *  Teachers get the library (to upload what they share) and settings, not the student study pages. */
+const TEACHER_SHARED = new Set(["/library"]);
+
+export function navItemsFor(user: { is_admin: boolean; role?: "student" | "teacher" }): NavItem[] {
+  const role = user.role ?? "student";
+  return navItems().filter((item) => {
+    if (item.adminOnly && !user.is_admin) return false;
+    if (role === "teacher") return item.role === "teacher" || TEACHER_SHARED.has(item.href) || (item.adminOnly && user.is_admin);
+    return item.role !== "teacher";
+  });
 }

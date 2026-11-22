@@ -8,7 +8,7 @@ import { useUser } from "@/components/auth/session-provider";
 import { authApi } from "@/lib/api";
 import { NEW_CHAT_EVENT } from "@/lib/chat-events";
 import { cn } from "@/lib/cn";
-import { navItems } from "@/lib/features";
+import { navItemsFor } from "@/lib/features";
 import { useDismiss } from "@/lib/use-dismiss";
 
 const circle = "relative inline-flex size-11 shrink-0 items-center justify-center rounded-full transition-colors duration-[120ms]";
@@ -55,7 +55,7 @@ export function Rail({ expanded }: { expanded: boolean }) {
   useDismiss(account, accountOpen, () => setAccountOpen(false));
 
   // Study tutor is the + button, so it is not repeated as a page icon
-  const pages = navItems().filter((item) => item.href !== "/tutor" && (!item.adminOnly || user.is_admin));
+  const pages = navItemsFor(user).filter((item) => item.href !== "/tutor");
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   function newChat() {

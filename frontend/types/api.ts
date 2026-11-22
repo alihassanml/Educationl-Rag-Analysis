@@ -460,3 +460,34 @@ export type TeacherStyleStatus = {
     built_at: string;
   } | null;
 };
+
+export type ClassSummary = {
+  id: string;
+  name: string;
+  teacher_name: string;
+  member_count: number;
+  document_count: number;
+  created_at: string;
+  /** Only the teacher who owns the class gets the code */
+  join_code: string | null;
+};
+
+export type SharedDocument = { id: string; title: string; kind: string; status: DocumentStatus; page_count: number | null; shared_at: string };
+
+export type ClassMember = { student_id: string; display_name: string; joined_at: string };
+
+export type ClassDetail = ClassSummary & { documents: SharedDocument[]; members: ClassMember[] };
+
+export type ClassTopic = { topic: string; students: number; accuracy: number; status: TopicStatus; weak: boolean };
+
+export type StudentTopic = { topic: string; status: TopicStatus; level: string; accuracy: number | null; attempted: number };
+
+export type ClassInsights = {
+  class_id: string;
+  class_name: string;
+  student_count: number;
+  min_students: number;
+  topics: ClassTopic[];
+  topics_hidden: number;
+  students: { student_id: string; display_name: string; topics: StudentTopic[] }[];
+};

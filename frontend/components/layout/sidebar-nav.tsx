@@ -4,14 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/components/auth/session-provider";
 import { cn } from "@/lib/cn";
-import { NAV_GROUP_LABELS, navItems, type NavGroup } from "@/lib/features";
+import { NAV_GROUP_LABELS, navItemsFor, type NavGroup } from "@/lib/features";
 
 const GROUP_ORDER: NavGroup[] = ["learn", "practise", "insights"];
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const user = useUser();
-  const items = navItems().filter((item) => !item.adminOnly || user.is_admin);
+  const items = navItemsFor(user);
 
   return (
     <nav aria-label="Main" className="flex flex-col gap-5">
